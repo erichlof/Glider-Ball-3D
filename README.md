@@ -4,7 +4,7 @@ Click to Play --> https://erichlof.github.io/Glider-Ball-3D/Glider_Ball_3D.html
 <br>
 <h4>Goal of this game</h4>
 The goal of Glider Ball 3D is simple, yet challenging: Drive your Glider and knock the ball into the opponent's goal! <br>
-Think 'Rocket League' car-soccer gameplay, but instead of playing on boring, flat levels, the futuristic Gliders battle it out on interesting curve-shaped courses (more courses coming soon!).  And instead of having normal Earth-type gravity, Glider Ball 3D features Anti-Gravity, allowing the Gliders and ball to follow and hug the course surface wherever it leads, even if that means going upside down! 
+Think 'Rocket League' car-soccer gameplay, but instead of playing on boring, flat levels, our futuristic Glider vehicles battle it out on interesting curve-shaped courses (more courses coming soon!).  And instead of having normal Earth-type gravity, Glider Ball 3D features Anti-Gravity, allowing the Gliders and ball to follow and hug the course surface wherever it leads, even if that means going upside down! 
 
 <h4>Desktop Controls</h4>
 
