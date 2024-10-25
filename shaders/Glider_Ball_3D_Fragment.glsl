@@ -552,8 +552,8 @@ void main( void )
 	}
 		
 	// for dynamic scenes (to clear out old, dark, sharp pixel trails left behind from moving objects)
-	if (previousPixel.a == 1.0 && rng() < 0.05)
-		currentPixel.a = 0.0;
+	// if (previousPixel.a == 1.0 && rng() < 0.01) // 0.05
+	// 	currentPixel.a = 0.0;
 
 	
 	pc_fragColor = vec4(previousPixel.rgb + currentPixel.rgb, currentPixel.a);
