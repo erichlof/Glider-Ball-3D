@@ -284,6 +284,7 @@ function updateVariablesAndUniforms()
 			{
 				gliderForwardVelocity.addScaledVector(worldForward, 200 * frameTime);
 				gliderIsAccelerating = true;
+				
 			}
 			if ((keyPressed('KeyS') || button4Pressed) && !(keyPressed('KeyW') || button3Pressed))
 			{
@@ -301,12 +302,15 @@ function updateVariablesAndUniforms()
 				gliderIsAccelerating = true;
 			}
 		}
-		// if (!gliderIsAccelerating)
-		// {	
-		// 	gliderForwardVelocity.
-		// }
-
+		
 	} // end if (!isPaused)
+
+	// if camera is not rotating and Glider motion has almost fully stopped, set cameraIsMoving to false,
+	// otherwise set cameraIsMoving to true because there must be some action or movement going on in the game.
+	// This helps with the temporal/spatial denoiser in the final shader, which tries to get rid of noise from edges (which must remain sharp)
+	if (!cameraIsMoving && gliderRightVelocity.lengthSq() < 20 && gliderUpVelocity.lengthSq() < 20 && gliderForwardVelocity.lengthSq() < 20)
+		cameraIsMoving = false;
+	else cameraIsMoving = true;
 
 	// update glider position
 	if (gliderIsInAir)
@@ -606,7 +610,8 @@ function updateVariablesAndUniforms()
 	
 
 	// DEBUG INFO
-	demoInfoElement.innerHTML = "gliderIsInAir: " + gliderIsInAir + "<br>" + " gliderRight: " + gliderRight.x.toFixed(1) + " " + gliderRight.y.toFixed(1) + " " + gliderRight.z.toFixed(1) + " " + 
+	demoInfoElement.innerHTML = "gliderIsInAir: " + gliderIsInAir + " " + "cameraIsMoving: " + cameraIsMoving + "<br>" + 
+	" gliderRight: " + gliderRight.x.toFixed(1) + " " + gliderRight.y.toFixed(1) + " " + gliderRight.z.toFixed(1) + " " + 
 	" gliderUp: " + gliderUp.x.toFixed(1) + " " + gliderUp.y.toFixed(1) + " " + gliderUp.z.toFixed(1) + " " + 
 	" gliderForward: " + gliderForward.x.toFixed(1) + " " + gliderForward.y.toFixed(1) + " " + gliderForward.z.toFixed(1) + "<br>" + 
 	" gliderRightVelocity: " + gliderRightVelocity.x.toFixed(1) + " " + gliderRightVelocity.y.toFixed(1) + " " + gliderRightVelocity.z.toFixed(1) + " " +
