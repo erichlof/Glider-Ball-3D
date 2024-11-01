@@ -1,17 +1,16 @@
 // scene/demo-specific variables go here
 let courseSphere = new THREE.Object3D();
 let courseSphere_invMatrix = new THREE.Matrix4();
-let cameraRayOrigin = new THREE.Vector3();
-let cameraRayDirection = new THREE.Vector3();
-let chaseCameraPosition = new THREE.Vector3();
 let rayObjectOrigin = new THREE.Vector3();
 let rayObjectDirection = new THREE.Vector3();
 let intersectionPoint = new THREE.Vector3();
 let intersectionNormal = new THREE.Vector3();
+let tempVec1 = new THREE.Vector3();
+let tempVec2 = new THREE.Vector3();
 let glider = new THREE.Object3D();
 let gliderRotationMatrix = new THREE.Matrix4();
-let YRotationMatrix = new THREE.Matrix4();
-let gliderInvMatrix = new THREE.Matrix4();
+let gliderThrusters = new THREE.Object3D();
+let gliderThrustersRotationMatrix = new THREE.Matrix4();
 let gliderRayOrigin = new THREE.Vector3();
 let gliderRayDirection = new THREE.Vector3();
 let gliderOldPosition = new THREE.Vector3();
@@ -20,27 +19,46 @@ let gliderRaySegmentLength = 0;
 let gliderRight = new THREE.Vector3();
 let gliderUp = new THREE.Vector3();
 let gliderForward = new THREE.Vector3();
+let gliderThrustersRight = new THREE.Vector3(1,0,0);
+let gliderThrustersUp = new THREE.Vector3(0,1,0);
+let gliderThrustersForward = new THREE.Vector3(0,0,-1);
 let gliderRightVelocity = new THREE.Vector3();
 let gliderUpVelocity = new THREE.Vector3();
 let gliderForwardVelocity = new THREE.Vector3();
-let worldGravity = new THREE.Vector3(0, -1, 0);
-let gliderRotationY = 0;
+let gliderVelocity = new THREE.Vector3();
 let gliderIsInAir = true;
-let frictionVec = new THREE.Vector3();
+let gliderIsAcceleratingRight = false;
+let gliderIsAcceleratingUp = false;
+let gliderIsAcceleratingForward = false;
+let worldGravity = new THREE.Vector3(0, -1, 0);
 let worldRight = new THREE.Vector3(1, 0, 0);
 let worldUp = new THREE.Vector3(0, 1, 0);
 let worldForward = new THREE.Vector3(0, 0, -1);
-let pullGravity = 0;
-let gliderIsAccelerating = false;
 let forwardProbe = new THREE.Vector3();
 let backwardProbe = new THREE.Vector3();
 let rightProbe = new THREE.Vector3();
 let leftProbe = new THREE.Vector3();
 
+let ball = new THREE.Object3D();
+let ballRotationMatrix = new THREE.Matrix4();
+let ballRayOrigin = new THREE.Vector3();
+let ballRayDirection = new THREE.Vector3();
+let ballOldPosition = new THREE.Vector3();
+let ballRaySegment = new THREE.Vector3();
+let ballRaySegmentLength = 0;
+let ballRight = new THREE.Vector3();
+let ballUp = new THREE.Vector3();
+let ballForward = new THREE.Vector3();
+let ballRightVelocity = new THREE.Vector3();
+let ballUpVelocity = new THREE.Vector3();
+let ballForwardVelocity = new THREE.Vector3();
+let ballIsInAir = true;
+
 
 let demoInfoElement = document.getElementById('demoInfo');
 let canPress_Space = true;
 let jumpWasTriggered = false;
+let roundBeginFlag = true;
 
 
 // first, add some new methods to Three.js' Vector3 class
@@ -81,7 +99,7 @@ transformed by a user-specified transform matrix which has changed the original 
 When raycasting against such transformed objects, we must first transform the ray's origin into the reference of this 
 changed object (its object space).  After the ray's origin is transformed with this method, we can get a correct raycast result from the changed object. 
 Mathematically, this is accomplished by applying the transformed object's matrixInverse to the rayOrigin as a 3D point.  The result is a changed Vector3
-that will be used as the new rayOrigin when performing a raycast against a transformed unit-shape (using a simple unit-shape rayscast routine, which is easier).
+that will be used as the new rayOrigin when performing a raycast against a transformed unit-shape (using a simple unit-shape raycast routine, which is easier).
 */
 THREE.Vector3.prototype.transformRayOriginAsPoint = function(m4_MatrixInverse)
 {
@@ -109,7 +127,7 @@ When raycasting against such transformed objects, we must also transform the ray
 changed object (its object space).  After the ray's direction is transformed with this method, we can get a correct raycast result from the changed object. 
 Mathematically, this is accomplished by applying the transformed object's matrixInverse to the rayDirection as a pure direction vector.  This method differs from
 the one above because it only operates on the directional part of the supplied matrix (as opposed to the positional part used above).  The result is a changed 
-Vector3 that will be used as the new rayDirection when performing a raycast against a transformed unit-shape (using a simple unit-shape rayscast routine, which is easier).
+Vector3 that will be used as the new rayDirection when performing a raycast against a transformed unit-shape (using a simple unit-shape raycast routine, which is easier).
 */
 
 THREE.Vector3.prototype.transformRayDirectionAsDirection = function(m4_MatrixInverse)
@@ -228,14 +246,8 @@ function initSceneData()
 	EPS_intersect = 0.01;
 
 	// set camera's field of view
-	worldCamera.fov = 60;
-	focusDistance = 130.0;
+	worldCamera.fov = 80;
 
-	// position and orient camera
-	cameraControlsObject.position.set(0, 150, 250);
-	///cameraControlsYawObject.rotation.y = 0.0;
-	// look slightly downward
-	//cameraControlsPitchObject.rotation.x = -0.4;
 
 	// COURSE (Sphere-shaped)
 	courseSphere.visible = false;
@@ -247,7 +259,7 @@ function initSceneData()
 
 	// GLIDER
 	glider.visible = false;
-	glider.position.set(0, 300, 0);
+	glider.position.set(0, 300, 30);
 	glider.scale.set(15, 22, 5);
 	glider.updateMatrixWorld();
 	
@@ -255,10 +267,21 @@ function initSceneData()
 	gliderUp.set(0, 1, 0);
 	gliderForward.set(0, 0, -1);
 
+	// BALL
+	ball.visible = false;
+	ball.position.set(0, 300, 0);
+	ball.scale.set(8, 12, 8);
+	ball.updateMatrixWorld();
+	
+	ballRight.set(1, 0, 0);
+	ballUp.set(0, 1, 0);
+	ballForward.set(0, 0, -1);
+
 
 	// scene/demo-specific uniforms go here
 	pathTracingUniforms.uCourseSphere_invMatrix = { value: courseSphere_invMatrix };
 	pathTracingUniforms.uGliderInvMatrix = { value: new THREE.Matrix4() };
+	pathTracingUniforms.uBallInvMatrix = { value: new THREE.Matrix4() };
 
 } // end function initSceneData()
 
@@ -267,8 +290,11 @@ function initSceneData()
 // called automatically from within the animate() function (located in InitCommon.js file)
 function updateVariablesAndUniforms()
 {
-	// reset variables at start of game loop
-	gliderIsAccelerating = false;
+
+	// reset some variables at start of game loop
+	gliderIsAcceleratingRight = false;
+	gliderIsAcceleratingUp = false;
+	gliderIsAcceleratingForward = false;
 	
 	// get user input
 	if (!isPaused)
@@ -278,28 +304,62 @@ function updateVariablesAndUniforms()
 			jumpWasTriggered = true;
 			canPress_Space = false;
 		}
-		if (!gliderIsInAir)
-		{
+		// Use the following controls for a more realistic physics simulation of a floating Glider. You can only travel in the direction of thrust. 
+		// Facing direction will not steer the Glider (like you would be able to if the Glider was a car with wheels).  The 2D example of this
+		// behavior is piloting your spaceship in the classic Asteroids arcade game.  The spacecraft travels only in the thrust direction and keeps floating
+		// in that direction until applying an opposing thrust or an artificial 'friction' force. The Asteroids ship slows from friction, even though there's none in space.
+		/* {
 			if ((keyPressed('KeyW') || button3Pressed) && !(keyPressed('KeyS') || button4Pressed))
 			{
-				gliderForwardVelocity.addScaledVector(worldForward, 200 * frameTime);
-				gliderIsAccelerating = true;
+				gliderForwardVelocity.addScaledVector(worldForward, gliderThrustersForward.dot(gliderForward) * -300 * frameTime); 
+				gliderRightVelocity.addScaledVector(worldRight, gliderThrustersForward.dot(gliderRight) * 300 * frameTime);
+				gliderIsAcceleratingForward = true;
 				
 			}
 			if ((keyPressed('KeyS') || button4Pressed) && !(keyPressed('KeyW') || button3Pressed))
 			{
-				gliderForwardVelocity.addScaledVector(worldForward, -200 * frameTime);
-				gliderIsAccelerating = true;
+				gliderForwardVelocity.addScaledVector(worldForward, gliderThrustersForward.dot(gliderForward) * 300 * frameTime); 
+				gliderRightVelocity.addScaledVector(worldRight, gliderThrustersForward.dot(gliderRight) * -300 * frameTime);
+				gliderIsAcceleratingForward = true;
 			}
 			if ((keyPressed('KeyA') || button1Pressed) && !(keyPressed('KeyD') || button2Pressed))
 			{
-				gliderRightVelocity.addScaledVector(worldRight, -200 * frameTime);
-				gliderIsAccelerating = true;
+				gliderForwardVelocity.addScaledVector(worldForward, gliderThrustersRight.dot(gliderForward) * 300 * frameTime); 
+				gliderRightVelocity.addScaledVector(worldRight, gliderThrustersRight.dot(gliderRight) * -300 * frameTime);
+				gliderIsAcceleratingRight = true;
 			}
 			if ((keyPressed('KeyD') || button2Pressed) && !(keyPressed('KeyA') || button1Pressed))
 			{
-				gliderRightVelocity.addScaledVector(worldRight, 200 * frameTime);
-				gliderIsAccelerating = true;
+				gliderForwardVelocity.addScaledVector(worldForward, gliderThrustersRight.dot(gliderForward) * -300 * frameTime); 
+				gliderRightVelocity.addScaledVector(worldRight, gliderThrustersRight.dot(gliderRight) * 300 * frameTime);
+				gliderIsAcceleratingRight = true;
+			}
+		} */
+		// Or use the following controls for a constantly-steerable Glider (even steers when no thrust is being applied and Glider is slowing down)
+		// Behaves more like a car with wheels.  This is less realistic physics-wise for a hovering Glider, but I may ultimately keep it for max player-steering control.
+		// When everything is moving really fast, it may be helpful to 'steer' the floating Glider, in order to maximize ball-targeting ability, and thus fun factor.
+		//if (!gliderIsInAir)
+		{
+			if ((keyPressed('KeyW') || button3Pressed) && !(keyPressed('KeyS') || button4Pressed))
+			{
+				gliderForwardVelocity.addScaledVector(worldForward, -300 * frameTime); 
+				gliderIsAcceleratingForward = true;
+				
+			}
+			if ((keyPressed('KeyS') || button4Pressed) && !(keyPressed('KeyW') || button3Pressed))
+			{
+				gliderForwardVelocity.addScaledVector(worldForward, 300 * frameTime); 
+				gliderIsAcceleratingForward = true;
+			}
+			if ((keyPressed('KeyA') || button1Pressed) && !(keyPressed('KeyD') || button2Pressed))
+			{
+				gliderRightVelocity.addScaledVector(worldRight, -300 * frameTime);
+				gliderIsAcceleratingRight = true;
+			}
+			if ((keyPressed('KeyD') || button2Pressed) && !(keyPressed('KeyA') || button1Pressed))
+			{ 
+				gliderRightVelocity.addScaledVector(worldRight, 300 * frameTime);
+				gliderIsAcceleratingRight = true;
 			}
 		}
 		
@@ -312,24 +372,67 @@ function updateVariablesAndUniforms()
 		cameraIsMoving = false;
 	else cameraIsMoving = true;
 
-	// update glider position
+
+	// UPDATE GLIDER ////////////////////////////////////////////////////////////////////////////////
+
+
+	// if glider is on the ground (touching the large course), allow player to jump again
+	if (!gliderIsInAir)
+	{
+		gliderUpVelocity.set(0, 0, 0);
+		gliderIsAcceleratingUp = false;
+		canPress_Space = true;
+	}
+	// if in air, apply gravity (actually anti-gravity: pulls Glider down to the large course surface in all directions)
 	if (gliderIsInAir)
 	{
-		gliderUpVelocity.addScaledVector(worldGravity, 200 * frameTime);
+		canPress_Space = false;
+		gliderUpVelocity.addScaledVector(worldUp, -200 * frameTime);
+		gliderIsAcceleratingUp = true;
+	}
+	// if a legal jump action was triggered, apply a short, upward impulse to glider
+	if (jumpWasTriggered)
+	{
+		gliderIsInAir = true;
+		gliderUpVelocity.copy(worldUp).multiplyScalar(150);
+		gliderIsAcceleratingUp = true;
+		jumpWasTriggered = false;
 	}
 
-	glider.position.addScaledVector(gliderRight, worldRight.dot(gliderRightVelocity) * frameTime);
-	glider.position.addScaledVector(gliderUp, worldUp.dot(gliderUpVelocity) * frameTime);
-	glider.position.addScaledVector(gliderForward, worldForward.dot(gliderForwardVelocity) * frameTime);
 	
+	// apply friction to glider
+	if (!gliderIsAcceleratingForward && !gliderIsAcceleratingUp && !gliderIsAcceleratingRight)
+	{
+		gliderForwardVelocity.z -= (gliderForwardVelocity.z * 1 * frameTime);
+		gliderRightVelocity.x -= (gliderRightVelocity.x * 1 * frameTime);
+	}
+	
+	// update glider position
+
+	// Use the following code for setting position according to glider world positional basis (basis vectors only based on glider Up vector). Will behave more like the real world,
+	// where the glider has momentum and will travel in the thrusted direction (only slowing due to artificial 'friction'), and will continue in that direction unless a
+	// thrust is applied in a different direction. A perfect 2D example of this behavior is found in the classic Asteroids arcade game.  The player's ship
+	// travels in the thrusted direction, and will continue in that direction (just like a real spacecraft), unless acted upon by a different force, i.e. another thrust 
+	// in a different direction, or applying fake 'friction' to the environment, which is used to artificially slow the craft down, even in outer space. 
+	// This realistic behavior, although cool, makes it more challenging to target and hit the ball with your glider, especially when everything is moving fast in-game. 
+	/* 
+	glider.position.addScaledVector(gliderRight, gliderRightVelocity.x * frameTime);
+	glider.position.addScaledVector(gliderUp, gliderUpVelocity.y * frameTime);
+	glider.position.addScaledVector(gliderForward, gliderForwardVelocity.z * frameTime);
+ 	*/
+
+	// Or, use the following code for setting position according to gliderThrusters rotational basis (which way glider is facing). Will constantly steer the glider in that
+	// facing direction, even when no engine thrusting is being applied and glider is slowing down due to friction (glider will continue to perfectly steer until fully stopped).
+	// Behaves more like a car with wheels. This is less realistic physics-wise for a hovering glider, but I may ultimately keep it for max player-steering control.
+	// When everything is moving really fast, it may be helpful to 'steer' your floating glider, in order to maximize ball-targeting ability, and thus fun factor.
+	glider.position.addScaledVector(gliderThrustersRight, gliderRightVelocity.x * frameTime);
+	glider.position.addScaledVector(gliderThrustersUp, gliderUpVelocity.y * frameTime);
+	glider.position.addScaledVector(gliderThrustersForward, gliderForwardVelocity.z * frameTime);
+
 	
 
-	// must reset nearestT each animation frame, in order to start ray casting
-	//nearestT = Infinity;
-	
 	// now that the glider has moved, record its new position minus its old position as a line segment
-	gliderRaySegment.copy(glider.position);
-	gliderRaySegment.sub(gliderOldPosition);
+	gliderRaySegment.copy(glider.position).sub(gliderOldPosition);
 	gliderRaySegmentLength = gliderRaySegment.length(); // will be used later as an out-of-bounds check
 
 	// now make a ray using the glider's old position (rayOrigin) and the direction it is trying to move in (rayDirection)
@@ -391,7 +494,7 @@ function updateVariablesAndUniforms()
 		intersectionPoint.addScaledVector(intersectionNormal, 1);
 		gliderUp.copy(intersectionNormal);
 		gliderRight.crossVectors(gliderForward, gliderUp).normalize();
-		gliderForward.crossVectors(gliderUp, gliderRight).normalize();	
+		gliderForward.crossVectors(gliderUp, gliderRight).normalize();
 	}
 	if (testT < 1)
 	{
@@ -536,87 +639,347 @@ function updateVariablesAndUniforms()
 
 	
 
-	// apply friction to glider
-	if (!gliderIsAccelerating && !gliderIsInAir)
-	{
-		gliderForwardVelocity.multiplyScalar(0.97);
-		gliderRightVelocity.multiplyScalar(0.97);
-		
-		/* tempVec1.copy(gliderForwardVelocity).normalize().negate();
-		gliderForwardVelocity.addScaledVector(tempVec1, 100 * frameTime);
-		tempVec2.copy(gliderRightVelocity).normalize().negate();
-		gliderRightVelocity.addScaledVector(tempVec2, 100 * frameTime);
-		if ( (gliderForwardVelocity.lengthSq() < 0.1 && gliderRightVelocity.lengthSq() < 0.1) ||
-			tempVec1.dot(gliderForwardVelocity) > 0 || tempVec2.dot(gliderRightVelocity) > 0 )
-		{
-			gliderForwardVelocity.set(0, 0, 0);
-			gliderRightVelocity.set(0, 0, 0);
-		} */
-	}
-
-
+	// now that glider position is in its final place for this frame, copy it to gliderOldPosition
 	gliderOldPosition.copy(glider.position);
 
 
 	
-
 	gliderForward.negate();
 	gliderRotationMatrix.makeBasis(gliderRight, gliderUp, gliderForward);
+	gliderForward.negate();
 	glider.rotation.setFromRotationMatrix(gliderRotationMatrix);
-	glider.rotateY(inputMovementHorizontal);
 	glider.updateMatrixWorld();
+	
 
-	glider.matrixWorld.extractBasis(gliderRight, gliderUp, gliderForward);
-	gliderRight.normalize(); gliderUp.normalize(); gliderForward.normalize().negate();
+	gliderThrusters.position.copy(glider.position);
+	gliderThrusters.rotation.copy(glider.rotation);
+	gliderThrusters.scale.copy(glider.scale);
+
+	gliderThrusters.rotateY(inputRotationHorizontal);
+	gliderThrusters.updateMatrixWorld();
+	gliderThrusters.matrixWorld.extractBasis(gliderThrustersRight, gliderThrustersUp, gliderThrustersForward);
+	gliderThrustersRight.normalize(); gliderThrustersUp.normalize(); gliderThrustersForward.normalize().negate();
+
+	
 
 	// temporarily move glider up out of the ground for final render
-	glider.position.addScaledVector(gliderUp, 8);
-	glider.updateMatrixWorld();
+	gliderThrusters.position.addScaledVector(gliderThrustersUp, 8);
+	gliderThrusters.updateMatrixWorld();
 
-	cameraControlsObject.position.copy(glider.position);
-	cameraControlsObject.position.addScaledVector(gliderForward, -70);
-	cameraControlsObject.position.addScaledVector(gliderUp, 20);
+	cameraControlsObject.position.copy(gliderThrusters.position);
+	cameraControlsObject.position.addScaledVector(gliderThrustersForward, -70);
+	cameraControlsObject.position.addScaledVector(gliderThrustersUp, 20);
 	
-	cameraControlsObject.rotation.copy(glider.rotation);
+	cameraControlsObject.rotation.copy(gliderThrusters.rotation);
 	cameraControlsPitchObject.rotation.x = inputRotationVertical;
 	// rotate glider paraboloid (temporary stand-in for more complex game model), so its apex faces in the forward direction
-	glider.rotateX(-Math.PI * 0.5);
-	glider.updateMatrixWorld();
-	
-	if (jumpWasTriggered)
-	{
-		gliderIsInAir = true;
-		gliderUpVelocity.copy(worldUp).multiplyScalar(150);
-		jumpWasTriggered = false;
-	}
-
-	// if glider is on the ground (touching the large course), allow player to jump again
-	if (!gliderIsInAir)
-	{
-		gliderUpVelocity.set(0, 0, 0);
-		canPress_Space = true;
-	}
-	else canPress_Space = false;
+	gliderThrusters.rotateX(-Math.PI * 0.5);
+	gliderThrusters.updateMatrixWorld();
 
 
-	// send final 
-	pathTracingUniforms.uGliderInvMatrix.value.copy(glider.matrixWorld).invert();
+	// send final Glider transform (as an inverted matrix), so that the ray tracer can render it in the correct position and orientation
+	pathTracingUniforms.uGliderInvMatrix.value.copy(gliderThrusters.matrixWorld).invert();
 
 	// after rendering, reset glider position back down so that its center is right on the ground (this helps with ray casting against course)
-	glider.position.addScaledVector(gliderUp, -8);
+	gliderThrusters.position.addScaledVector(gliderThrustersUp, -8);
 	// after rendering, reset glider rotation to be default upright (aligned with ground surface normal), so that rotation calculation code above will be easier
-	glider.rotateX(Math.PI * 0.5);
-	//glider.updateMatrixWorld();
+	gliderThrusters.rotateX(Math.PI * 0.5);
 	
+		
+
+
+
+	// UPDATE BALL ///////////////////////////////////////////////////////////////////////////////////
+
+
+	if (ballIsInAir)
+	{
+		ballUpVelocity.addScaledVector(worldGravity, 4);
+	}
+
+	ballRightVelocity.copy(worldRight).multiplyScalar(200);
+	ball.position.addScaledVector(ballRight, worldRight.dot(ballRightVelocity) * frameTime);
+	ball.position.addScaledVector(ballUp, worldUp.dot(ballUpVelocity) * frameTime);
+	ball.position.addScaledVector(ballForward, worldForward.dot(ballForwardVelocity) * frameTime);
+
+	
+
+
+	// now that the ball has moved, record its new position minus its old position as a line segment
+	ballRaySegment.copy(ball.position);
+	ballRaySegment.sub(ballOldPosition);
+	ballRaySegmentLength = ballRaySegment.length(); // will be used later as an out-of-bounds check
+
+	// now make a ray using the ball's old position (rayOrigin) and the direction it is trying to move in (rayDirection)
+	ballRayOrigin.copy(ballOldPosition); // must use ball's old position for this to work
+	ballRayDirection.copy(ballRaySegment).normalize();
+	rayObjectOrigin.copy(ballRayOrigin);
+	rayObjectDirection.copy(ballRayDirection);
+	// put the rayObjectOrigin and rayObjectDirection in the object space of the large course
+	// the line below is not needed, because the large course never moves (it is fixed in place)
+	//courseSphere_invMatrix.copy(courseSphere.matrixWorld).invert(); // only needed if this object moves
+	rayObjectOrigin.transformRayOriginAsPoint(courseSphere_invMatrix);
+	rayObjectDirection.transformRayDirectionAsDirection(courseSphere_invMatrix);
+	// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-sphere intersection routine
+	testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
+	// If the test t value from the raycast comes back smaller than the distance that the ball is trying to cover during
+	//   this animation frame, that means that the ball's future position would step out of bounds of the course.
+	//   Therefore, we must snap the ball back into position at the raycast intersectionPoint on the course surface.
+	if (testT < ballRaySegmentLength)
+	{
+		ballIsInAir = false;
+		ballUpVelocity.set(0, 0, 0);
+		intersectionNormal.transformSurfaceNormal(courseSphere_invMatrix); // bring intersected object-space normal back into world space
+		intersectionNormal.negate(); // normals usually point outward on spheres, but since we are inside the sphere, must flip it
+		intersectionNormal.normalize(); // after the various transformations, make sure normal is a unit-length vector (length of 1)
+		intersectionPoint.getPointAlongRay(ballRayOrigin, ballRayDirection, testT);
+		intersectionPoint.addScaledVector(intersectionNormal, 1);
+		ball.position.copy(intersectionPoint);
+		ballUp.copy(intersectionNormal);
+		ballRight.crossVectors(ballForward, ballUp).normalize();
+		ballForward.crossVectors(ballUp, ballRight).normalize();
+	}
+	if (testT == Infinity)
+	{// bail out and snap the ball back to its old position
+		ball.position.copy(ballOldPosition);
+	}
+
+	
+	
+	// check ball center probe for intersection with course (a ray is cast from ball's position downward towards the floor beneath)
+	
+	ballRayOrigin.copy(ball.position);
+	ballRayDirection.copy(ballUp).negate();
+
+	rayObjectOrigin.copy(ballRayOrigin);
+	rayObjectDirection.copy(ballRayDirection);
+	// put the rayObjectOrigin and rayObjectDirection in the object space of the large course
+	// the line below is not needed, because the large course never moves (it is fixed in place)
+	//courseSphere_invMatrix.copy(courseSphere.matrixWorld).invert(); // only needed if this object moves
+	rayObjectOrigin.transformRayOriginAsPoint(courseSphere_invMatrix);
+	rayObjectDirection.transformRayDirectionAsDirection(courseSphere_invMatrix);
+	// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-sphere intersection routine
+	testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
+	if (testT < Infinity)
+	{
+		intersectionNormal.transformSurfaceNormal(courseSphere_invMatrix); // bring intersected object-space normal back into world space
+		intersectionNormal.negate(); // normals usually point outward on spheres, but since we are inside the sphere, must flip it
+		intersectionNormal.normalize(); // after the various transformations, make sure normal is a unit-length vector (length of 1)
+		intersectionPoint.getPointAlongRay(ballRayOrigin, ballRayDirection, testT);
+		intersectionPoint.addScaledVector(intersectionNormal, 1);
+		ballUp.copy(intersectionNormal);
+		ballRight.crossVectors(ballForward, ballUp).normalize();
+		ballForward.crossVectors(ballUp, ballRight).normalize();	
+	}
+	if (testT < 1)
+	{
+		ballIsInAir = false;
+		ballUpVelocity.set(0, 0, 0);
+		ball.position.copy(intersectionPoint);
+	}
+	if (testT > 2)
+	{
+		ballIsInAir = true;
+	}
+		
+	if (testT == Infinity)
+	{// bail out and snap the ball back to its old position
+		ball.position.copy(ballOldPosition);
+	}
+	
+
+	// now check all 4 probes around the ball (forward, backward, right, and left) for collision with the large course
+	
+	// reset nearestT to the max probe distance value
+	nearestT = 1;
+	
+	forwardProbe.copy(ball.position).addScaledVector(ballForward, 1);
+	ballRayOrigin.copy(forwardProbe);
+	ballRayDirection.copy(ballUp).negate();
+
+	rayObjectOrigin.copy(ballRayOrigin);
+	rayObjectDirection.copy(ballRayDirection);
+	// put the rayObjectOrigin and rayObjectDirection in the object space of the large course
+	// the line below is not needed, because the large course never moves (it is fixed in place)
+	//courseSphere_invMatrix.copy(courseSphere.matrixWorld).invert(); // only needed if this object moves
+	rayObjectOrigin.transformRayOriginAsPoint(courseSphere_invMatrix);
+	rayObjectDirection.transformRayDirectionAsDirection(courseSphere_invMatrix);
+	// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-sphere intersection routine
+	testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
+	if (testT < nearestT)
+	{
+		nearestT = testT;
+		intersectionNormal.transformSurfaceNormal(courseSphere_invMatrix); // bring intersected object-space normal back into world space
+		intersectionNormal.negate(); // normals usually point outward on spheres, but since we are inside the sphere, must flip it
+		intersectionNormal.normalize(); // after the various transformations, make sure normal is a unit-length vector (length of 1)
+		intersectionPoint.getPointAlongRay(ballRayOrigin, ballRayDirection, testT);
+		intersectionPoint.addScaledVector(intersectionNormal, 1);
+		forwardProbe.copy(intersectionPoint);
+		
+		ballForward.copy(forwardProbe).sub(ball.position).normalize();
+		ballUp.copy(intersectionNormal);
+		ballRight.crossVectors(ballForward, ballUp).normalize();
+		ballUp.crossVectors(ballRight, ballForward).normalize();
+	}
+
+
+	backwardProbe.copy(ball.position).addScaledVector(ballForward, -1);
+	ballRayOrigin.copy(backwardProbe);
+	ballRayDirection.copy(ballUp).negate();
+
+	rayObjectOrigin.copy(ballRayOrigin);
+	rayObjectDirection.copy(ballRayDirection);
+	// put the rayObjectOrigin and rayObjectDirection in the object space of the large course
+	// the line below is not needed, because the large course never moves (it is fixed in place)
+	//courseSphere_invMatrix.copy(courseSphere.matrixWorld).invert(); // only needed if this object moves
+	rayObjectOrigin.transformRayOriginAsPoint(courseSphere_invMatrix);
+	rayObjectDirection.transformRayDirectionAsDirection(courseSphere_invMatrix);
+	// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-sphere intersection routine
+	testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
+	if (testT < nearestT)
+	{
+		nearestT = testT;
+		intersectionNormal.transformSurfaceNormal(courseSphere_invMatrix); // bring intersected object-space normal back into world space
+		intersectionNormal.negate(); // normals usually point outward on spheres, but since we are inside the sphere, must flip it
+		intersectionNormal.normalize(); // after the various transformations, make sure normal is a unit-length vector (length of 1)
+		intersectionPoint.getPointAlongRay(ballRayOrigin, ballRayDirection, testT);
+		intersectionPoint.addScaledVector(intersectionNormal, 1);
+		backwardProbe.copy(intersectionPoint);
+
+		ballForward.copy(backwardProbe).sub(ball.position).negate().normalize();
+		ballUp.copy(intersectionNormal);
+		ballRight.crossVectors(ballForward, ballUp).normalize();
+		ballUp.crossVectors(ballRight, ballForward).normalize();
+	}
+
+
+	rightProbe.copy(ball.position).addScaledVector(ballRight, 1);
+	ballRayOrigin.copy(rightProbe);
+	ballRayDirection.copy(ballUp).negate();
+
+	rayObjectOrigin.copy(ballRayOrigin);
+	rayObjectDirection.copy(ballRayDirection);
+	// put the rayObjectOrigin and rayObjectDirection in the object space of the large course
+	// the line below is not needed, because the large course never moves (it is fixed in place)
+	//courseSphere_invMatrix.copy(courseSphere.matrixWorld).invert(); // only needed if this object moves
+	rayObjectOrigin.transformRayOriginAsPoint(courseSphere_invMatrix);
+	rayObjectDirection.transformRayDirectionAsDirection(courseSphere_invMatrix);
+	// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-sphere intersection routine
+	testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
+	if (testT < nearestT)
+	{
+		nearestT = testT;
+		intersectionNormal.transformSurfaceNormal(courseSphere_invMatrix); // bring intersected object-space normal back into world space
+		intersectionNormal.negate(); // normals usually point outward on spheres, but since we are inside the sphere, must flip it
+		intersectionNormal.normalize(); // after the various transformations, make sure normal is a unit-length vector (length of 1)
+		intersectionPoint.getPointAlongRay(ballRayOrigin, ballRayDirection, testT);
+		intersectionPoint.addScaledVector(intersectionNormal, 1);
+		rightProbe.copy(intersectionPoint);
+
+		ballRight.copy(rightProbe).sub(ball.position).normalize();
+		ballUp.copy(intersectionNormal);
+		ballForward.crossVectors(ballUp, ballRight).normalize();
+		ballUp.crossVectors(ballRight, ballForward).normalize();
+	}
+
+
+	leftProbe.copy(ball.position).addScaledVector(ballRight, -1);
+	ballRayOrigin.copy(leftProbe);
+	ballRayDirection.copy(ballUp).negate();
+
+	rayObjectOrigin.copy(ballRayOrigin);
+	rayObjectDirection.copy(ballRayDirection);
+	// put the rayObjectOrigin and rayObjectDirection in the object space of the large course
+	// the line below is not needed, because the large course never moves (it is fixed in place)
+	//courseSphere_invMatrix.copy(courseSphere.matrixWorld).invert(); // only needed if this object moves
+	rayObjectOrigin.transformRayOriginAsPoint(courseSphere_invMatrix);
+	rayObjectDirection.transformRayDirectionAsDirection(courseSphere_invMatrix);
+	// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-sphere intersection routine
+	testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
+	if (testT < nearestT)
+	{
+		nearestT = testT;
+		intersectionNormal.transformSurfaceNormal(courseSphere_invMatrix); // bring intersected object-space normal back into world space
+		intersectionNormal.negate(); // normals usually point outward on spheres, but since we are inside the sphere, must flip it
+		intersectionNormal.normalize(); // after the various transformations, make sure normal is a unit-length vector (length of 1)
+		intersectionPoint.getPointAlongRay(ballRayOrigin, ballRayDirection, testT);
+		intersectionPoint.addScaledVector(intersectionNormal, 1);
+		leftProbe.copy(intersectionPoint);
+		
+		ballRight.copy(leftProbe).sub(ball.position).negate().normalize();
+		ballUp.copy(intersectionNormal);
+		ballForward.crossVectors(ballUp, ballRight).normalize();
+		ballUp.crossVectors(ballRight, ballForward).normalize();
+	}
+
+	
+
+	// apply friction to ball
+	if (!ballIsInAir)
+	{
+		//ballForwardVelocity.multiplyScalar(0.97);
+		//ballRightVelocity.multiplyScalar(0.97);
+		
+		/* tempVec1.copy(ballForwardVelocity).normalize();
+		ballForwardVelocity.addScaledVector(tempVec1, -1);
+		tempVec2.copy(ballRightVelocity).normalize();
+		ballRightVelocity.addScaledVector(tempVec2, -1);
+		if ( (ballForwardVelocity.lengthSq() < 0.1 && ballRightVelocity.lengthSq() < 0.1) ||
+			tempVec1.dot(ballForwardVelocity) > 0 || tempVec2.dot(ballRightVelocity) > 0 )
+		{
+			ballForwardVelocity.set(0, 0, 0);
+			ballRightVelocity.set(0, 0, 0);
+		} */
+	}
+
+
+	ballOldPosition.copy(ball.position);
+
+
+	
+
+	ballForward.negate();
+	ballRotationMatrix.makeBasis(ballRight, ballUp, ballForward);
+	ball.rotation.setFromRotationMatrix(ballRotationMatrix);
+	//ball.rotateY(1 * frameTime);
+	ball.updateMatrixWorld();
+
+	ball.matrixWorld.extractBasis(ballRight, ballUp, ballForward);
+	ballRight.normalize(); ballUp.normalize(); ballForward.normalize().negate();
+
+	// temporarily move ball up out of the ground for final render
+	ball.position.addScaledVector(ballUp, 12);
+	ball.updateMatrixWorld();
+
+	// rotate ball so its apex faces up
+	//ball.rotateX(-Math.PI * 0.5);
+	//ball.updateMatrixWorld();
+
+	// if ball is on the ground (touching the large course), set its up velocity to 0
+	if (!ballIsInAir)
+	{
+		ballUpVelocity.set(0, 0, 0);
+	}
+
+
+	// send final ball transform (as an inverted matrix), so that the ray tracer can render it in the correct position and orientation
+	pathTracingUniforms.uBallInvMatrix.value.copy(ball.matrixWorld).invert();
+
+	// after rendering, reset ball position back down so that its center is right on the ground (this helps with ray casting against course)
+	ball.position.addScaledVector(ballUp, -12);
+	// after rendering, reset ball rotation to be default upright (aligned with ground surface normal), so that rotation calculation code above will be easier
+	//ball.rotateX(Math.PI * 0.5);
+
+
 
 	// DEBUG INFO
 	demoInfoElement.innerHTML = "gliderIsInAir: " + gliderIsInAir + " " + "cameraIsMoving: " + cameraIsMoving + "<br>" + 
-	" gliderRight: " + gliderRight.x.toFixed(1) + " " + gliderRight.y.toFixed(1) + " " + gliderRight.z.toFixed(1) + " " + 
-	" gliderUp: " + gliderUp.x.toFixed(1) + " " + gliderUp.y.toFixed(1) + " " + gliderUp.z.toFixed(1) + " " + 
-	" gliderForward: " + gliderForward.x.toFixed(1) + " " + gliderForward.y.toFixed(1) + " " + gliderForward.z.toFixed(1) + "<br>" + 
-	" gliderRightVelocity: " + gliderRightVelocity.x.toFixed(1) + " " + gliderRightVelocity.y.toFixed(1) + " " + gliderRightVelocity.z.toFixed(1) + " " +
-	" gliderUpVelocity: " + gliderUpVelocity.x.toFixed(1) + " " + gliderUpVelocity.y.toFixed(1) + " " + gliderUpVelocity.z.toFixed(1) + " " +
-	" gliderForwardVelocity: " + gliderForwardVelocity.x.toFixed(1) + " " + gliderForwardVelocity.y.toFixed(1) + " " + gliderForwardVelocity.z.toFixed(1);
+	"gliderWorldRight: " + "(" + gliderThrustersRight.x.toFixed(1) + " " + gliderThrustersRight.y.toFixed(1) + " " + gliderThrustersRight.z.toFixed(1) + ")" + " " + 
+	"gliderWorldUp: " + "(" + gliderThrustersUp.x.toFixed(1) + " " + gliderThrustersUp.y.toFixed(1) + " " + gliderThrustersUp.z.toFixed(1) + ")" + " " + 
+	"gliderWorldForward: " + "(" + gliderThrustersForward.x.toFixed(1) + " " + gliderThrustersForward.y.toFixed(1) + " " + gliderThrustersForward.z.toFixed(1) + ")" + "<br>" + 
+	
+	"gliderLocalRightVelocity: " + gliderRightVelocity.x.toFixed(1) + " " + "gliderLocalUpVelocity: " + gliderUpVelocity.y.toFixed(1) + " " + "gliderLocalForwardVelocity: " + gliderForwardVelocity.z.toFixed(1);// + "<br>" + 
+	//"gliderVelocity: " + gliderVelocity.x.toFixed(1) + " " + gliderVelocity.y.toFixed(1) + " " + gliderVelocity.z.toFixed(1);
 	
 	// CAMERA INFO
 	///cameraInfoElement.innerHTML = "FOV: " + worldCamera.fov + " / Aperture: " + apertureSize.toFixed(2) + " / FocusDistance: " + focusDistance + "<br>" + "Samples: " + sampleCounter;
