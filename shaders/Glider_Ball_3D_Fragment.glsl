@@ -6,10 +6,12 @@ precision highp sampler2D;
 
 uniform mat4 uCourseSphere_invMatrix;
 uniform mat4 uGliderInvMatrix;
+uniform mat4 uBallInvMatrix;
 
 #define N_LIGHTS 3.0
 #define N_SPHERES 3
 #define N_UNIT_SPHERES 1
+#define N_UNIT_BOXES 1
 #define N_UNIT_PARABOLOIDS 1
 
 
@@ -24,11 +26,13 @@ int hitType = -100;
 
 struct Sphere { float radius; vec3 position; vec3 emission; vec3 color; int type; };
 struct UnitSphere { vec3 emission; vec3 color; int type; };
+struct UnitBox { vec3 emission; vec3 color; int type; };
 struct UnitParaboloid { vec3 emission; vec3 color; int type; };
 
 
 Sphere spheres[N_SPHERES];
 UnitSphere unitSpheres[N_UNIT_SPHERES];
+UnitBox unitBoxes[N_UNIT_BOXES];
 UnitParaboloid unitParaboloids[N_UNIT_PARABOLOIDS];
 
 
@@ -39,6 +43,8 @@ UnitParaboloid unitParaboloids[N_UNIT_PARABOLOIDS];
 #include <pathtracing_sphere_intersect>
 
 #include <pathtracing_unit_sphere_intersect>
+
+#include <pathtracing_unit_box_intersect>
 
 #include <pathtracing_unit_paraboloid_intersect>
 
@@ -114,6 +120,21 @@ float SceneIntersect(out int finalIsRayExiting)
 	}
 	objectCount++;
 
+	// transform ray into ball's object space
+	rObjOrigin = vec3( uBallInvMatrix * vec4(rayOrigin, 1.0) );
+	rObjDirection = vec3( uBallInvMatrix * vec4(rayDirection, 0.0) );
+	d = UnitBoxIntersect(rObjOrigin, rObjDirection, normal);
+
+	if (d < t)
+	{
+		t = d;
+		hitNormal = transpose(mat3(uBallInvMatrix)) * normal;
+		hitEmission = unitBoxes[0].emission;
+		hitColor = unitBoxes[0].color;
+		hitType = unitBoxes[0].type;
+		hitObjectID = float(objectCount);
+	}
+	objectCount++;
 
 	// transform ray into glider's object space
 	rObjOrigin = vec3( uGliderInvMatrix * vec4(rayOrigin, 1.0) );
@@ -432,6 +453,8 @@ void SetupScene(void)
 	
 	unitSpheres[0] = UnitSphere(vec3(0), vec3(1.0, 1.0, 1.0), DIFF);//checkered Course
 
+	unitBoxes[0] = UnitBox(vec3(0), vec3(0.01, 1.0, 0.4), SPEC);//mirror Ball
+
 	unitParaboloids[0] = UnitParaboloid(vec3(0), vec3(0.01, 0.4, 1.0), SPEC);//mirror Glider
 		
 }
@@ -552,8 +575,8 @@ void main( void )
 	}
 		
 	// for dynamic scenes (to clear out old, dark, sharp pixel trails left behind from moving objects)
-	// if (previousPixel.a == 1.0 && rng() < 0.01) // 0.05
-	// 	currentPixel.a = 0.0;
+	if (previousPixel.a == 1.0 && rng() < 0.05)
+		currentPixel.a = 0.0;
 
 	
 	pc_fragColor = vec4(previousPixel.rgb + currentPixel.rgb, currentPixel.a);
