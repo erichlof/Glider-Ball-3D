@@ -84,7 +84,6 @@ let currentlyUsingOrthographicCamera = false;
 let cameraDirectionVector = new THREE.Vector3(); //for moving where the camera is looking
 let cameraRightVector = new THREE.Vector3(); //for strafing the camera right and left
 let cameraUpVector = new THREE.Vector3(); //for moving camera up and down
-let cameraWorldQuaternion = new THREE.Quaternion(); //for rotating scene objects to match camera's current rotation
 let cameraControlsObject; //for positioning and moving the camera itself
 let cameraControlsYawObject; //allows access to control camera's left/right movements through mobile input
 let cameraControlsPitchObject; //allows access to control camera's up/down movements through mobile input
@@ -821,6 +820,10 @@ function animate()
 
 	} // end if ( !mouseControl )
 
+
+	cameraControlsYawObject.rotateY(inputMovementHorizontal);
+	cameraControlsPitchObject.rotateX(inputMovementVertical);
+
 	// this gives us a vector in the direction that the camera is pointing,
 	// which will be useful for moving the camera 'forward' and shooting projectiles in that direction
 	controls.getDirection(cameraDirectionVector);
@@ -830,15 +833,9 @@ function animate()
 	controls.getRightVector(cameraRightVector);
 	cameraRightVector.normalize();
 
-	// the following gives us a rotation quaternion (4D vector), which will be useful for 
-	// rotating scene objects to match the camera's rotation
-	worldCamera.getWorldQuaternion(cameraWorldQuaternion);
 
 	if (useGenericInput)
 	{
-		cameraControlsYawObject.rotateY(inputMovementHorizontal);
-		cameraControlsPitchObject.rotateX(inputMovementVertical);
-	
 		if (!isPaused)
 		{
 			if ((keyPressed('KeyW') || button3Pressed) && !(keyPressed('KeyS') || button4Pressed))
