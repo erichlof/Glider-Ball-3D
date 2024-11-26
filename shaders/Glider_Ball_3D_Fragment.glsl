@@ -548,8 +548,8 @@ void main( void )
 	}
 	else
 	{
-		previousPixel.rgb *= 0.7; // motion-blur trail amount (old image)
-		currentPixel.rgb *= 0.3; // brightness of new image (noisy)
+		previousPixel.rgb *= 0.8; // motion-blur trail amount (old image)
+		currentPixel.rgb *= 0.2; // brightness of new image (noisy)
 	}
 
 	currentPixel.a = pixelSharpness;
@@ -560,11 +560,7 @@ void main( void )
 
 	// makes light source edges (shape boundaries) more stable
 	if (previousPixel.a == 1.01)
-	{
-		if (pixelSharpness > 0.0)
-			currentPixel.a = 1.01;
-		else currentPixel.a = 1.0;
-	}
+		currentPixel.a = 1.01;
 
 	// makes sharp edges more stable
 	if (previousPixel.a == 1.0)
