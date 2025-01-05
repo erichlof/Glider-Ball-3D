@@ -7,10 +7,9 @@ let intersectionPoint = new THREE.Vector3();
 let intersectionNormal = new THREE.Vector3();
 let tempVec1 = new THREE.Vector3();
 let tempVec2 = new THREE.Vector3();
-let glider = new THREE.Object3D();
+let gliderBase = new THREE.Object3D();
 let gliderRotationMatrix = new THREE.Matrix4();
 let gliderThrusters = new THREE.Object3D();
-let gliderThrustersRotationMatrix = new THREE.Matrix4();
 let gliderRayOrigin = new THREE.Vector3();
 let gliderRayDirection = new THREE.Vector3();
 let gliderOldPosition = new THREE.Vector3();
@@ -52,8 +51,9 @@ let ballForward = new THREE.Vector3();
 let ballRightVelocity = new THREE.Vector3();
 let ballUpVelocity = new THREE.Vector3();
 let ballForwardVelocity = new THREE.Vector3();
+let ballVelocity = new THREE.Vector3();
 let ballIsInAir = true;
-
+let ballYRotateAngle = 0;
 
 let demoInfoElement = document.getElementById('demoInfo');
 let canPress_Space = true;
@@ -235,8 +235,6 @@ function initSceneData()
 	sceneIsDynamic = true;
 
 	useGenericInput = false;
-
-	pixelEdgeSharpness = 0.75;
 	
 	cameraFlightSpeed = 60;
 
@@ -258,10 +256,10 @@ function initSceneData()
 	courseSphere_invMatrix.copy(courseSphere.matrixWorld).invert();
 
 	// GLIDER
-	glider.visible = false;
-	glider.position.set(0, 300, 30);
-	glider.scale.set(15, 22, 5);
-	glider.updateMatrixWorld();
+	gliderBase.visible = false;
+	gliderBase.position.set(0, 300, 30);
+	gliderBase.scale.set(15, 22, 5);
+	gliderBase.updateMatrixWorld();
 	
 	gliderRight.set(1, 0, 0);
 	gliderUp.set(0, 1, 0);
@@ -308,7 +306,8 @@ function updateVariablesAndUniforms()
 		// Facing direction will not steer the Glider (like you would be able to if the Glider was a car with wheels).  The 2D example of this
 		// behavior is piloting your spaceship in the classic Asteroids arcade game.  The spacecraft travels only in the thrust direction and keeps floating
 		// in that direction until applying an opposing thrust or an artificial 'friction' force. The Asteroids ship slows from friction, even though there's none in space.
-		/* {
+		
+		{
 			if ((keyPressed('KeyW') || button3Pressed) && !(keyPressed('KeyS') || button4Pressed))
 			{
 				gliderForwardVelocity.addScaledVector(worldForward, gliderThrustersForward.dot(gliderForward) * -300 * frameTime); 
@@ -334,10 +333,12 @@ function updateVariablesAndUniforms()
 				gliderRightVelocity.addScaledVector(worldRight, gliderThrustersRight.dot(gliderRight) * 300 * frameTime);
 				gliderIsAcceleratingRight = true;
 			}
-		} */
+		}
+
 		// Or use the following controls for a constantly-steerable Glider (even steers when no thrust is being applied and Glider is slowing down)
 		// Behaves more like a car with wheels.  This is less realistic physics-wise for a hovering Glider, but I may ultimately keep it for max player-steering control.
 		// When everything is moving really fast, it may be helpful to 'steer' the floating Glider, in order to maximize ball-targeting ability, and thus fun factor.
+		/* 
 		//if (!gliderIsInAir)
 		{
 			if ((keyPressed('KeyW') || button3Pressed) && !(keyPressed('KeyS') || button4Pressed))
@@ -361,7 +362,7 @@ function updateVariablesAndUniforms()
 				gliderRightVelocity.addScaledVector(worldRight, 300 * frameTime);
 				gliderIsAcceleratingRight = true;
 			}
-		}
+		} */
 		
 	} // end if (!isPaused)
 
@@ -415,24 +416,25 @@ function updateVariablesAndUniforms()
 	// travels in the thrusted direction, and will continue in that direction (just like a real spacecraft), unless acted upon by a different force, i.e. another thrust 
 	// in a different direction, or applying fake 'friction' to the environment, which is used to artificially slow the craft down, even in outer space. 
 	// This realistic behavior, although cool, makes it more challenging to target and hit the ball with your glider, especially when everything is moving fast in-game. 
-	/* 
-	glider.position.addScaledVector(gliderRight, gliderRightVelocity.x * frameTime);
-	glider.position.addScaledVector(gliderUp, gliderUpVelocity.y * frameTime);
-	glider.position.addScaledVector(gliderForward, gliderForwardVelocity.z * frameTime);
- 	*/
+	
+	gliderBase.position.addScaledVector(gliderRight, gliderRightVelocity.x * frameTime);
+	gliderBase.position.addScaledVector(gliderUp, gliderUpVelocity.y * frameTime);
+	gliderBase.position.addScaledVector(gliderForward, gliderForwardVelocity.z * frameTime);
+ 	
 
 	// Or, use the following code for setting position according to gliderThrusters rotational basis (which way glider is facing). Will constantly steer the glider in that
 	// facing direction, even when no engine thrusting is being applied and glider is slowing down due to friction (glider will continue to perfectly steer until fully stopped).
 	// Behaves more like a car with wheels. This is less realistic physics-wise for a hovering glider, but I may ultimately keep it for max player-steering control.
 	// When everything is moving really fast, it may be helpful to 'steer' your floating glider, in order to maximize ball-targeting ability, and thus fun factor.
-	glider.position.addScaledVector(gliderThrustersRight, gliderRightVelocity.x * frameTime);
-	glider.position.addScaledVector(gliderThrustersUp, gliderUpVelocity.y * frameTime);
-	glider.position.addScaledVector(gliderThrustersForward, gliderForwardVelocity.z * frameTime);
-
+	/* 
+	gliderBase.position.addScaledVector(gliderThrustersRight, gliderRightVelocity.x * frameTime);
+	gliderBase.position.addScaledVector(gliderThrustersUp, gliderUpVelocity.y * frameTime);
+	gliderBase.position.addScaledVector(gliderThrustersForward, gliderForwardVelocity.z * frameTime);
+ 	*/
 	
 
 	// now that the glider has moved, record its new position minus its old position as a line segment
-	gliderRaySegment.copy(glider.position).sub(gliderOldPosition);
+	gliderRaySegment.copy(gliderBase.position).sub(gliderOldPosition);
 	gliderRaySegmentLength = gliderRaySegment.length(); // will be used later as an out-of-bounds check
 
 	// now make a ray using the glider's old position (rayOrigin) and the direction it is trying to move in (rayDirection)
@@ -459,21 +461,21 @@ function updateVariablesAndUniforms()
 		intersectionNormal.normalize(); // after the various transformations, make sure normal is a unit-length vector (length of 1)
 		intersectionPoint.getPointAlongRay(gliderRayOrigin, gliderRayDirection, testT);
 		intersectionPoint.addScaledVector(intersectionNormal, 1);
-		glider.position.copy(intersectionPoint);
+		gliderBase.position.copy(intersectionPoint);
 		gliderUp.copy(intersectionNormal);
 		gliderRight.crossVectors(gliderForward, gliderUp).normalize();
 		gliderForward.crossVectors(gliderUp, gliderRight).normalize();
 	}
 	if (testT == Infinity)
 	{// bail out and snap the glider back to its old position
-		glider.position.copy(gliderOldPosition);
+		gliderBase.position.copy(gliderOldPosition);
 	}
 
 	
 	
 	// check glider center probe for intersection with course (a ray is cast from glider's position downward towards the floor beneath)
 	
-	gliderRayOrigin.copy(glider.position);
+	gliderRayOrigin.copy(gliderBase.position);
 	gliderRayDirection.copy(gliderUp).negate();
 
 	rayObjectOrigin.copy(gliderRayOrigin);
@@ -500,7 +502,7 @@ function updateVariablesAndUniforms()
 	{
 		gliderIsInAir = false;
 		gliderUpVelocity.set(0, 0, 0);
-		glider.position.copy(intersectionPoint);
+		gliderBase.position.copy(intersectionPoint);
 	}
 	if (testT > 2)
 	{
@@ -509,7 +511,7 @@ function updateVariablesAndUniforms()
 		
 	if (testT == Infinity)
 	{// bail out and snap the glider back to its old position
-		glider.position.copy(gliderOldPosition);
+		gliderBase.position.copy(gliderOldPosition);
 	}
 	
 
@@ -518,7 +520,7 @@ function updateVariablesAndUniforms()
 	// reset nearestT to the max probe distance value
 	nearestT = 1;
 	
-	forwardProbe.copy(glider.position).addScaledVector(gliderForward, 1);
+	forwardProbe.copy(gliderBase.position).addScaledVector(gliderForward, 1);
 	gliderRayOrigin.copy(forwardProbe);
 	gliderRayDirection.copy(gliderUp).negate();
 
@@ -541,14 +543,14 @@ function updateVariablesAndUniforms()
 		intersectionPoint.addScaledVector(intersectionNormal, 1);
 		forwardProbe.copy(intersectionPoint);
 		
-		gliderForward.copy(forwardProbe).sub(glider.position).normalize();
+		gliderForward.copy(forwardProbe).sub(gliderBase.position).normalize();
 		gliderUp.copy(intersectionNormal);
 		gliderRight.crossVectors(gliderForward, gliderUp).normalize();
 		gliderUp.crossVectors(gliderRight, gliderForward).normalize();
 	}
 
 
-	backwardProbe.copy(glider.position).addScaledVector(gliderForward, -1);
+	backwardProbe.copy(gliderBase.position).addScaledVector(gliderForward, -1);
 	gliderRayOrigin.copy(backwardProbe);
 	gliderRayDirection.copy(gliderUp).negate();
 
@@ -571,14 +573,14 @@ function updateVariablesAndUniforms()
 		intersectionPoint.addScaledVector(intersectionNormal, 1);
 		backwardProbe.copy(intersectionPoint);
 
-		gliderForward.copy(backwardProbe).sub(glider.position).negate().normalize();
+		gliderForward.copy(backwardProbe).sub(gliderBase.position).negate().normalize();
 		gliderUp.copy(intersectionNormal);
 		gliderRight.crossVectors(gliderForward, gliderUp).normalize();
 		gliderUp.crossVectors(gliderRight, gliderForward).normalize();
 	}
 
 
-	rightProbe.copy(glider.position).addScaledVector(gliderRight, 1);
+	rightProbe.copy(gliderBase.position).addScaledVector(gliderRight, 1);
 	gliderRayOrigin.copy(rightProbe);
 	gliderRayDirection.copy(gliderUp).negate();
 
@@ -601,14 +603,14 @@ function updateVariablesAndUniforms()
 		intersectionPoint.addScaledVector(intersectionNormal, 1);
 		rightProbe.copy(intersectionPoint);
 
-		gliderRight.copy(rightProbe).sub(glider.position).normalize();
+		gliderRight.copy(rightProbe).sub(gliderBase.position).normalize();
 		gliderUp.copy(intersectionNormal);
 		gliderForward.crossVectors(gliderUp, gliderRight).normalize();
 		gliderUp.crossVectors(gliderRight, gliderForward).normalize();
 	}
 
 
-	leftProbe.copy(glider.position).addScaledVector(gliderRight, -1);
+	leftProbe.copy(gliderBase.position).addScaledVector(gliderRight, -1);
 	gliderRayOrigin.copy(leftProbe);
 	gliderRayDirection.copy(gliderUp).negate();
 
@@ -631,7 +633,7 @@ function updateVariablesAndUniforms()
 		intersectionPoint.addScaledVector(intersectionNormal, 1);
 		leftProbe.copy(intersectionPoint);
 		
-		gliderRight.copy(leftProbe).sub(glider.position).negate().normalize();
+		gliderRight.copy(leftProbe).sub(gliderBase.position).negate().normalize();
 		gliderUp.copy(intersectionNormal);
 		gliderForward.crossVectors(gliderUp, gliderRight).normalize();
 		gliderUp.crossVectors(gliderRight, gliderForward).normalize();
@@ -640,20 +642,20 @@ function updateVariablesAndUniforms()
 	
 
 	// now that glider position is in its final place for this frame, copy it to gliderOldPosition
-	gliderOldPosition.copy(glider.position);
+	gliderOldPosition.copy(gliderBase.position);
 
 
 	
 	gliderForward.negate();
 	gliderRotationMatrix.makeBasis(gliderRight, gliderUp, gliderForward);
 	gliderForward.negate();
-	glider.rotation.setFromRotationMatrix(gliderRotationMatrix);
-	glider.updateMatrixWorld();
+	gliderBase.rotation.setFromRotationMatrix(gliderRotationMatrix);
+	gliderBase.updateMatrixWorld();
 	
 
-	gliderThrusters.position.copy(glider.position);
-	gliderThrusters.rotation.copy(glider.rotation);
-	gliderThrusters.scale.copy(glider.scale);
+	gliderThrusters.position.copy(gliderBase.position);
+	gliderThrusters.rotation.copy(gliderBase.rotation);
+	gliderThrusters.scale.copy(gliderBase.scale);
 
 	gliderThrusters.rotateY(inputRotationHorizontal);
 	gliderThrusters.updateMatrixWorld();
@@ -696,11 +698,12 @@ function updateVariablesAndUniforms()
 	{
 		ballUpVelocity.addScaledVector(worldGravity, 4);
 	}
-
-	ballRightVelocity.copy(worldRight).multiplyScalar(200);
-	ball.position.addScaledVector(ballRight, worldRight.dot(ballRightVelocity) * frameTime);
+	
+	ballVelocity.copy(worldForward).add(worldRight).normalize();
+	ballVelocity.multiplyScalar(50);
+	ball.position.addScaledVector(ballRight, worldRight.dot(ballVelocity) * frameTime);
 	ball.position.addScaledVector(ballUp, worldUp.dot(ballUpVelocity) * frameTime);
-	ball.position.addScaledVector(ballForward, worldForward.dot(ballForwardVelocity) * frameTime);
+	ball.position.addScaledVector(ballForward, worldForward.dot(ballVelocity) * frameTime);
 
 	
 
@@ -941,7 +944,6 @@ function updateVariablesAndUniforms()
 	ballForward.negate();
 	ballRotationMatrix.makeBasis(ballRight, ballUp, ballForward);
 	ball.rotation.setFromRotationMatrix(ballRotationMatrix);
-	//ball.rotateY(1 * frameTime);
 	ball.updateMatrixWorld();
 
 	ball.matrixWorld.extractBasis(ballRight, ballUp, ballForward);
@@ -951,9 +953,13 @@ function updateVariablesAndUniforms()
 	ball.position.addScaledVector(ballUp, 12);
 	ball.updateMatrixWorld();
 
+	
 	// rotate ball so its apex faces up
+	ballYRotateAngle += 1 * frameTime;
+	ballYRotateAngle %= TWO_PI;
+	ball.rotateY(ballYRotateAngle);
 	//ball.rotateX(-Math.PI * 0.5);
-	//ball.updateMatrixWorld();
+	ball.updateMatrixWorld();
 
 	// if ball is on the ground (touching the large course), set its up velocity to 0
 	if (!ballIsInAir)
