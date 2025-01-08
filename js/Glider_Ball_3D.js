@@ -15,16 +15,13 @@ let gliderRayDirection = new THREE.Vector3();
 let gliderOldPosition = new THREE.Vector3();
 let gliderRaySegment = new THREE.Vector3();
 let gliderRaySegmentLength = 0;
-let gliderRight = new THREE.Vector3();
-let gliderUp = new THREE.Vector3();
-let gliderForward = new THREE.Vector3();
+let gliderBaseRight = new THREE.Vector3();
+let gliderBaseUp = new THREE.Vector3();
+let gliderBaseForward = new THREE.Vector3();
 let gliderThrustersRight = new THREE.Vector3(1,0,0);
 let gliderThrustersUp = new THREE.Vector3(0,1,0);
-let gliderThrustersForward = new THREE.Vector3(0,0,-1);
-let gliderRightVelocity = new THREE.Vector3();
-let gliderUpVelocity = new THREE.Vector3();
-let gliderForwardVelocity = new THREE.Vector3();
-let gliderVelocity = new THREE.Vector3();
+let gliderThrustersForward = new THREE.Vector3(0,0,1);
+let gliderLocalVelocity = new THREE.Vector3();
 let gliderIsInAir = true;
 let gliderIsAcceleratingRight = false;
 let gliderIsAcceleratingUp = false;
@@ -32,7 +29,7 @@ let gliderIsAcceleratingForward = false;
 let worldGravity = new THREE.Vector3(0, -1, 0);
 let worldRight = new THREE.Vector3(1, 0, 0);
 let worldUp = new THREE.Vector3(0, 1, 0);
-let worldForward = new THREE.Vector3(0, 0, -1);
+let worldForward = new THREE.Vector3(0, 0, 1);
 let forwardProbe = new THREE.Vector3();
 let backwardProbe = new THREE.Vector3();
 let rightProbe = new THREE.Vector3();
@@ -261,9 +258,9 @@ function initSceneData()
 	gliderBase.scale.set(15, 22, 5);
 	gliderBase.updateMatrixWorld();
 	
-	gliderRight.set(1, 0, 0);
-	gliderUp.set(0, 1, 0);
-	gliderForward.set(0, 0, -1);
+	gliderBaseRight.set(1, 0, 0);
+	gliderBaseUp.set(0, 1, 0);
+	gliderBaseForward.set(0, 0, 1);
 
 	// BALL
 	ball.visible = false;
@@ -273,7 +270,7 @@ function initSceneData()
 	
 	ballRight.set(1, 0, 0);
 	ballUp.set(0, 1, 0);
-	ballForward.set(0, 0, -1);
+	ballForward.set(0, 0, 1);
 
 
 	// scene/demo-specific uniforms go here
@@ -308,29 +305,29 @@ function updateVariablesAndUniforms()
 		// in that direction until applying an opposing thrust or an artificial 'friction' force. The Asteroids ship slows from friction, even though there's none in space.
 		
 		{
-			if ((keyPressed('KeyW') || button3Pressed) && !(keyPressed('KeyS') || button4Pressed))
+			if ((keyPressed('KeyS') || button4Pressed) && !(keyPressed('KeyW') || button3Pressed))
 			{
-				gliderForwardVelocity.addScaledVector(worldForward, gliderThrustersForward.dot(gliderForward) * -300 * frameTime); 
-				gliderRightVelocity.addScaledVector(worldRight, gliderThrustersForward.dot(gliderRight) * 300 * frameTime);
+				gliderLocalVelocity.z += (gliderThrustersForward.dot(gliderBaseForward) * 300 * frameTime); 
+				gliderLocalVelocity.x += (gliderThrustersForward.dot(gliderBaseRight) * 300 * frameTime);
 				gliderIsAcceleratingForward = true;
 				
 			}
-			if ((keyPressed('KeyS') || button4Pressed) && !(keyPressed('KeyW') || button3Pressed))
+			if ((keyPressed('KeyW') || button3Pressed) && !(keyPressed('KeyS') || button4Pressed))
 			{
-				gliderForwardVelocity.addScaledVector(worldForward, gliderThrustersForward.dot(gliderForward) * 300 * frameTime); 
-				gliderRightVelocity.addScaledVector(worldRight, gliderThrustersForward.dot(gliderRight) * -300 * frameTime);
+				gliderLocalVelocity.z += (gliderThrustersForward.dot(gliderBaseForward) * -300 * frameTime); 
+				gliderLocalVelocity.x += (gliderThrustersForward.dot(gliderBaseRight) * -300 * frameTime);
 				gliderIsAcceleratingForward = true;
 			}
 			if ((keyPressed('KeyA') || button1Pressed) && !(keyPressed('KeyD') || button2Pressed))
 			{
-				gliderForwardVelocity.addScaledVector(worldForward, gliderThrustersRight.dot(gliderForward) * 300 * frameTime); 
-				gliderRightVelocity.addScaledVector(worldRight, gliderThrustersRight.dot(gliderRight) * -300 * frameTime);
+				gliderLocalVelocity.z += (gliderThrustersRight.dot(gliderBaseForward) * -300 * frameTime); 
+				gliderLocalVelocity.x += (gliderThrustersRight.dot(gliderBaseRight) * -300 * frameTime);
 				gliderIsAcceleratingRight = true;
 			}
 			if ((keyPressed('KeyD') || button2Pressed) && !(keyPressed('KeyA') || button1Pressed))
 			{
-				gliderForwardVelocity.addScaledVector(worldForward, gliderThrustersRight.dot(gliderForward) * -300 * frameTime); 
-				gliderRightVelocity.addScaledVector(worldRight, gliderThrustersRight.dot(gliderRight) * 300 * frameTime);
+				gliderLocalVelocity.z += (gliderThrustersRight.dot(gliderBaseForward) * 300 * frameTime); 
+				gliderLocalVelocity.x += (gliderThrustersRight.dot(gliderBaseRight) * 300 * frameTime);
 				gliderIsAcceleratingRight = true;
 			}
 		}
@@ -343,23 +340,23 @@ function updateVariablesAndUniforms()
 		{
 			if ((keyPressed('KeyW') || button3Pressed) && !(keyPressed('KeyS') || button4Pressed))
 			{
-				gliderForwardVelocity.addScaledVector(worldForward, -300 * frameTime); 
+				gliderLocalVelocity.z += (-300 * frameTime); 
 				gliderIsAcceleratingForward = true;
 				
 			}
 			if ((keyPressed('KeyS') || button4Pressed) && !(keyPressed('KeyW') || button3Pressed))
 			{
-				gliderForwardVelocity.addScaledVector(worldForward, 300 * frameTime); 
+				gliderLocalVelocity.z += (300 * frameTime); 
 				gliderIsAcceleratingForward = true;
 			}
 			if ((keyPressed('KeyA') || button1Pressed) && !(keyPressed('KeyD') || button2Pressed))
 			{
-				gliderRightVelocity.addScaledVector(worldRight, -300 * frameTime);
+				gliderLocalVelocity.x += (-300 * frameTime);
 				gliderIsAcceleratingRight = true;
 			}
 			if ((keyPressed('KeyD') || button2Pressed) && !(keyPressed('KeyA') || button1Pressed))
 			{ 
-				gliderRightVelocity.addScaledVector(worldRight, 300 * frameTime);
+				gliderLocalVelocity.x += (300 * frameTime);
 				gliderIsAcceleratingRight = true;
 			}
 		} */
@@ -369,7 +366,7 @@ function updateVariablesAndUniforms()
 	// if camera is not rotating and Glider motion has almost fully stopped, set cameraIsMoving to false,
 	// otherwise set cameraIsMoving to true because there must be some action or movement going on in the game.
 	// This helps with the temporal/spatial denoiser in the final shader, which tries to get rid of noise from edges (which must remain sharp)
-	if (!cameraIsMoving && gliderRightVelocity.lengthSq() < 20 && gliderUpVelocity.lengthSq() < 20 && gliderForwardVelocity.lengthSq() < 20)
+	if (!cameraIsMoving && gliderLocalVelocity.x * gliderLocalVelocity.x < 20 && gliderLocalVelocity.z * gliderLocalVelocity.z  < 20)
 		cameraIsMoving = false;
 	else cameraIsMoving = true;
 
@@ -380,7 +377,7 @@ function updateVariablesAndUniforms()
 	// if glider is on the ground (touching the large course), allow player to jump again
 	if (!gliderIsInAir)
 	{
-		gliderUpVelocity.set(0, 0, 0);
+		gliderLocalVelocity.y = 0;
 		gliderIsAcceleratingUp = false;
 		canPress_Space = true;
 	}
@@ -388,14 +385,14 @@ function updateVariablesAndUniforms()
 	if (gliderIsInAir)
 	{
 		canPress_Space = false;
-		gliderUpVelocity.addScaledVector(worldUp, -200 * frameTime);
+		gliderLocalVelocity.y += (-200 * frameTime);
 		gliderIsAcceleratingUp = true;
 	}
 	// if a legal jump action was triggered, apply a short, upward impulse to glider
 	if (jumpWasTriggered)
 	{
 		gliderIsInAir = true;
-		gliderUpVelocity.copy(worldUp).multiplyScalar(150);
+		gliderLocalVelocity.y = 150;
 		gliderIsAcceleratingUp = true;
 		jumpWasTriggered = false;
 	}
@@ -404,8 +401,8 @@ function updateVariablesAndUniforms()
 	// apply friction to glider
 	if (!gliderIsAcceleratingForward && !gliderIsAcceleratingUp && !gliderIsAcceleratingRight)
 	{
-		gliderForwardVelocity.z -= (gliderForwardVelocity.z * 1 * frameTime);
-		gliderRightVelocity.x -= (gliderRightVelocity.x * 1 * frameTime);
+		gliderLocalVelocity.z -= (gliderLocalVelocity.z * 1 * frameTime);
+		gliderLocalVelocity.x -= (gliderLocalVelocity.x * 1 * frameTime);
 	}
 	
 	// update glider position
@@ -417,9 +414,9 @@ function updateVariablesAndUniforms()
 	// in a different direction, or applying fake 'friction' to the environment, which is used to artificially slow the craft down, even in outer space. 
 	// This realistic behavior, although cool, makes it more challenging to target and hit the ball with your glider, especially when everything is moving fast in-game. 
 	
-	gliderBase.position.addScaledVector(gliderRight, gliderRightVelocity.x * frameTime);
-	gliderBase.position.addScaledVector(gliderUp, gliderUpVelocity.y * frameTime);
-	gliderBase.position.addScaledVector(gliderForward, gliderForwardVelocity.z * frameTime);
+	gliderBase.position.addScaledVector(gliderBaseRight, gliderLocalVelocity.x * frameTime);
+	gliderBase.position.addScaledVector(gliderBaseUp, gliderLocalVelocity.y * frameTime);
+	gliderBase.position.addScaledVector(gliderBaseForward, gliderLocalVelocity.z * frameTime);
  	
 
 	// Or, use the following code for setting position according to gliderThrusters rotational basis (which way glider is facing). Will constantly steer the glider in that
@@ -427,10 +424,10 @@ function updateVariablesAndUniforms()
 	// Behaves more like a car with wheels. This is less realistic physics-wise for a hovering glider, but I may ultimately keep it for max player-steering control.
 	// When everything is moving really fast, it may be helpful to 'steer' your floating glider, in order to maximize ball-targeting ability, and thus fun factor.
 	/* 
-	gliderBase.position.addScaledVector(gliderThrustersRight, gliderRightVelocity.x * frameTime);
-	gliderBase.position.addScaledVector(gliderThrustersUp, gliderUpVelocity.y * frameTime);
-	gliderBase.position.addScaledVector(gliderThrustersForward, gliderForwardVelocity.z * frameTime);
- 	*/
+	gliderBase.position.addScaledVector(gliderThrustersRight, gliderLocalVelocity.x * frameTime);
+	gliderBase.position.addScaledVector(gliderThrustersUp, gliderLocalVelocity.y * frameTime);
+	gliderBase.position.addScaledVector(gliderThrustersForward, gliderLocalVelocity.z * frameTime);
+ 	 */
 	
 
 	// now that the glider has moved, record its new position minus its old position as a line segment
@@ -455,16 +452,16 @@ function updateVariablesAndUniforms()
 	if (testT < gliderRaySegmentLength)
 	{
 		gliderIsInAir = false;
-		gliderUpVelocity.set(0, 0, 0);
+		gliderLocalVelocity.y = 0;
 		intersectionNormal.transformSurfaceNormal(courseSphere_invMatrix); // bring intersected object-space normal back into world space
 		intersectionNormal.negate(); // normals usually point outward on spheres, but since we are inside the sphere, must flip it
 		intersectionNormal.normalize(); // after the various transformations, make sure normal is a unit-length vector (length of 1)
 		intersectionPoint.getPointAlongRay(gliderRayOrigin, gliderRayDirection, testT);
 		intersectionPoint.addScaledVector(intersectionNormal, 1);
 		gliderBase.position.copy(intersectionPoint);
-		gliderUp.copy(intersectionNormal);
-		gliderRight.crossVectors(gliderForward, gliderUp).normalize();
-		gliderForward.crossVectors(gliderUp, gliderRight).normalize();
+		gliderBaseUp.copy(intersectionNormal);
+		gliderBaseRight.crossVectors(gliderBaseUp, gliderBaseForward).normalize();
+		gliderBaseForward.crossVectors(gliderBaseRight, gliderBaseUp).normalize();
 	}
 	if (testT == Infinity)
 	{// bail out and snap the glider back to its old position
@@ -476,7 +473,7 @@ function updateVariablesAndUniforms()
 	// check glider center probe for intersection with course (a ray is cast from glider's position downward towards the floor beneath)
 	
 	gliderRayOrigin.copy(gliderBase.position);
-	gliderRayDirection.copy(gliderUp).negate();
+	gliderRayDirection.copy(gliderBaseUp).negate();
 
 	rayObjectOrigin.copy(gliderRayOrigin);
 	rayObjectDirection.copy(gliderRayDirection);
@@ -494,14 +491,14 @@ function updateVariablesAndUniforms()
 		intersectionNormal.normalize(); // after the various transformations, make sure normal is a unit-length vector (length of 1)
 		intersectionPoint.getPointAlongRay(gliderRayOrigin, gliderRayDirection, testT);
 		intersectionPoint.addScaledVector(intersectionNormal, 1);
-		gliderUp.copy(intersectionNormal);
-		gliderRight.crossVectors(gliderForward, gliderUp).normalize();
-		gliderForward.crossVectors(gliderUp, gliderRight).normalize();
+		gliderBaseUp.copy(intersectionNormal);
+		gliderBaseRight.crossVectors(gliderBaseUp, gliderBaseForward).normalize();
+		gliderBaseForward.crossVectors(gliderBaseRight, gliderBaseUp).normalize();
 	}
 	if (testT < 1)
 	{
 		gliderIsInAir = false;
-		gliderUpVelocity.set(0, 0, 0);
+		gliderLocalVelocity.y = 0;
 		gliderBase.position.copy(intersectionPoint);
 	}
 	if (testT > 2)
@@ -520,9 +517,9 @@ function updateVariablesAndUniforms()
 	// reset nearestT to the max probe distance value
 	nearestT = 1;
 	
-	forwardProbe.copy(gliderBase.position).addScaledVector(gliderForward, 1);
+	forwardProbe.copy(gliderBase.position).addScaledVector(gliderBaseForward, 1);
 	gliderRayOrigin.copy(forwardProbe);
-	gliderRayDirection.copy(gliderUp).negate();
+	gliderRayDirection.copy(gliderBaseUp).negate();
 
 	rayObjectOrigin.copy(gliderRayOrigin);
 	rayObjectDirection.copy(gliderRayDirection);
@@ -543,16 +540,16 @@ function updateVariablesAndUniforms()
 		intersectionPoint.addScaledVector(intersectionNormal, 1);
 		forwardProbe.copy(intersectionPoint);
 		
-		gliderForward.copy(forwardProbe).sub(gliderBase.position).normalize();
-		gliderUp.copy(intersectionNormal);
-		gliderRight.crossVectors(gliderForward, gliderUp).normalize();
-		gliderUp.crossVectors(gliderRight, gliderForward).normalize();
+		gliderBaseForward.copy(forwardProbe).sub(gliderBase.position).normalize();
+		gliderBaseUp.copy(intersectionNormal);
+		gliderBaseRight.crossVectors(gliderBaseUp, gliderBaseForward).normalize();
+		gliderBaseUp.crossVectors(gliderBaseForward, gliderBaseRight).normalize();
 	}
 
 
-	backwardProbe.copy(gliderBase.position).addScaledVector(gliderForward, -1);
+	backwardProbe.copy(gliderBase.position).addScaledVector(gliderBaseForward, -1);
 	gliderRayOrigin.copy(backwardProbe);
-	gliderRayDirection.copy(gliderUp).negate();
+	gliderRayDirection.copy(gliderBaseUp).negate();
 
 	rayObjectOrigin.copy(gliderRayOrigin);
 	rayObjectDirection.copy(gliderRayDirection);
@@ -573,16 +570,16 @@ function updateVariablesAndUniforms()
 		intersectionPoint.addScaledVector(intersectionNormal, 1);
 		backwardProbe.copy(intersectionPoint);
 
-		gliderForward.copy(backwardProbe).sub(gliderBase.position).negate().normalize();
-		gliderUp.copy(intersectionNormal);
-		gliderRight.crossVectors(gliderForward, gliderUp).normalize();
-		gliderUp.crossVectors(gliderRight, gliderForward).normalize();
+		gliderBaseForward.copy(backwardProbe).sub(gliderBase.position).negate().normalize();
+		gliderBaseUp.copy(intersectionNormal);
+		gliderBaseRight.crossVectors(gliderBaseUp, gliderBaseForward).normalize();
+		gliderBaseUp.crossVectors(gliderBaseForward, gliderBaseRight).normalize();
 	}
 
 
-	rightProbe.copy(gliderBase.position).addScaledVector(gliderRight, 1);
+	rightProbe.copy(gliderBase.position).addScaledVector(gliderBaseRight, 1);
 	gliderRayOrigin.copy(rightProbe);
-	gliderRayDirection.copy(gliderUp).negate();
+	gliderRayDirection.copy(gliderBaseUp).negate();
 
 	rayObjectOrigin.copy(gliderRayOrigin);
 	rayObjectDirection.copy(gliderRayDirection);
@@ -603,16 +600,16 @@ function updateVariablesAndUniforms()
 		intersectionPoint.addScaledVector(intersectionNormal, 1);
 		rightProbe.copy(intersectionPoint);
 
-		gliderRight.copy(rightProbe).sub(gliderBase.position).normalize();
-		gliderUp.copy(intersectionNormal);
-		gliderForward.crossVectors(gliderUp, gliderRight).normalize();
-		gliderUp.crossVectors(gliderRight, gliderForward).normalize();
+		gliderBaseRight.copy(rightProbe).sub(gliderBase.position).normalize();
+		gliderBaseUp.copy(intersectionNormal);
+		gliderBaseForward.crossVectors(gliderBaseRight, gliderBaseUp).normalize();
+		gliderBaseUp.crossVectors(gliderBaseForward, gliderBaseRight).normalize();
 	}
 
 
-	leftProbe.copy(gliderBase.position).addScaledVector(gliderRight, -1);
+	leftProbe.copy(gliderBase.position).addScaledVector(gliderBaseRight, -1);
 	gliderRayOrigin.copy(leftProbe);
-	gliderRayDirection.copy(gliderUp).negate();
+	gliderRayDirection.copy(gliderBaseUp).negate();
 
 	rayObjectOrigin.copy(gliderRayOrigin);
 	rayObjectDirection.copy(gliderRayDirection);
@@ -633,10 +630,10 @@ function updateVariablesAndUniforms()
 		intersectionPoint.addScaledVector(intersectionNormal, 1);
 		leftProbe.copy(intersectionPoint);
 		
-		gliderRight.copy(leftProbe).sub(gliderBase.position).negate().normalize();
-		gliderUp.copy(intersectionNormal);
-		gliderForward.crossVectors(gliderUp, gliderRight).normalize();
-		gliderUp.crossVectors(gliderRight, gliderForward).normalize();
+		gliderBaseRight.copy(leftProbe).sub(gliderBase.position).negate().normalize();
+		gliderBaseUp.copy(intersectionNormal);
+		gliderBaseForward.crossVectors(gliderBaseRight, gliderBaseUp).normalize();
+		gliderBaseUp.crossVectors(gliderBaseForward, gliderBaseRight).normalize();
 	}
 
 	
@@ -646,9 +643,7 @@ function updateVariablesAndUniforms()
 
 
 	
-	gliderForward.negate();
-	gliderRotationMatrix.makeBasis(gliderRight, gliderUp, gliderForward);
-	gliderForward.negate();
+	gliderRotationMatrix.makeBasis(gliderBaseRight, gliderBaseUp, gliderBaseForward);
 	gliderBase.rotation.setFromRotationMatrix(gliderRotationMatrix);
 	gliderBase.updateMatrixWorld();
 	
@@ -660,7 +655,7 @@ function updateVariablesAndUniforms()
 	gliderThrusters.rotateY(inputRotationHorizontal);
 	gliderThrusters.updateMatrixWorld();
 	gliderThrusters.matrixWorld.extractBasis(gliderThrustersRight, gliderThrustersUp, gliderThrustersForward);
-	gliderThrustersRight.normalize(); gliderThrustersUp.normalize(); gliderThrustersForward.normalize().negate();
+	gliderThrustersRight.normalize(); gliderThrustersUp.normalize(); gliderThrustersForward.normalize();
 
 	
 
@@ -669,7 +664,7 @@ function updateVariablesAndUniforms()
 	gliderThrusters.updateMatrixWorld();
 
 	cameraControlsObject.position.copy(gliderThrusters.position);
-	cameraControlsObject.position.addScaledVector(gliderThrustersForward, -70);
+	cameraControlsObject.position.addScaledVector(gliderThrustersForward, 70);
 	cameraControlsObject.position.addScaledVector(gliderThrustersUp, 20);
 	
 	cameraControlsObject.rotation.copy(gliderThrusters.rotation);
@@ -699,7 +694,7 @@ function updateVariablesAndUniforms()
 		ballUpVelocity.addScaledVector(worldGravity, 4);
 	}
 	
-	ballVelocity.copy(worldForward).add(worldRight).normalize();
+	ballVelocity.copy(worldForward).negate().add(worldRight).normalize();
 	ballVelocity.multiplyScalar(50);
 	ball.position.addScaledVector(ballRight, worldRight.dot(ballVelocity) * frameTime);
 	ball.position.addScaledVector(ballUp, worldUp.dot(ballUpVelocity) * frameTime);
@@ -739,8 +734,8 @@ function updateVariablesAndUniforms()
 		intersectionPoint.addScaledVector(intersectionNormal, 1);
 		ball.position.copy(intersectionPoint);
 		ballUp.copy(intersectionNormal);
-		ballRight.crossVectors(ballForward, ballUp).normalize();
-		ballForward.crossVectors(ballUp, ballRight).normalize();
+		ballRight.crossVectors(ballUp, ballForward).normalize();
+		ballForward.crossVectors(ballRight, ballUp).normalize();
 	}
 	if (testT == Infinity)
 	{// bail out and snap the ball back to its old position
@@ -771,8 +766,8 @@ function updateVariablesAndUniforms()
 		intersectionPoint.getPointAlongRay(ballRayOrigin, ballRayDirection, testT);
 		intersectionPoint.addScaledVector(intersectionNormal, 1);
 		ballUp.copy(intersectionNormal);
-		ballRight.crossVectors(ballForward, ballUp).normalize();
-		ballForward.crossVectors(ballUp, ballRight).normalize();	
+		ballRight.crossVectors(ballUp, ballForward).normalize();
+		ballForward.crossVectors(ballRight, ballUp).normalize();	
 	}
 	if (testT < 1)
 	{
@@ -821,8 +816,8 @@ function updateVariablesAndUniforms()
 		
 		ballForward.copy(forwardProbe).sub(ball.position).normalize();
 		ballUp.copy(intersectionNormal);
-		ballRight.crossVectors(ballForward, ballUp).normalize();
-		ballUp.crossVectors(ballRight, ballForward).normalize();
+		ballRight.crossVectors(ballUp, ballForward).normalize();
+		ballUp.crossVectors(ballForward, ballRight).normalize();
 	}
 
 
@@ -851,8 +846,8 @@ function updateVariablesAndUniforms()
 
 		ballForward.copy(backwardProbe).sub(ball.position).negate().normalize();
 		ballUp.copy(intersectionNormal);
-		ballRight.crossVectors(ballForward, ballUp).normalize();
-		ballUp.crossVectors(ballRight, ballForward).normalize();
+		ballRight.crossVectors(ballUp, ballForward).normalize();
+		ballUp.crossVectors(ballForward, ballRight).normalize();
 	}
 
 
@@ -881,8 +876,8 @@ function updateVariablesAndUniforms()
 
 		ballRight.copy(rightProbe).sub(ball.position).normalize();
 		ballUp.copy(intersectionNormal);
-		ballForward.crossVectors(ballUp, ballRight).normalize();
-		ballUp.crossVectors(ballRight, ballForward).normalize();
+		ballForward.crossVectors(ballRight, ballUp).normalize();
+		ballUp.crossVectors(ballForward, ballRight).normalize();
 	}
 
 
@@ -911,8 +906,8 @@ function updateVariablesAndUniforms()
 		
 		ballRight.copy(leftProbe).sub(ball.position).negate().normalize();
 		ballUp.copy(intersectionNormal);
-		ballForward.crossVectors(ballUp, ballRight).normalize();
-		ballUp.crossVectors(ballRight, ballForward).normalize();
+		ballForward.crossVectors(ballRight, ballUp).normalize();
+		ballUp.crossVectors(ballForward, ballRight).normalize();
 	}
 
 	
@@ -940,14 +935,9 @@ function updateVariablesAndUniforms()
 
 
 	
-
-	ballForward.negate();
 	ballRotationMatrix.makeBasis(ballRight, ballUp, ballForward);
 	ball.rotation.setFromRotationMatrix(ballRotationMatrix);
-	ball.updateMatrixWorld();
-
-	ball.matrixWorld.extractBasis(ballRight, ballUp, ballForward);
-	ballRight.normalize(); ballUp.normalize(); ballForward.normalize().negate();
+	//ball.updateMatrixWorld();
 
 	// temporarily move ball up out of the ground for final render
 	ball.position.addScaledVector(ballUp, 12);
@@ -984,8 +974,8 @@ function updateVariablesAndUniforms()
 	"gliderWorldUp: " + "(" + gliderThrustersUp.x.toFixed(1) + " " + gliderThrustersUp.y.toFixed(1) + " " + gliderThrustersUp.z.toFixed(1) + ")" + " " + 
 	"gliderWorldForward: " + "(" + gliderThrustersForward.x.toFixed(1) + " " + gliderThrustersForward.y.toFixed(1) + " " + gliderThrustersForward.z.toFixed(1) + ")" + "<br>" + 
 	
-	"gliderLocalRightVelocity: " + gliderRightVelocity.x.toFixed(1) + " " + "gliderLocalUpVelocity: " + gliderUpVelocity.y.toFixed(1) + " " + "gliderLocalForwardVelocity: " + gliderForwardVelocity.z.toFixed(1);// + "<br>" + 
-	//"gliderVelocity: " + gliderVelocity.x.toFixed(1) + " " + gliderVelocity.y.toFixed(1) + " " + gliderVelocity.z.toFixed(1);
+	"gliderLocalVelocity: " + "(" +  + gliderLocalVelocity.x.toFixed(1) + " " + gliderLocalVelocity.y.toFixed(1) + " " + gliderLocalVelocity.z.toFixed(1) + ")";// + "<br>" + 
+	//"gliderLocalVelocity: " + gliderLocalVelocity.x.toFixed(1) + " " + gliderLocalVelocity.y.toFixed(1) + " " + gliderLocalVelocity.z.toFixed(1);
 	
 	// CAMERA INFO
 	///cameraInfoElement.innerHTML = "FOV: " + worldCamera.fov + " / Aperture: " + apertureSize.toFixed(2) + " / FocusDistance: " + focusDistance + "<br>" + "Samples: " + sampleCounter;
