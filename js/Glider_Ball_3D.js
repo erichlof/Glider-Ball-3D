@@ -22,11 +22,11 @@ let gliderThrustersRight = new THREE.Vector3(1,0,0);
 let gliderThrustersUp = new THREE.Vector3(0,1,0);
 let gliderThrustersForward = new THREE.Vector3(0,0,1);
 let gliderLocalVelocity = new THREE.Vector3();
+let gliderWorldVelocity = new THREE.Vector3();
 let gliderIsInAir = true;
 let gliderIsAcceleratingRight = false;
 let gliderIsAcceleratingUp = false;
 let gliderIsAcceleratingForward = false;
-let worldGravity = new THREE.Vector3(0, -1, 0);
 let worldRight = new THREE.Vector3(1, 0, 0);
 let worldUp = new THREE.Vector3(0, 1, 0);
 let worldForward = new THREE.Vector3(0, 0, 1);
@@ -45,12 +45,12 @@ let ballRaySegmentLength = 0;
 let ballRight = new THREE.Vector3();
 let ballUp = new THREE.Vector3();
 let ballForward = new THREE.Vector3();
-let ballRightVelocity = new THREE.Vector3();
-let ballUpVelocity = new THREE.Vector3();
-let ballForwardVelocity = new THREE.Vector3();
-let ballVelocity = new THREE.Vector3();
+let ballLocalVelocity = new THREE.Vector3();
+let ballWorldVelocity = new THREE.Vector3();
 let ballIsInAir = true;
 let ballYRotateAngle = 0;
+let impulse = new THREE.Vector3();
+let canPress_F = true;
 
 let demoInfoElement = document.getElementById('demoInfo');
 let canPress_Space = true;
@@ -272,6 +272,8 @@ function initSceneData()
 	ballUp.set(0, 1, 0);
 	ballForward.set(0, 0, 1);
 
+	//ballLocalVelocity.copy(worldForward).negate().add(worldRight).normalize();
+	//ballLocalVelocity.multiplyScalar(50);
 
 	// scene/demo-specific uniforms go here
 	pathTracingUniforms.uCourseSphere_invMatrix = { value: courseSphere_invMatrix };
@@ -330,6 +332,41 @@ function updateVariablesAndUniforms()
 				gliderLocalVelocity.x += (gliderThrustersRight.dot(gliderBaseRight) * 300 * frameTime);
 				gliderIsAcceleratingRight = true;
 			}
+			/* if (keyPressed('KeyF') && canPress_F)
+			{
+				impulse.set((Math.random() * 2 - 1) * 200, (Math.random() * 2 - 1) * 200, (Math.random() * 2 - 1) * 200);
+				ballLocalVelocity.x += impulse.dot(ballRight);
+				ballLocalVelocity.z += impulse.dot(ballForward);
+				canPress_F = false;
+			}
+			if (!keyPressed('KeyF'))
+				canPress_F = true;
+			*/
+			if (keyPressed('KeyL'))
+			{
+				ballLocalVelocity.x += 10;
+			}
+			if (keyPressed('KeyJ'))
+			{
+				ballLocalVelocity.x -= 10;
+			}
+			if (keyPressed('KeyK'))
+			{
+				ballLocalVelocity.z += 10;
+			}
+			if (keyPressed('KeyI'))
+			{
+				ballLocalVelocity.z -= 10;
+			}
+			if (keyPressed('KeyU'))
+			{
+				ballLocalVelocity.y += 10;
+				gliderIsInAir = true;
+			}
+			if (keyPressed('KeyM'))
+			{
+				ballLocalVelocity.y -= 10;
+			}
 		}
 
 		// Or use the following controls for a constantly-steerable Glider (even steers when no thrust is being applied and Glider is slowing down)
@@ -385,7 +422,7 @@ function updateVariablesAndUniforms()
 	if (gliderIsInAir)
 	{
 		canPress_Space = false;
-		gliderLocalVelocity.y += (-200 * frameTime);
+		gliderLocalVelocity.y -= (200 * frameTime);
 		gliderIsAcceleratingUp = true;
 	}
 	// if a legal jump action was triggered, apply a short, upward impulse to glider
@@ -414,9 +451,13 @@ function updateVariablesAndUniforms()
 	// in a different direction, or applying fake 'friction' to the environment, which is used to artificially slow the craft down, even in outer space. 
 	// This realistic behavior, although cool, makes it more challenging to target and hit the ball with your glider, especially when everything is moving fast in-game. 
 	
-	gliderBase.position.addScaledVector(gliderBaseRight, gliderLocalVelocity.x * frameTime);
-	gliderBase.position.addScaledVector(gliderBaseUp, gliderLocalVelocity.y * frameTime);
-	gliderBase.position.addScaledVector(gliderBaseForward, gliderLocalVelocity.z * frameTime);
+	// get glider world velocity vector from its local velocity ()
+	gliderWorldVelocity.set(0, 0, 0);
+	gliderWorldVelocity.addScaledVector(gliderBaseRight, gliderLocalVelocity.x);
+	gliderWorldVelocity.addScaledVector(gliderBaseUp, gliderLocalVelocity.y);
+	gliderWorldVelocity.addScaledVector(gliderBaseForward, gliderLocalVelocity.z);
+	
+	gliderBase.position.addScaledVector(gliderWorldVelocity, frameTime);
  	
 
 	// Or, use the following code for setting position according to gliderThrusters rotational basis (which way glider is facing). Will constantly steer the glider in that
@@ -688,20 +729,32 @@ function updateVariablesAndUniforms()
 
 	// UPDATE BALL ///////////////////////////////////////////////////////////////////////////////////
 
-
+	// if in air, apply gravity (actually anti-gravity: pulls ball down to the large course surface in all directions)
 	if (ballIsInAir)
 	{
-		ballUpVelocity.addScaledVector(worldGravity, 4);
+		ballLocalVelocity.y -= (200 * frameTime);
+	}
+
+	if (gliderBase.position.distanceToSquared(ball.position) < 600)
+	{
+		impulse.copy(gliderWorldVelocity);
+		ballLocalVelocity.x += impulse.dot(ballRight);
+		ballLocalVelocity.z += impulse.dot(ballForward);
+
+		gliderLocalVelocity.x -= impulse.dot(gliderBaseRight) * 0.4;
+		gliderLocalVelocity.z -= impulse.dot(gliderBaseForward) * 0.4;
 	}
 	
-	ballVelocity.copy(worldForward).negate().add(worldRight).normalize();
-	ballVelocity.multiplyScalar(50);
-	ball.position.addScaledVector(ballRight, worldRight.dot(ballVelocity) * frameTime);
-	ball.position.addScaledVector(ballUp, worldUp.dot(ballUpVelocity) * frameTime);
-	ball.position.addScaledVector(ballForward, worldForward.dot(ballVelocity) * frameTime);
+	ballWorldVelocity.set(0, 0, 0);
+	ballWorldVelocity.addScaledVector(ballRight, ballLocalVelocity.x);
+	ballWorldVelocity.addScaledVector(ballUp, ballLocalVelocity.y);
+	ballWorldVelocity.addScaledVector(ballForward, ballLocalVelocity.z);
+	
+	ball.position.addScaledVector(ballWorldVelocity, frameTime);
 
 	
 
+	
 
 	// now that the ball has moved, record its new position minus its old position as a line segment
 	ballRaySegment.copy(ball.position);
@@ -726,7 +779,7 @@ function updateVariablesAndUniforms()
 	if (testT < ballRaySegmentLength)
 	{
 		ballIsInAir = false;
-		ballUpVelocity.set(0, 0, 0);
+		ballLocalVelocity.y = 0;
 		intersectionNormal.transformSurfaceNormal(courseSphere_invMatrix); // bring intersected object-space normal back into world space
 		intersectionNormal.negate(); // normals usually point outward on spheres, but since we are inside the sphere, must flip it
 		intersectionNormal.normalize(); // after the various transformations, make sure normal is a unit-length vector (length of 1)
@@ -772,7 +825,7 @@ function updateVariablesAndUniforms()
 	if (testT < 1)
 	{
 		ballIsInAir = false;
-		ballUpVelocity.set(0, 0, 0);
+		ballLocalVelocity.y = 0;
 		ball.position.copy(intersectionPoint);
 	}
 	if (testT > 2)
@@ -915,19 +968,8 @@ function updateVariablesAndUniforms()
 	// apply friction to ball
 	if (!ballIsInAir)
 	{
-		//ballForwardVelocity.multiplyScalar(0.97);
-		//ballRightVelocity.multiplyScalar(0.97);
-		
-		/* tempVec1.copy(ballForwardVelocity).normalize();
-		ballForwardVelocity.addScaledVector(tempVec1, -1);
-		tempVec2.copy(ballRightVelocity).normalize();
-		ballRightVelocity.addScaledVector(tempVec2, -1);
-		if ( (ballForwardVelocity.lengthSq() < 0.1 && ballRightVelocity.lengthSq() < 0.1) ||
-			tempVec1.dot(ballForwardVelocity) > 0 || tempVec2.dot(ballRightVelocity) > 0 )
-		{
-			ballForwardVelocity.set(0, 0, 0);
-			ballRightVelocity.set(0, 0, 0);
-		} */
+		ballLocalVelocity.z -= (ballLocalVelocity.z * 0.7 * frameTime);
+		ballLocalVelocity.x -= (ballLocalVelocity.x * 0.7 * frameTime);
 	}
 
 
@@ -954,7 +996,7 @@ function updateVariablesAndUniforms()
 	// if ball is on the ground (touching the large course), set its up velocity to 0
 	if (!ballIsInAir)
 	{
-		ballUpVelocity.set(0, 0, 0);
+		ballLocalVelocity.y = 0;
 	}
 
 
@@ -974,8 +1016,8 @@ function updateVariablesAndUniforms()
 	"gliderWorldUp: " + "(" + gliderThrustersUp.x.toFixed(1) + " " + gliderThrustersUp.y.toFixed(1) + " " + gliderThrustersUp.z.toFixed(1) + ")" + " " + 
 	"gliderWorldForward: " + "(" + gliderThrustersForward.x.toFixed(1) + " " + gliderThrustersForward.y.toFixed(1) + " " + gliderThrustersForward.z.toFixed(1) + ")" + "<br>" + 
 	
-	"gliderLocalVelocity: " + "(" +  + gliderLocalVelocity.x.toFixed(1) + " " + gliderLocalVelocity.y.toFixed(1) + " " + gliderLocalVelocity.z.toFixed(1) + ")";// + "<br>" + 
-	//"gliderLocalVelocity: " + gliderLocalVelocity.x.toFixed(1) + " " + gliderLocalVelocity.y.toFixed(1) + " " + gliderLocalVelocity.z.toFixed(1);
+	"gliderLocalVelocity: " + "(" + gliderLocalVelocity.x.toFixed(1) + " " + gliderLocalVelocity.y.toFixed(1) + " " + gliderLocalVelocity.z.toFixed(1) + ")" + "<br>" + 
+	"gliderWorldVelocity: " + "(" + gliderWorldVelocity.x.toFixed(1) + " " + gliderWorldVelocity.y.toFixed(1) + " " + gliderWorldVelocity.z.toFixed(1) + ")";
 	
 	// CAMERA INFO
 	///cameraInfoElement.innerHTML = "FOV: " + worldCamera.fov + " / Aperture: " + apertureSize.toFixed(2) + " / FocusDistance: " + focusDistance + "<br>" + "Samples: " + sampleCounter;
