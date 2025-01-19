@@ -49,14 +49,18 @@ let ballLocalVelocity = new THREE.Vector3();
 let ballWorldVelocity = new THREE.Vector3();
 let ballIsInAir = true;
 let ballYRotateAngle = 0;
-let impulse = new THREE.Vector3();
-let canPress_F = true;
-
-let demoInfoElement = document.getElementById('demoInfo');
 let canPress_Space = true;
 let jumpWasTriggered = false;
 let roundBeginFlag = true;
 
+let impulseGlider = new THREE.Vector3();
+let impulseBall = new THREE.Vector3();
+let relativeVelocity = new THREE.Vector3();
+let collisionNormal = new THREE.Vector3();
+let combinedMass = 0;
+let impulseAmount = 0;
+
+let demoInfoElement = document.getElementById('demoInfo');
 
 // first, add some new methods to Three.js' Vector3 class
 
@@ -306,7 +310,7 @@ function updateVariablesAndUniforms()
 		// behavior is piloting your spaceship in the classic Asteroids arcade game.  The spacecraft travels only in the thrust direction and keeps floating
 		// in that direction until applying an opposing thrust or an artificial 'friction' force. The Asteroids ship slows from friction, even though there's none in space.
 		
-		{
+		/* {
 			if ((keyPressed('KeyS') || button4Pressed) && !(keyPressed('KeyW') || button3Pressed))
 			{
 				gliderLocalVelocity.z += (gliderThrustersForward.dot(gliderBaseForward) * 300 * frameTime); 
@@ -332,47 +336,12 @@ function updateVariablesAndUniforms()
 				gliderLocalVelocity.x += (gliderThrustersRight.dot(gliderBaseRight) * 300 * frameTime);
 				gliderIsAcceleratingRight = true;
 			}
-			/* if (keyPressed('KeyF') && canPress_F)
-			{
-				impulse.set((Math.random() * 2 - 1) * 200, (Math.random() * 2 - 1) * 200, (Math.random() * 2 - 1) * 200);
-				ballLocalVelocity.x += impulse.dot(ballRight);
-				ballLocalVelocity.z += impulse.dot(ballForward);
-				canPress_F = false;
-			}
-			if (!keyPressed('KeyF'))
-				canPress_F = true;
-			*/
-			if (keyPressed('KeyL'))
-			{
-				ballLocalVelocity.x += 10;
-			}
-			if (keyPressed('KeyJ'))
-			{
-				ballLocalVelocity.x -= 10;
-			}
-			if (keyPressed('KeyK'))
-			{
-				ballLocalVelocity.z += 10;
-			}
-			if (keyPressed('KeyI'))
-			{
-				ballLocalVelocity.z -= 10;
-			}
-			if (keyPressed('KeyU'))
-			{
-				ballLocalVelocity.y += 10;
-				gliderIsInAir = true;
-			}
-			if (keyPressed('KeyM'))
-			{
-				ballLocalVelocity.y -= 10;
-			}
-		}
+		} */
 
 		// Or use the following controls for a constantly-steerable Glider (even steers when no thrust is being applied and Glider is slowing down)
 		// Behaves more like a car with wheels.  This is less realistic physics-wise for a hovering Glider, but I may ultimately keep it for max player-steering control.
 		// When everything is moving really fast, it may be helpful to 'steer' the floating Glider, in order to maximize ball-targeting ability, and thus fun factor.
-		/* 
+		
 		//if (!gliderIsInAir)
 		{
 			if ((keyPressed('KeyW') || button3Pressed) && !(keyPressed('KeyS') || button4Pressed))
@@ -396,7 +365,7 @@ function updateVariablesAndUniforms()
 				gliderLocalVelocity.x += (300 * frameTime);
 				gliderIsAcceleratingRight = true;
 			}
-		} */
+		}
 		
 	} // end if (!isPaused)
 
@@ -410,6 +379,23 @@ function updateVariablesAndUniforms()
 
 	// UPDATE GLIDER ////////////////////////////////////////////////////////////////////////////////
 
+	collisionNormal.subVectors(gliderBase.position, ball.position);
+	if (collisionNormal.length() < 20)
+	{
+		collisionNormal.normalize();
+		ball.position.copy(gliderBase.position);
+		ball.position.addScaledVector(collisionNormal, -20);
+		relativeVelocity.subVectors(gliderWorldVelocity, ballWorldVelocity);
+		combinedMass = 30 + 5;
+		impulseAmount = -0.3 * ( relativeVelocity.dot(collisionNormal) / (collisionNormal.dot(collisionNormal) / combinedMass) );
+		collisionNormal.multiplyScalar(impulseAmount);
+		impulseGlider.copy(gliderWorldVelocity).addScaledVector(collisionNormal, (1/30));
+		impulseBall.copy(ballWorldVelocity).addScaledVector(collisionNormal, -(1/5));
+		gliderLocalVelocity.x = impulseGlider.dot(gliderBaseRight);
+		gliderLocalVelocity.z = impulseGlider.dot(gliderBaseForward);
+		ballLocalVelocity.x = impulseBall.dot(ballRight);
+		ballLocalVelocity.z = impulseBall.dot(ballForward); 
+	}
 
 	// if glider is on the ground (touching the large course), allow player to jump again
 	if (!gliderIsInAir)
@@ -452,23 +438,25 @@ function updateVariablesAndUniforms()
 	// This realistic behavior, although cool, makes it more challenging to target and hit the ball with your glider, especially when everything is moving fast in-game. 
 	
 	// get glider world velocity vector from its local velocity ()
-	gliderWorldVelocity.set(0, 0, 0);
+	/* gliderWorldVelocity.set(0, 0, 0);
 	gliderWorldVelocity.addScaledVector(gliderBaseRight, gliderLocalVelocity.x);
 	gliderWorldVelocity.addScaledVector(gliderBaseUp, gliderLocalVelocity.y);
 	gliderWorldVelocity.addScaledVector(gliderBaseForward, gliderLocalVelocity.z);
 	
-	gliderBase.position.addScaledVector(gliderWorldVelocity, frameTime);
+	gliderBase.position.addScaledVector(gliderWorldVelocity, frameTime); */
  	
 
 	// Or, use the following code for setting position according to gliderThrusters rotational basis (which way glider is facing). Will constantly steer the glider in that
 	// facing direction, even when no engine thrusting is being applied and glider is slowing down due to friction (glider will continue to perfectly steer until fully stopped).
 	// Behaves more like a car with wheels. This is less realistic physics-wise for a hovering glider, but I may ultimately keep it for max player-steering control.
 	// When everything is moving really fast, it may be helpful to 'steer' your floating glider, in order to maximize ball-targeting ability, and thus fun factor.
-	/* 
-	gliderBase.position.addScaledVector(gliderThrustersRight, gliderLocalVelocity.x * frameTime);
-	gliderBase.position.addScaledVector(gliderThrustersUp, gliderLocalVelocity.y * frameTime);
-	gliderBase.position.addScaledVector(gliderThrustersForward, gliderLocalVelocity.z * frameTime);
- 	 */
+	
+	gliderWorldVelocity.set(0, 0, 0);
+	gliderWorldVelocity.addScaledVector(gliderThrustersRight, gliderLocalVelocity.x);
+	gliderWorldVelocity.addScaledVector(gliderThrustersUp, gliderLocalVelocity.y);
+	gliderWorldVelocity.addScaledVector(gliderThrustersForward, gliderLocalVelocity.z);
+	
+	gliderBase.position.addScaledVector(gliderWorldVelocity, frameTime);
 	
 
 	// now that the glider has moved, record its new position minus its old position as a line segment
@@ -735,15 +723,7 @@ function updateVariablesAndUniforms()
 		ballLocalVelocity.y -= (200 * frameTime);
 	}
 
-	if (gliderBase.position.distanceToSquared(ball.position) < 600)
-	{
-		impulse.copy(gliderWorldVelocity);
-		ballLocalVelocity.x += impulse.dot(ballRight);
-		ballLocalVelocity.z += impulse.dot(ballForward);
-
-		gliderLocalVelocity.x -= impulse.dot(gliderBaseRight) * 0.4;
-		gliderLocalVelocity.z -= impulse.dot(gliderBaseForward) * 0.4;
-	}
+	
 	
 	ballWorldVelocity.set(0, 0, 0);
 	ballWorldVelocity.addScaledVector(ballRight, ballLocalVelocity.x);
@@ -752,9 +732,6 @@ function updateVariablesAndUniforms()
 	
 	ball.position.addScaledVector(ballWorldVelocity, frameTime);
 
-	
-
-	
 
 	// now that the ball has moved, record its new position minus its old position as a line segment
 	ballRaySegment.copy(ball.position);
