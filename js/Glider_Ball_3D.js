@@ -377,7 +377,7 @@ function updateVariablesAndUniforms()
 	else cameraIsMoving = true;
 
 
-	// UPDATE GLIDER ////////////////////////////////////////////////////////////////////////////////
+	// PHYSICS
 
 	collisionNormal.subVectors(gliderBase.position, ball.position);
 	if (collisionNormal.length() < 20)
@@ -386,17 +386,22 @@ function updateVariablesAndUniforms()
 		ball.position.copy(gliderBase.position);
 		ball.position.addScaledVector(collisionNormal, -20);
 		relativeVelocity.subVectors(gliderWorldVelocity, ballWorldVelocity);
-		combinedMass = 30 + 5;
+		combinedMass = 50 + 10;
 		impulseAmount = -0.3 * ( relativeVelocity.dot(collisionNormal) / (collisionNormal.dot(collisionNormal) / combinedMass) );
 		collisionNormal.multiplyScalar(impulseAmount);
-		impulseGlider.copy(gliderWorldVelocity).addScaledVector(collisionNormal, (1/30));
-		impulseBall.copy(ballWorldVelocity).addScaledVector(collisionNormal, -(1/5));
+		impulseGlider.copy(gliderWorldVelocity).addScaledVector(collisionNormal, (1/50));
+		impulseBall.copy(ballWorldVelocity).addScaledVector(collisionNormal, -(1/10));
 		gliderLocalVelocity.x = impulseGlider.dot(gliderBaseRight);
 		gliderLocalVelocity.z = impulseGlider.dot(gliderBaseForward);
 		ballLocalVelocity.x = impulseBall.dot(ballRight);
 		ballLocalVelocity.z = impulseBall.dot(ballForward); 
 	}
 
+
+
+	// UPDATE GLIDER ////////////////////////////////////////////////////////////////////////////////
+
+	
 	// if glider is on the ground (touching the large course), allow player to jump again
 	if (!gliderIsInAir)
 	{
