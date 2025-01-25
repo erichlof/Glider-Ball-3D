@@ -269,7 +269,7 @@ function initSceneData()
 	// BALL
 	ball.visible = false;
 	ball.position.set(0, 300, 0);
-	ball.scale.set(8, 12, 8);
+	ball.scale.set(16, 4, 16);
 	ball.updateMatrixWorld();
 	
 	ballRight.set(1, 0, 0);
@@ -380,21 +380,21 @@ function updateVariablesAndUniforms()
 	// PHYSICS
 
 	collisionNormal.subVectors(gliderBase.position, ball.position);
-	if (collisionNormal.length() < 20)
+	if (collisionNormal.length() < 25)
 	{
 		collisionNormal.normalize();
 		ball.position.copy(gliderBase.position);
-		ball.position.addScaledVector(collisionNormal, -20);
+		ball.position.addScaledVector(collisionNormal, -25);
 		relativeVelocity.subVectors(gliderWorldVelocity, ballWorldVelocity);
 		combinedMass = 50 + 10;
-		impulseAmount = -0.3 * ( relativeVelocity.dot(collisionNormal) / (collisionNormal.dot(collisionNormal) / combinedMass) );
+		impulseAmount = -0.4 * ( relativeVelocity.dot(collisionNormal) / (collisionNormal.dot(collisionNormal) / combinedMass) );
 		collisionNormal.multiplyScalar(impulseAmount);
-		impulseGlider.copy(gliderWorldVelocity).addScaledVector(collisionNormal, (1/50));
-		impulseBall.copy(ballWorldVelocity).addScaledVector(collisionNormal, -(1/10));
-		gliderLocalVelocity.x = impulseGlider.dot(gliderBaseRight);
-		gliderLocalVelocity.z = impulseGlider.dot(gliderBaseForward);
-		ballLocalVelocity.x = impulseBall.dot(ballRight);
-		ballLocalVelocity.z = impulseBall.dot(ballForward); 
+		impulseGlider.copy(collisionNormal).multiplyScalar(1/50);
+		impulseBall.copy(collisionNormal).multiplyScalar(-1/10);
+		gliderLocalVelocity.x += impulseGlider.dot(gliderBaseRight);
+		gliderLocalVelocity.z += impulseGlider.dot(gliderBaseForward);
+		ballLocalVelocity.x += impulseBall.dot(ballRight);
+		ballLocalVelocity.z += impulseBall.dot(ballForward); 
 	}
 
 
@@ -964,7 +964,7 @@ function updateVariablesAndUniforms()
 	//ball.updateMatrixWorld();
 
 	// temporarily move ball up out of the ground for final render
-	ball.position.addScaledVector(ballUp, 12);
+	ball.position.addScaledVector(ballUp, 10);
 	ball.updateMatrixWorld();
 
 	
@@ -986,7 +986,7 @@ function updateVariablesAndUniforms()
 	pathTracingUniforms.uBallInvMatrix.value.copy(ball.matrixWorld).invert();
 
 	// after rendering, reset ball position back down so that its center is right on the ground (this helps with ray casting against course)
-	ball.position.addScaledVector(ballUp, -12);
+	ball.position.addScaledVector(ballUp, -10);
 	// after rendering, reset ball rotation to be default upright (aligned with ground surface normal), so that rotation calculation code above will be easier
 	//ball.rotateX(Math.PI * 0.5);
 
