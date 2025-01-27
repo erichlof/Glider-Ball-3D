@@ -57,7 +57,9 @@ let impulseGlider = new THREE.Vector3();
 let impulseBall = new THREE.Vector3();
 let relativeVelocity = new THREE.Vector3();
 let collisionNormal = new THREE.Vector3();
-let combinedMass = 0;
+let rV_dot_cN = 0;
+let separatingDistance = 0;
+let combinedInverseMasses = 0;
 let impulseAmount = 0;
 
 let demoInfoElement = document.getElementById('demoInfo');
@@ -269,7 +271,7 @@ function initSceneData()
 	// BALL
 	ball.visible = false;
 	ball.position.set(0, 300, 0);
-	ball.scale.set(16, 4, 16);
+	ball.scale.set(16, 6, 16);
 	ball.updateMatrixWorld();
 	
 	ballRight.set(1, 0, 0);
@@ -377,27 +379,6 @@ function updateVariablesAndUniforms()
 	else cameraIsMoving = true;
 
 
-	// PHYSICS
-
-	collisionNormal.subVectors(gliderBase.position, ball.position);
-	if (collisionNormal.length() < 25)
-	{
-		collisionNormal.normalize();
-		ball.position.copy(gliderBase.position);
-		ball.position.addScaledVector(collisionNormal, -25);
-		relativeVelocity.subVectors(gliderWorldVelocity, ballWorldVelocity);
-		combinedMass = 50 + 10;
-		impulseAmount = -0.4 * ( relativeVelocity.dot(collisionNormal) / (collisionNormal.dot(collisionNormal) / combinedMass) );
-		collisionNormal.multiplyScalar(impulseAmount);
-		impulseGlider.copy(collisionNormal).multiplyScalar(1/50);
-		impulseBall.copy(collisionNormal).multiplyScalar(-1/10);
-		gliderLocalVelocity.x += impulseGlider.dot(gliderBaseRight);
-		gliderLocalVelocity.z += impulseGlider.dot(gliderBaseForward);
-		ballLocalVelocity.x += impulseBall.dot(ballRight);
-		ballLocalVelocity.z += impulseBall.dot(ballForward); 
-	}
-
-
 
 	// UPDATE GLIDER ////////////////////////////////////////////////////////////////////////////////
 
@@ -431,6 +412,36 @@ function updateVariablesAndUniforms()
 	{
 		gliderLocalVelocity.z -= (gliderLocalVelocity.z * 1 * frameTime);
 		gliderLocalVelocity.x -= (gliderLocalVelocity.x * 1 * frameTime);
+	}
+
+	// PHYSICS
+
+	collisionNormal.subVectors(gliderBase.position, ball.position);
+	separatingDistance = collisionNormal.length();
+	collisionNormal.normalize();
+	relativeVelocity.subVectors(gliderWorldVelocity, ballWorldVelocity);
+	rV_dot_cN = relativeVelocity.dot(collisionNormal);
+
+	if (separatingDistance < 30)
+	{
+		ball.position.copy(gliderBase.position);
+		ball.position.addScaledVector(collisionNormal, -31);
+		gliderBase.position.addScaledVector(collisionNormal, 5);
+
+		if (rV_dot_cN < 0)
+		{
+			combinedInverseMasses = (1/50) + (1/20);
+			impulseAmount = (-3.0 * rV_dot_cN) / ( collisionNormal.dot(collisionNormal) * combinedInverseMasses );
+			collisionNormal.multiplyScalar(impulseAmount);
+			impulseGlider.copy(collisionNormal).multiplyScalar(1/50);
+			impulseBall.copy(collisionNormal).multiplyScalar(-1/20);
+			
+			gliderLocalVelocity.x += impulseGlider.dot(gliderThrustersRight);
+			gliderLocalVelocity.z += impulseGlider.dot(gliderThrustersForward);
+
+			ballLocalVelocity.x += impulseBall.dot(ballRight);
+			ballLocalVelocity.z += impulseBall.dot(ballForward); 
+		}
 	}
 	
 	// update glider position
