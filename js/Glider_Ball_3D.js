@@ -61,6 +61,8 @@ let rV_dot_cN = 0;
 let separatingDistance = 0;
 let combinedInverseMasses = 0;
 let impulseAmount = 0;
+let gliderMass = 50;
+let ballMass = 30;
 
 let demoInfoElement = document.getElementById('demoInfo');
 
@@ -430,11 +432,11 @@ function updateVariablesAndUniforms()
 
 		if (rV_dot_cN < 0)
 		{
-			combinedInverseMasses = (1/50) + (1/20);
-			impulseAmount = (-3.0 * rV_dot_cN) / ( collisionNormal.dot(collisionNormal) * combinedInverseMasses );
+			combinedInverseMasses = 1 / (gliderMass + ballMass);
+			impulseAmount = 2.5 * combinedInverseMasses * rV_dot_cN / collisionNormal.dot(collisionNormal);
 			collisionNormal.multiplyScalar(impulseAmount);
-			impulseGlider.copy(collisionNormal).multiplyScalar(1/50);
-			impulseBall.copy(collisionNormal).multiplyScalar(-1/20);
+			impulseGlider.copy(collisionNormal).multiplyScalar(-ballMass);
+			impulseBall.copy(collisionNormal).multiplyScalar(gliderMass);
 			
 			gliderLocalVelocity.x += impulseGlider.dot(gliderThrustersRight);
 			gliderLocalVelocity.z += impulseGlider.dot(gliderThrustersForward);
