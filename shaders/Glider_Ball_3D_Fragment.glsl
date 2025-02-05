@@ -5,14 +5,15 @@ precision highp sampler2D;
 #include <pathtracing_uniforms_and_defines>
 
 uniform mat4 uCourseSphere_invMatrix;
-uniform mat4 uGliderInvMatrix;
+uniform mat4 uGlider1InvMatrix;
+uniform mat4 uGlider2InvMatrix;
 uniform mat4 uBallInvMatrix;
 
 #define N_LIGHTS 3.0
 #define N_SPHERES 3
 #define N_UNIT_SPHERES 1
 #define N_UNIT_BOXES 1
-#define N_UNIT_PARABOLOIDS 1
+#define N_UNIT_PARABOLOIDS 2
 
 
 //-----------------------------------------------------------------------
@@ -136,18 +137,34 @@ float SceneIntersect(out int finalIsRayExiting)
 	}
 	objectCount++;
 
-	// transform ray into glider's object space
-	rObjOrigin = vec3( uGliderInvMatrix * vec4(rayOrigin, 1.0) );
-	rObjDirection = vec3( uGliderInvMatrix * vec4(rayDirection, 0.0) );
+	// transform ray into glider1's object space
+	rObjOrigin = vec3( uGlider1InvMatrix * vec4(rayOrigin, 1.0) );
+	rObjDirection = vec3( uGlider1InvMatrix * vec4(rayDirection, 0.0) );
 	d = UnitParaboloidIntersect(rObjOrigin, rObjDirection, normal);
 
 	if (d < t)
 	{
 		t = d;
-		hitNormal = transpose(mat3(uGliderInvMatrix)) * normal;
+		hitNormal = transpose(mat3(uGlider1InvMatrix)) * normal;
 		hitEmission = unitParaboloids[0].emission;
 		hitColor = unitParaboloids[0].color;
 		hitType = unitParaboloids[0].type;
+		hitObjectID = float(objectCount);
+	}
+	objectCount++;
+
+	// transform ray into glider2's object space
+	rObjOrigin = vec3( uGlider2InvMatrix * vec4(rayOrigin, 1.0) );
+	rObjDirection = vec3( uGlider2InvMatrix * vec4(rayDirection, 0.0) );
+	d = UnitParaboloidIntersect(rObjOrigin, rObjDirection, normal);
+
+	if (d < t)
+	{
+		t = d;
+		hitNormal = transpose(mat3(uGlider2InvMatrix)) * normal;
+		hitEmission = unitParaboloids[1].emission;
+		hitColor = unitParaboloids[1].color;
+		hitType = unitParaboloids[1].type;
 		hitObjectID = float(objectCount);
 	}
 	objectCount++;
@@ -455,8 +472,8 @@ void SetupScene(void)
 
 	unitBoxes[0] = UnitBox(vec3(0), vec3(0.01, 1.0, 0.4), SPEC);//mirror Ball
 
-	unitParaboloids[0] = UnitParaboloid(vec3(0), vec3(0.01, 0.4, 1.0), SPEC);//mirror Glider
-		
+	unitParaboloids[0] = UnitParaboloid(vec3(0), vec3(0.01, 0.4, 1.0), SPEC);//mirror Glider1
+	unitParaboloids[1] = UnitParaboloid(vec3(0), vec3(1.0, 0.01, 0.1), SPEC);//mirror Glider2
 }
 
 
