@@ -142,7 +142,7 @@ THREE.Vector3.prototype.transformRayOriginAsPoint = function(m4_MatrixInverse)
 	this.y = (vx * el[1] + vy * el[5] + vz * el[9] + el[13]) * d;
 	this.z = (vx * el[2] + vy * el[6] + vz * el[10] + el[14]) * d;
 	return this;
-}
+};
 
 /*
 Vector3.transformRayDirectionAsDirection(m4_MatrixInverse) is a method that is called on a THREE.Vector3 
@@ -169,7 +169,7 @@ THREE.Vector3.prototype.transformRayDirectionAsDirection = function(m4_MatrixInv
 	this.y = vx * el[1] + vy * el[5] + vz * el[9];
 	this.z = vx * el[2] + vy * el[6] + vz * el[10];
 	return this;
-}
+};
 
 /*
 Vector3.transformSurfaceNormal(m4_MatrixInverse) is a method that is called on a THREE.Vector3 
@@ -196,7 +196,7 @@ THREE.Vector3.prototype.transformSurfaceNormal = function(m4_MatrixInverse)
 	this.x = vx * el[0] + vy * el[1] + vz * el[2];
 	this.y = vx * el[4] + vy * el[5] + vz * el[6];
 	this.z = vx * el[8] + vy * el[9] + vz * el[10];
-}
+};
 
 
 let t = Infinity;
@@ -388,7 +388,7 @@ function updateVariablesAndUniforms()
 		{
 			if ((keyPressed('KeyW') || button3Pressed) && !(keyPressed('KeyS') || button4Pressed))
 			{
-				glider1LocalVelocity.z += (-300 * frameTime); 
+				glider1LocalVelocity.z -= (300 * frameTime); 
 				glider1IsAcceleratingForward = true;
 				
 			}
@@ -399,7 +399,7 @@ function updateVariablesAndUniforms()
 			}
 			if ((keyPressed('KeyA') || button1Pressed) && !(keyPressed('KeyD') || button2Pressed))
 			{
-				glider1LocalVelocity.x += (-300 * frameTime);
+				glider1LocalVelocity.x -= (300 * frameTime);
 				glider1IsAcceleratingRight = true;
 			}
 			if ((keyPressed('KeyD') || button2Pressed) && !(keyPressed('KeyA') || button1Pressed))
@@ -407,6 +407,12 @@ function updateVariablesAndUniforms()
 				glider1LocalVelocity.x += (300 * frameTime);
 				glider1IsAcceleratingRight = true;
 			}
+		}
+
+		if (keyPressed('KeyI'))
+		{
+			glider2LocalVelocity.z -= (300 * frameTime);
+			glider2IsAcceleratingForward = true;
 		}
 		
 	} // end if (!isPaused)
@@ -416,9 +422,11 @@ function updateVariablesAndUniforms()
 	// This helps with the temporal/spatial denoiser in the final shader, which tries to get rid of noise from edges (which must remain sharp)
 	if (!cameraIsMoving && glider1LocalVelocity.x * glider1LocalVelocity.x < 20 && glider1LocalVelocity.z * glider1LocalVelocity.z  < 20)
 		cameraIsMoving = false;
-	else cameraIsMoving = true;
+	else 
+		cameraIsMoving = true;
 
 
+	
 
 	// UPDATE GLIDER 1 ////////////////////////////////////////////////////////////////////////////////
 
@@ -1095,7 +1103,8 @@ function updateVariablesAndUniforms()
 	glider2Thrusters.rotation.copy(glider2Base.rotation);
 	glider2Thrusters.scale.copy(glider2Base.scale);
 
-	//glider2Thrusters.rotateY(inputRotationHorizontal);
+	glider2Thrusters.rotateY(Math.PI);
+	glider2Thrusters.rotateY(inputRotationHorizontal);
 	glider2Thrusters.updateMatrixWorld();
 	glider2Thrusters.matrixWorld.extractBasis(glider2ThrustersRight, glider2ThrustersUp, glider2ThrustersForward);
 	glider2ThrustersRight.normalize(); glider2ThrustersUp.normalize(); glider2ThrustersForward.normalize();
