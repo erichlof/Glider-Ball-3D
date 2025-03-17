@@ -791,7 +791,8 @@ function updateVariablesAndUniforms()
 	cameraControlsObject.position.addScaledVector(glider1ThrustersUp, 20);
 	
 	cameraControlsObject.rotation.copy(glider1Thrusters.rotation);
-	cameraControlsPitchObject.rotation.x = inputRotationVertical;
+	if (inputRotationVertical)
+		cameraControlsPitchObject.rotation.x = inputRotationVertical;
 	// rotate glider paraboloid (temporary stand-in for more complex game model), so its apex faces in the forward direction
 	glider1Thrusters.rotateX(-Math.PI * 0.5);
 	glider1Thrusters.updateMatrixWorld();
