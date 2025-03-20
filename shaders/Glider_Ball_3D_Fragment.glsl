@@ -8,11 +8,13 @@ uniform mat4 uCourseSphere_invMatrix;
 uniform mat4 uGlider1InvMatrix;
 uniform mat4 uGlider2InvMatrix;
 uniform mat4 uBallInvMatrix;
+uniform mat4 uPlayerGoalInvMatrix;
+uniform mat4 uComputerGoalInvMatrix;
 
 #define N_LIGHTS 3.0
 #define N_SPHERES 3
 #define N_UNIT_SPHERES 1
-#define N_UNIT_BOXES 1
+#define N_UNIT_BOXES 3
 #define N_UNIT_PARABOLOIDS 2
 
 
@@ -117,6 +119,38 @@ float SceneIntersect(out int finalIsRayExiting)
 		q = clamp( mod( dot( floor(hitPos.xz * 0.04), vec2(1.0) ), 2.0 ) , 0.0, 1.0 );
 		hitColor = mix(vec3(0.5), unitSpheres[0].color, q);
 		hitType = unitSpheres[0].type;
+		hitObjectID = float(objectCount);
+	}
+	objectCount++;
+
+	// transform ray into playerGoal's object space
+	rObjOrigin = vec3( uPlayerGoalInvMatrix * vec4(rayOrigin, 1.0) );
+	rObjDirection = vec3( uPlayerGoalInvMatrix * vec4(rayDirection, 0.0) );
+	d = UnitBoxIntersect(rObjOrigin, rObjDirection, normal);
+
+	if (d < t)
+	{
+		t = d;
+		hitNormal = transpose(mat3(uPlayerGoalInvMatrix)) * normal;
+		hitEmission = unitBoxes[1].emission;
+		hitColor = unitBoxes[1].color;
+		hitType = unitBoxes[1].type;
+		hitObjectID = float(objectCount);
+	}
+	objectCount++;
+
+	// transform ray into computerGoal's object space
+	rObjOrigin = vec3( uComputerGoalInvMatrix * vec4(rayOrigin, 1.0) );
+	rObjDirection = vec3( uComputerGoalInvMatrix * vec4(rayDirection, 0.0) );
+	d = UnitBoxIntersect(rObjOrigin, rObjDirection, normal);
+
+	if (d < t)
+	{
+		t = d;
+		hitNormal = transpose(mat3(uComputerGoalInvMatrix)) * normal;
+		hitEmission = unitBoxes[2].emission;
+		hitColor = unitBoxes[2].color;
+		hitType = unitBoxes[2].type;
 		hitObjectID = float(objectCount);
 	}
 	objectCount++;
@@ -470,10 +504,12 @@ void SetupScene(void)
 	
 	unitSpheres[0] = UnitSphere(vec3(0), vec3(1.0, 1.0, 1.0), DIFF);//checkered Course
 
-	unitBoxes[0] = UnitBox(vec3(0), vec3(0.01, 1.0, 0.4), SPEC);//mirror Ball
+	unitBoxes[0] = UnitBox(vec3(0), vec3(0.01, 1.0, 0.4), SPEC);//Ball
+	unitBoxes[1] = UnitBox(vec3(0), vec3(0.01, 0.2, 1.0), SPEC);//player's Goal
+	unitBoxes[2] = UnitBox(vec3(0), vec3(1.0, 0.01, 0.2), SPEC);//computer's Goal
 
-	unitParaboloids[0] = UnitParaboloid(vec3(0), vec3(0.01, 0.4, 1.0), SPEC);//mirror Glider1
-	unitParaboloids[1] = UnitParaboloid(vec3(0), vec3(1.0, 0.01, 0.1), SPEC);//mirror Glider2
+	unitParaboloids[0] = UnitParaboloid(vec3(0), vec3(0.01, 0.2, 1.0), SPEC);//player's Glider1
+	unitParaboloids[1] = UnitParaboloid(vec3(0), vec3(1.0, 0.01, 0.4), SPEC);//computer's Glider2
 }
 
 
