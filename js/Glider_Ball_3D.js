@@ -7,6 +7,7 @@ let intersectionPoint = new THREE.Vector3();
 let intersectionNormal = new THREE.Vector3();
 let tempVec1 = new THREE.Vector3();
 let tempVec2 = new THREE.Vector3();
+
 let glider1Base = new THREE.Object3D();
 let glider1RotationMatrix = new THREE.Matrix4();
 let glider1Thrusters = new THREE.Object3D();
@@ -49,14 +50,6 @@ let glider2IsAcceleratingRight = false;
 let glider2IsAcceleratingUp = false;
 let glider2IsAcceleratingForward = false;
 
-let worldRight = new THREE.Vector3(1, 0, 0);
-let worldUp = new THREE.Vector3(0, 1, 0);
-let worldForward = new THREE.Vector3(0, 0, 1);
-let forwardProbe = new THREE.Vector3();
-let backwardProbe = new THREE.Vector3();
-let rightProbe = new THREE.Vector3();
-let leftProbe = new THREE.Vector3();
-
 let ball = new THREE.Object3D();
 let ballRotationMatrix = new THREE.Matrix4();
 let ballRayOrigin = new THREE.Vector3();
@@ -71,9 +64,36 @@ let ballLocalVelocity = new THREE.Vector3();
 let ballWorldVelocity = new THREE.Vector3();
 let ballIsInAir = true;
 let ballYRotateAngle = 0;
-let canPress_Space = true;
-let jumpWasTriggered = false;
-let roundBeginFlag = true;
+
+let playerGoal = new THREE.Object3D();
+let playerGoalRotationMatrix = new THREE.Matrix4();
+let playerGoalRayOrigin = new THREE.Vector3();
+let playerGoalRayDirection = new THREE.Vector3();
+let playerGoalOldPosition = new THREE.Vector3();
+let playerGoalRaySegment = new THREE.Vector3();
+let playerGoalRaySegmentLength = 0;
+let playerGoalRight = new THREE.Vector3();
+let playerGoalUp = new THREE.Vector3();
+let playerGoalForward = new THREE.Vector3();
+let playerGoalLocalVelocity = new THREE.Vector3();
+let playerGoalWorldVelocity = new THREE.Vector3();
+let playerGoalIsInAir = true;
+let playerGoalYRotateAngle = 0;
+
+let computerGoal = new THREE.Object3D();
+let computerGoalRotationMatrix = new THREE.Matrix4();
+let computerGoalRayOrigin = new THREE.Vector3();
+let computerGoalRayDirection = new THREE.Vector3();
+let computerGoalOldPosition = new THREE.Vector3();
+let computerGoalRaySegment = new THREE.Vector3();
+let computerGoalRaySegmentLength = 0;
+let computerGoalRight = new THREE.Vector3();
+let computerGoalUp = new THREE.Vector3();
+let computerGoalForward = new THREE.Vector3();
+let computerGoalLocalVelocity = new THREE.Vector3();
+let computerGoalWorldVelocity = new THREE.Vector3();
+let computerGoalIsInAir = true;
+let computerGoalYRotateAngle = 0;
 
 let impulseGlider1 = new THREE.Vector3();
 let impulseGlider2 = new THREE.Vector3();
@@ -86,6 +106,19 @@ let combinedInverseMasses = 0;
 let impulseAmount = 0;
 let gliderMass = 50;
 let ballMass = 30;
+
+let worldRight = new THREE.Vector3(1, 0, 0);
+let worldUp = new THREE.Vector3(0, 1, 0);
+let worldForward = new THREE.Vector3(0, 0, 1);
+let forwardProbe = new THREE.Vector3();
+let backwardProbe = new THREE.Vector3();
+let rightProbe = new THREE.Vector3();
+let leftProbe = new THREE.Vector3();
+let canPress_Space = true;
+let jumpWasTriggered = false;
+let roundBeginFlag = true;
+
+
 
 let demoInfoElement = document.getElementById('demoInfo');
 
@@ -268,7 +301,7 @@ function initSceneData()
 
 	// pixelRatio is resolution - range: 0.5(half resolution) to 1.0(full resolution)
 	pixelRatio = mouseControl ? 0.75 : 0.75;
-
+	//pixelRatio = 0.5; // for TESTING
 	EPS_intersect = 0.01;
 
 	// set camera's field of view
@@ -276,7 +309,7 @@ function initSceneData()
 
 
 	// COURSE (Sphere-shaped)
-	courseSphere.visible = false;
+	courseSphere.visible = false; // don't need Three.js to render this - we will ray trace it ourselves
 	courseSphere.position.set(0, 400, 0);
 	courseSphere.scale.set(400, 400, 400);
 	// must call this each time we change an object's transform
@@ -288,7 +321,6 @@ function initSceneData()
 	glider1Base.position.set(0, 300, 40);
 	glider1Base.scale.set(20, 22, 6);
 	glider1Base.updateMatrixWorld();
-	
 	glider1BaseRight.set(1, 0, 0);
 	glider1BaseUp.set(0, 1, 0);
 	glider1BaseForward.set(0, 0, 1);
@@ -298,7 +330,6 @@ function initSceneData()
 	glider2Base.position.set(0, 300, -40);
 	glider2Base.scale.set(20, 22, 6);
 	glider2Base.updateMatrixWorld();
-	
 	glider2BaseRight.set(1, 0, 0);
 	glider2BaseUp.set(0, 1, 0);
 	glider2BaseForward.set(0, 0, 1);
@@ -308,19 +339,37 @@ function initSceneData()
 	ball.position.set(0, 300, 0);
 	ball.scale.set(16, 6, 16);
 	ball.updateMatrixWorld();
-	
 	ballRight.set(1, 0, 0);
 	ballUp.set(0, 1, 0);
 	ballForward.set(0, 0, 1);
 
-	//ballLocalVelocity.copy(worldForward).negate().add(worldRight).normalize();
-	//ballLocalVelocity.multiplyScalar(50);
+	// PLAYER's GOAL
+	playerGoal.visible = false;
+	playerGoal.position.set(300, 400, 0);
+	playerGoal.scale.set(3, 20, 90);
+	playerGoal.updateMatrixWorld();
+	playerGoalRight.set(1, 0, 0);
+	playerGoalUp.set(0, 1, 0);
+	playerGoalForward.set(0, 0, 1);
+
+	// COMPUTER's GOAL
+	computerGoal.visible = false;
+	computerGoal.position.set(-300, 400, 0);
+	computerGoal.scale.set(3, 20, 90);
+	computerGoal.updateMatrixWorld();
+	computerGoalRight.set(1, 0, 0);
+	computerGoalUp.set(0, 1, 0);
+	computerGoalForward.set(0, 0, 1);
+
+	
 
 	// scene/demo-specific uniforms go here
 	pathTracingUniforms.uCourseSphere_invMatrix = { value: courseSphere_invMatrix };
 	pathTracingUniforms.uGlider1InvMatrix = { value: new THREE.Matrix4() };
 	pathTracingUniforms.uGlider2InvMatrix = { value: new THREE.Matrix4() };
 	pathTracingUniforms.uBallInvMatrix = { value: new THREE.Matrix4() };
+	pathTracingUniforms.uPlayerGoalInvMatrix = { value: new THREE.Matrix4() };
+	pathTracingUniforms.uComputerGoalInvMatrix = { value: new THREE.Matrix4() };
 
 } // end function initSceneData()
 
@@ -791,8 +840,7 @@ function updateVariablesAndUniforms()
 	cameraControlsObject.position.addScaledVector(glider1ThrustersUp, 20);
 	
 	cameraControlsObject.rotation.copy(glider1Thrusters.rotation);
-	if (inputRotationVertical)
-		cameraControlsPitchObject.rotation.x = inputRotationVertical;
+	cameraControlsPitchObject.rotation.x = inputRotationVertical;
 	// rotate glider paraboloid (temporary stand-in for more complex game model), so its apex faces in the forward direction
 	glider1Thrusters.rotateX(-Math.PI * 0.5);
 	glider1Thrusters.updateMatrixWorld();
@@ -801,7 +849,7 @@ function updateVariablesAndUniforms()
 	// send final Glider transform (as an inverted matrix), so that the ray tracer can render it in the correct position and orientation
 	pathTracingUniforms.uGlider1InvMatrix.value.copy(glider1Thrusters.matrixWorld).invert();
 
-	// after rendering, reset glider position back down so that its center is right on the ground (this helps with ray casting against course)
+	// after rendering, reset glider position back down so that its center is right on the ground (this helps with ray casting against large course)
 	glider1Thrusters.position.addScaledVector(glider1ThrustersUp, -8);
 	// after rendering, reset glider rotation to be default upright (aligned with ground surface normal), so that rotation calculation code above will be easier
 	glider1Thrusters.rotateX(Math.PI * 0.5);
@@ -1119,9 +1167,9 @@ function updateVariablesAndUniforms()
 	// cameraControlsObject.position.copy(glider2Thrusters.position);
 	// cameraControlsObject.position.addScaledVector(glider2ThrustersForward, 70);
 	// cameraControlsObject.position.addScaledVector(glider2ThrustersUp, 20);
-	
 	// cameraControlsObject.rotation.copy(glider2Thrusters.rotation);
 	// cameraControlsPitchObject.rotation.x = inputRotationVertical;
+
 	// rotate glider paraboloid (temporary stand-in for more complex game model), so its apex faces in the forward direction
 	glider2Thrusters.rotateX(-Math.PI * 0.5);
 	glider2Thrusters.updateMatrixWorld();
@@ -1387,7 +1435,6 @@ function updateVariablesAndUniforms()
 	ball.updateMatrixWorld();
 
 	
-	// rotate ball so its apex faces up
 	ballYRotateAngle += 1 * frameTime;
 	ballYRotateAngle %= TWO_PI;
 	ball.rotateY(ballYRotateAngle);
@@ -1408,6 +1455,530 @@ function updateVariablesAndUniforms()
 	ball.position.addScaledVector(ballUp, -10);
 	// after rendering, reset ball rotation to be default upright (aligned with ground surface normal), so that rotation calculation code above will be easier
 	//ball.rotateX(Math.PI * 0.5);
+
+
+
+
+	// UPDATE PLAYER's GOAL ///////////////////////////////////////////////////////////////////////////////////
+
+	// if in air, apply gravity (actually anti-gravity: pulls playerGoal down to the large course surface in all directions)
+	if (playerGoalIsInAir)
+	{
+		playerGoalLocalVelocity.y -= (200 * frameTime);
+	}
+
+	playerGoalLocalVelocity.x = 20;
+	
+	playerGoalWorldVelocity.set(0, 0, 0);
+	playerGoalWorldVelocity.addScaledVector(playerGoalRight, playerGoalLocalVelocity.x);
+	playerGoalWorldVelocity.addScaledVector(playerGoalUp, playerGoalLocalVelocity.y);
+	playerGoalWorldVelocity.addScaledVector(playerGoalForward, playerGoalLocalVelocity.z);
+	
+	playerGoal.position.addScaledVector(playerGoalWorldVelocity, frameTime);
+
+
+	// now that the playerGoal has moved, record its new position minus its old position as a line segment
+	playerGoalRaySegment.copy(playerGoal.position);
+	playerGoalRaySegment.sub(playerGoalOldPosition);
+	playerGoalRaySegmentLength = playerGoalRaySegment.length(); // will be used later as an out-of-bounds check
+
+	// now make a ray using the playerGoal's old position (rayOrigin) and the direction it is trying to move in (rayDirection)
+	playerGoalRayOrigin.copy(playerGoalOldPosition); // must use playerGoal's old position for this to work
+	playerGoalRayDirection.copy(playerGoalRaySegment).normalize();
+	rayObjectOrigin.copy(playerGoalRayOrigin);
+	rayObjectDirection.copy(playerGoalRayDirection);
+	// put the rayObjectOrigin and rayObjectDirection in the object space of the large course
+	// the line below is not needed, because the large course never moves (it is fixed in place)
+	//courseSphere_invMatrix.copy(courseSphere.matrixWorld).invert(); // only needed if this object moves
+	rayObjectOrigin.transformRayOriginAsPoint(courseSphere_invMatrix);
+	rayObjectDirection.transformRayDirectionAsDirection(courseSphere_invMatrix);
+	// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-sphere intersection routine
+	testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
+	// If the test t value from the raycast comes back smaller than the distance that the playerGoal is trying to cover during
+	//   this animation frame, that means that the playerGoal's future position would step out of bounds of the course.
+	//   Therefore, we must snap the playerGoal back into position at the raycast intersectionPoint on the course surface.
+	if (testT < playerGoalRaySegmentLength)
+	{
+		playerGoalIsInAir = false;
+		playerGoalLocalVelocity.y = 0;
+		intersectionNormal.transformSurfaceNormal(courseSphere_invMatrix); // bring intersected object-space normal back into world space
+		intersectionNormal.negate(); // normals usually point outward on spheres, but since we are inside the sphere, must flip it
+		intersectionNormal.normalize(); // after the various transformations, make sure normal is a unit-length vector (length of 1)
+		intersectionPoint.getPointAlongRay(playerGoalRayOrigin, playerGoalRayDirection, testT);
+		intersectionPoint.addScaledVector(intersectionNormal, 1);
+		playerGoal.position.copy(intersectionPoint);
+		playerGoalUp.copy(intersectionNormal);
+		playerGoalRight.crossVectors(playerGoalUp, playerGoalForward).normalize();
+		playerGoalForward.crossVectors(playerGoalRight, playerGoalUp).normalize();
+	}
+	if (testT == Infinity)
+	{// bail out and snap the playerGoal back to its old position
+		playerGoal.position.copy(playerGoalOldPosition);
+	}
+
+	
+	
+	// check playerGoal center probe for intersection with course (a ray is cast from playerGoal's position downward towards the floor beneath)
+	
+	playerGoalRayOrigin.copy(playerGoal.position);
+	playerGoalRayDirection.copy(playerGoalUp).negate();
+
+	rayObjectOrigin.copy(playerGoalRayOrigin);
+	rayObjectDirection.copy(playerGoalRayDirection);
+	// put the rayObjectOrigin and rayObjectDirection in the object space of the large course
+	// the line below is not needed, because the large course never moves (it is fixed in place)
+	//courseSphere_invMatrix.copy(courseSphere.matrixWorld).invert(); // only needed if this object moves
+	rayObjectOrigin.transformRayOriginAsPoint(courseSphere_invMatrix);
+	rayObjectDirection.transformRayDirectionAsDirection(courseSphere_invMatrix);
+	// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-sphere intersection routine
+	testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
+	if (testT < Infinity)
+	{
+		intersectionNormal.transformSurfaceNormal(courseSphere_invMatrix); // bring intersected object-space normal back into world space
+		intersectionNormal.negate(); // normals usually point outward on spheres, but since we are inside the sphere, must flip it
+		intersectionNormal.normalize(); // after the various transformations, make sure normal is a unit-length vector (length of 1)
+		intersectionPoint.getPointAlongRay(playerGoalRayOrigin, playerGoalRayDirection, testT);
+		intersectionPoint.addScaledVector(intersectionNormal, 1);
+		playerGoalUp.copy(intersectionNormal);
+		playerGoalRight.crossVectors(playerGoalUp, playerGoalForward).normalize();
+		playerGoalForward.crossVectors(playerGoalRight, playerGoalUp).normalize();	
+	}
+	if (testT < 1)
+	{
+		playerGoalIsInAir = false;
+		playerGoalLocalVelocity.y = 0;
+		playerGoal.position.copy(intersectionPoint);
+	}
+	if (testT > 2)
+	{
+		playerGoalIsInAir = true;
+	}
+		
+	if (testT == Infinity)
+	{// bail out and snap the playerGoal back to its old position
+		playerGoal.position.copy(playerGoalOldPosition);
+	}
+	
+
+	// now check all 4 probes around the playerGoal (forward, backward, right, and left) for collision with the large course
+	
+	// reset nearestT to the max probe distance value
+	nearestT = 1;
+	
+	forwardProbe.copy(playerGoal.position).addScaledVector(playerGoalForward, 1);
+	playerGoalRayOrigin.copy(forwardProbe);
+	playerGoalRayDirection.copy(playerGoalUp).negate();
+
+	rayObjectOrigin.copy(playerGoalRayOrigin);
+	rayObjectDirection.copy(playerGoalRayDirection);
+	// put the rayObjectOrigin and rayObjectDirection in the object space of the large course
+	// the line below is not needed, because the large course never moves (it is fixed in place)
+	//courseSphere_invMatrix.copy(courseSphere.matrixWorld).invert(); // only needed if this object moves
+	rayObjectOrigin.transformRayOriginAsPoint(courseSphere_invMatrix);
+	rayObjectDirection.transformRayDirectionAsDirection(courseSphere_invMatrix);
+	// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-sphere intersection routine
+	testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
+	if (testT < nearestT)
+	{
+		nearestT = testT;
+		intersectionNormal.transformSurfaceNormal(courseSphere_invMatrix); // bring intersected object-space normal back into world space
+		intersectionNormal.negate(); // normals usually point outward on spheres, but since we are inside the sphere, must flip it
+		intersectionNormal.normalize(); // after the various transformations, make sure normal is a unit-length vector (length of 1)
+		intersectionPoint.getPointAlongRay(playerGoalRayOrigin, playerGoalRayDirection, testT);
+		intersectionPoint.addScaledVector(intersectionNormal, 1);
+		forwardProbe.copy(intersectionPoint);
+		
+		playerGoalForward.copy(forwardProbe).sub(playerGoal.position).normalize();
+		playerGoalUp.copy(intersectionNormal);
+		playerGoalRight.crossVectors(playerGoalUp, playerGoalForward).normalize();
+		playerGoalUp.crossVectors(playerGoalForward, playerGoalRight).normalize();
+	}
+
+
+	backwardProbe.copy(playerGoal.position).addScaledVector(playerGoalForward, -1);
+	playerGoalRayOrigin.copy(backwardProbe);
+	playerGoalRayDirection.copy(playerGoalUp).negate();
+
+	rayObjectOrigin.copy(playerGoalRayOrigin);
+	rayObjectDirection.copy(playerGoalRayDirection);
+	// put the rayObjectOrigin and rayObjectDirection in the object space of the large course
+	// the line below is not needed, because the large course never moves (it is fixed in place)
+	//courseSphere_invMatrix.copy(courseSphere.matrixWorld).invert(); // only needed if this object moves
+	rayObjectOrigin.transformRayOriginAsPoint(courseSphere_invMatrix);
+	rayObjectDirection.transformRayDirectionAsDirection(courseSphere_invMatrix);
+	// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-sphere intersection routine
+	testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
+	if (testT < nearestT)
+	{
+		nearestT = testT;
+		intersectionNormal.transformSurfaceNormal(courseSphere_invMatrix); // bring intersected object-space normal back into world space
+		intersectionNormal.negate(); // normals usually point outward on spheres, but since we are inside the sphere, must flip it
+		intersectionNormal.normalize(); // after the various transformations, make sure normal is a unit-length vector (length of 1)
+		intersectionPoint.getPointAlongRay(playerGoalRayOrigin, playerGoalRayDirection, testT);
+		intersectionPoint.addScaledVector(intersectionNormal, 1);
+		backwardProbe.copy(intersectionPoint);
+
+		playerGoalForward.copy(backwardProbe).sub(playerGoal.position).negate().normalize();
+		playerGoalUp.copy(intersectionNormal);
+		playerGoalRight.crossVectors(playerGoalUp, playerGoalForward).normalize();
+		playerGoalUp.crossVectors(playerGoalForward, playerGoalRight).normalize();
+	}
+
+
+	rightProbe.copy(playerGoal.position).addScaledVector(playerGoalRight, 1);
+	playerGoalRayOrigin.copy(rightProbe);
+	playerGoalRayDirection.copy(playerGoalUp).negate();
+
+	rayObjectOrigin.copy(playerGoalRayOrigin);
+	rayObjectDirection.copy(playerGoalRayDirection);
+	// put the rayObjectOrigin and rayObjectDirection in the object space of the large course
+	// the line below is not needed, because the large course never moves (it is fixed in place)
+	//courseSphere_invMatrix.copy(courseSphere.matrixWorld).invert(); // only needed if this object moves
+	rayObjectOrigin.transformRayOriginAsPoint(courseSphere_invMatrix);
+	rayObjectDirection.transformRayDirectionAsDirection(courseSphere_invMatrix);
+	// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-sphere intersection routine
+	testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
+	if (testT < nearestT)
+	{
+		nearestT = testT;
+		intersectionNormal.transformSurfaceNormal(courseSphere_invMatrix); // bring intersected object-space normal back into world space
+		intersectionNormal.negate(); // normals usually point outward on spheres, but since we are inside the sphere, must flip it
+		intersectionNormal.normalize(); // after the various transformations, make sure normal is a unit-length vector (length of 1)
+		intersectionPoint.getPointAlongRay(playerGoalRayOrigin, playerGoalRayDirection, testT);
+		intersectionPoint.addScaledVector(intersectionNormal, 1);
+		rightProbe.copy(intersectionPoint);
+
+		playerGoalRight.copy(rightProbe).sub(playerGoal.position).normalize();
+		playerGoalUp.copy(intersectionNormal);
+		playerGoalForward.crossVectors(playerGoalRight, playerGoalUp).normalize();
+		playerGoalUp.crossVectors(playerGoalForward, playerGoalRight).normalize();
+	}
+
+
+	leftProbe.copy(playerGoal.position).addScaledVector(playerGoalRight, -1);
+	playerGoalRayOrigin.copy(leftProbe);
+	playerGoalRayDirection.copy(playerGoalUp).negate();
+
+	rayObjectOrigin.copy(playerGoalRayOrigin);
+	rayObjectDirection.copy(playerGoalRayDirection);
+	// put the rayObjectOrigin and rayObjectDirection in the object space of the large course
+	// the line below is not needed, because the large course never moves (it is fixed in place)
+	//courseSphere_invMatrix.copy(courseSphere.matrixWorld).invert(); // only needed if this object moves
+	rayObjectOrigin.transformRayOriginAsPoint(courseSphere_invMatrix);
+	rayObjectDirection.transformRayDirectionAsDirection(courseSphere_invMatrix);
+	// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-sphere intersection routine
+	testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
+	if (testT < nearestT)
+	{
+		nearestT = testT;
+		intersectionNormal.transformSurfaceNormal(courseSphere_invMatrix); // bring intersected object-space normal back into world space
+		intersectionNormal.negate(); // normals usually point outward on spheres, but since we are inside the sphere, must flip it
+		intersectionNormal.normalize(); // after the various transformations, make sure normal is a unit-length vector (length of 1)
+		intersectionPoint.getPointAlongRay(playerGoalRayOrigin, playerGoalRayDirection, testT);
+		intersectionPoint.addScaledVector(intersectionNormal, 1);
+		leftProbe.copy(intersectionPoint);
+		
+		playerGoalRight.copy(leftProbe).sub(playerGoal.position).negate().normalize();
+		playerGoalUp.copy(intersectionNormal);
+		playerGoalForward.crossVectors(playerGoalRight, playerGoalUp).normalize();
+		playerGoalUp.crossVectors(playerGoalForward, playerGoalRight).normalize();
+	}
+
+
+	playerGoalOldPosition.copy(playerGoal.position);
+
+
+	
+	playerGoalRotationMatrix.makeBasis(playerGoalRight, playerGoalUp, playerGoalForward);
+	playerGoal.rotation.setFromRotationMatrix(playerGoalRotationMatrix);
+	//playerGoal.updateMatrixWorld();
+
+	// temporarily move playerGoal up out of the ground for final render
+	playerGoal.position.addScaledVector(playerGoalUp, 30);
+	playerGoal.updateMatrixWorld();
+
+	//playerGoalYRotateAngle += 0.1 * frameTime;
+	playerGoalYRotateAngle %= TWO_PI;
+	playerGoal.rotateY(playerGoalYRotateAngle);
+	//playerGoal.rotateX(-Math.PI * 0.5);
+	playerGoal.updateMatrixWorld();
+
+	// if playerGoal is on the ground (touching the large course), set its up velocity to 0
+	if (!playerGoalIsInAir)
+	{
+		playerGoalLocalVelocity.y = 0;
+	}
+
+
+	// send final playerGoal transform (as an inverted matrix), so that the ray tracer can render it in the correct position and orientation
+	pathTracingUniforms.uPlayerGoalInvMatrix.value.copy(playerGoal.matrixWorld).invert();
+
+	// after rendering, reset playerGoal position back down so that its center is right on the ground (this helps with ray casting against course)
+	playerGoal.position.addScaledVector(playerGoalUp, -30);
+	// after rendering, reset playerGoal rotation to be default upright (aligned with ground surface normal), so that rotation calculation code above will be easier
+	//playerGoal.rotateX(Math.PI * 0.5);
+
+
+
+	// UPDATE COMPUTER's GOAL ///////////////////////////////////////////////////////////////////////////////////
+
+	// if in air, apply gravity (actually anti-gravity: pulls computerGoal down to the large course surface in all directions)
+	if (computerGoalIsInAir)
+	{
+		computerGoalLocalVelocity.y -= (200 * frameTime);
+	}
+
+	computerGoalLocalVelocity.x = 20;
+
+	computerGoalWorldVelocity.set(0, 0, 0);
+	computerGoalWorldVelocity.addScaledVector(computerGoalRight, computerGoalLocalVelocity.x);
+	computerGoalWorldVelocity.addScaledVector(computerGoalUp, computerGoalLocalVelocity.y);
+	computerGoalWorldVelocity.addScaledVector(computerGoalForward, computerGoalLocalVelocity.z);
+	
+	computerGoal.position.addScaledVector(computerGoalWorldVelocity, frameTime);
+
+
+	// now that the computerGoal has moved, record its new position minus its old position as a line segment
+	computerGoalRaySegment.copy(computerGoal.position);
+	computerGoalRaySegment.sub(computerGoalOldPosition);
+	computerGoalRaySegmentLength = computerGoalRaySegment.length(); // will be used later as an out-of-bounds check
+
+	// now make a ray using the computerGoal's old position (rayOrigin) and the direction it is trying to move in (rayDirection)
+	computerGoalRayOrigin.copy(computerGoalOldPosition); // must use computerGoal's old position for this to work
+	computerGoalRayDirection.copy(computerGoalRaySegment).normalize();
+	rayObjectOrigin.copy(computerGoalRayOrigin);
+	rayObjectDirection.copy(computerGoalRayDirection);
+	// put the rayObjectOrigin and rayObjectDirection in the object space of the large course
+	// the line below is not needed, because the large course never moves (it is fixed in place)
+	//courseSphere_invMatrix.copy(courseSphere.matrixWorld).invert(); // only needed if this object moves
+	rayObjectOrigin.transformRayOriginAsPoint(courseSphere_invMatrix);
+	rayObjectDirection.transformRayDirectionAsDirection(courseSphere_invMatrix);
+	// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-sphere intersection routine
+	testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
+	// If the test t value from the raycast comes back smaller than the distance that the computerGoal is trying to cover during
+	//   this animation frame, that means that the computerGoal's future position would step out of bounds of the course.
+	//   Therefore, we must snap the computerGoal back into position at the raycast intersectionPoint on the course surface.
+	if (testT < computerGoalRaySegmentLength)
+	{
+		computerGoalIsInAir = false;
+		computerGoalLocalVelocity.y = 0;
+		intersectionNormal.transformSurfaceNormal(courseSphere_invMatrix); // bring intersected object-space normal back into world space
+		intersectionNormal.negate(); // normals usually point outward on spheres, but since we are inside the sphere, must flip it
+		intersectionNormal.normalize(); // after the various transformations, make sure normal is a unit-length vector (length of 1)
+		intersectionPoint.getPointAlongRay(computerGoalRayOrigin, computerGoalRayDirection, testT);
+		intersectionPoint.addScaledVector(intersectionNormal, 1);
+		computerGoal.position.copy(intersectionPoint);
+		computerGoalUp.copy(intersectionNormal);
+		computerGoalRight.crossVectors(computerGoalUp, computerGoalForward).normalize();
+		computerGoalForward.crossVectors(computerGoalRight, computerGoalUp).normalize();
+	}
+	if (testT == Infinity)
+	{// bail out and snap the computerGoal back to its old position
+		computerGoal.position.copy(computerGoalOldPosition);
+	}
+
+	
+	
+	// check computerGoal center probe for intersection with course (a ray is cast from computerGoal's position downward towards the floor beneath)
+	
+	computerGoalRayOrigin.copy(computerGoal.position);
+	computerGoalRayDirection.copy(computerGoalUp).negate();
+
+	rayObjectOrigin.copy(computerGoalRayOrigin);
+	rayObjectDirection.copy(computerGoalRayDirection);
+	// put the rayObjectOrigin and rayObjectDirection in the object space of the large course
+	// the line below is not needed, because the large course never moves (it is fixed in place)
+	//courseSphere_invMatrix.copy(courseSphere.matrixWorld).invert(); // only needed if this object moves
+	rayObjectOrigin.transformRayOriginAsPoint(courseSphere_invMatrix);
+	rayObjectDirection.transformRayDirectionAsDirection(courseSphere_invMatrix);
+	// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-sphere intersection routine
+	testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
+	if (testT < Infinity)
+	{
+		intersectionNormal.transformSurfaceNormal(courseSphere_invMatrix); // bring intersected object-space normal back into world space
+		intersectionNormal.negate(); // normals usually point outward on spheres, but since we are inside the sphere, must flip it
+		intersectionNormal.normalize(); // after the various transformations, make sure normal is a unit-length vector (length of 1)
+		intersectionPoint.getPointAlongRay(computerGoalRayOrigin, computerGoalRayDirection, testT);
+		intersectionPoint.addScaledVector(intersectionNormal, 1);
+		computerGoalUp.copy(intersectionNormal);
+		computerGoalRight.crossVectors(computerGoalUp, computerGoalForward).normalize();
+		computerGoalForward.crossVectors(computerGoalRight, computerGoalUp).normalize();	
+	}
+	if (testT < 1)
+	{
+		computerGoalIsInAir = false;
+		computerGoalLocalVelocity.y = 0;
+		computerGoal.position.copy(intersectionPoint);
+	}
+	if (testT > 2)
+	{
+		computerGoalIsInAir = true;
+	}
+		
+	if (testT == Infinity)
+	{// bail out and snap the computerGoal back to its old position
+		computerGoal.position.copy(computerGoalOldPosition);
+	}
+	
+
+	// now check all 4 probes around the computerGoal (forward, backward, right, and left) for collision with the large course
+	
+	// reset nearestT to the max probe distance value
+	nearestT = 1;
+	
+	forwardProbe.copy(computerGoal.position).addScaledVector(computerGoalForward, 1);
+	computerGoalRayOrigin.copy(forwardProbe);
+	computerGoalRayDirection.copy(computerGoalUp).negate();
+
+	rayObjectOrigin.copy(computerGoalRayOrigin);
+	rayObjectDirection.copy(computerGoalRayDirection);
+	// put the rayObjectOrigin and rayObjectDirection in the object space of the large course
+	// the line below is not needed, because the large course never moves (it is fixed in place)
+	//courseSphere_invMatrix.copy(courseSphere.matrixWorld).invert(); // only needed if this object moves
+	rayObjectOrigin.transformRayOriginAsPoint(courseSphere_invMatrix);
+	rayObjectDirection.transformRayDirectionAsDirection(courseSphere_invMatrix);
+	// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-sphere intersection routine
+	testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
+	if (testT < nearestT)
+	{
+		nearestT = testT;
+		intersectionNormal.transformSurfaceNormal(courseSphere_invMatrix); // bring intersected object-space normal back into world space
+		intersectionNormal.negate(); // normals usually point outward on spheres, but since we are inside the sphere, must flip it
+		intersectionNormal.normalize(); // after the various transformations, make sure normal is a unit-length vector (length of 1)
+		intersectionPoint.getPointAlongRay(computerGoalRayOrigin, computerGoalRayDirection, testT);
+		intersectionPoint.addScaledVector(intersectionNormal, 1);
+		forwardProbe.copy(intersectionPoint);
+		
+		computerGoalForward.copy(forwardProbe).sub(computerGoal.position).normalize();
+		computerGoalUp.copy(intersectionNormal);
+		computerGoalRight.crossVectors(computerGoalUp, computerGoalForward).normalize();
+		computerGoalUp.crossVectors(computerGoalForward, computerGoalRight).normalize();
+	}
+
+
+	backwardProbe.copy(computerGoal.position).addScaledVector(computerGoalForward, -1);
+	computerGoalRayOrigin.copy(backwardProbe);
+	computerGoalRayDirection.copy(computerGoalUp).negate();
+
+	rayObjectOrigin.copy(computerGoalRayOrigin);
+	rayObjectDirection.copy(computerGoalRayDirection);
+	// put the rayObjectOrigin and rayObjectDirection in the object space of the large course
+	// the line below is not needed, because the large course never moves (it is fixed in place)
+	//courseSphere_invMatrix.copy(courseSphere.matrixWorld).invert(); // only needed if this object moves
+	rayObjectOrigin.transformRayOriginAsPoint(courseSphere_invMatrix);
+	rayObjectDirection.transformRayDirectionAsDirection(courseSphere_invMatrix);
+	// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-sphere intersection routine
+	testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
+	if (testT < nearestT)
+	{
+		nearestT = testT;
+		intersectionNormal.transformSurfaceNormal(courseSphere_invMatrix); // bring intersected object-space normal back into world space
+		intersectionNormal.negate(); // normals usually point outward on spheres, but since we are inside the sphere, must flip it
+		intersectionNormal.normalize(); // after the various transformations, make sure normal is a unit-length vector (length of 1)
+		intersectionPoint.getPointAlongRay(computerGoalRayOrigin, computerGoalRayDirection, testT);
+		intersectionPoint.addScaledVector(intersectionNormal, 1);
+		backwardProbe.copy(intersectionPoint);
+
+		computerGoalForward.copy(backwardProbe).sub(computerGoal.position).negate().normalize();
+		computerGoalUp.copy(intersectionNormal);
+		computerGoalRight.crossVectors(computerGoalUp, computerGoalForward).normalize();
+		computerGoalUp.crossVectors(computerGoalForward, computerGoalRight).normalize();
+	}
+
+
+	rightProbe.copy(computerGoal.position).addScaledVector(computerGoalRight, 1);
+	computerGoalRayOrigin.copy(rightProbe);
+	computerGoalRayDirection.copy(computerGoalUp).negate();
+
+	rayObjectOrigin.copy(computerGoalRayOrigin);
+	rayObjectDirection.copy(computerGoalRayDirection);
+	// put the rayObjectOrigin and rayObjectDirection in the object space of the large course
+	// the line below is not needed, because the large course never moves (it is fixed in place)
+	//courseSphere_invMatrix.copy(courseSphere.matrixWorld).invert(); // only needed if this object moves
+	rayObjectOrigin.transformRayOriginAsPoint(courseSphere_invMatrix);
+	rayObjectDirection.transformRayDirectionAsDirection(courseSphere_invMatrix);
+	// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-sphere intersection routine
+	testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
+	if (testT < nearestT)
+	{
+		nearestT = testT;
+		intersectionNormal.transformSurfaceNormal(courseSphere_invMatrix); // bring intersected object-space normal back into world space
+		intersectionNormal.negate(); // normals usually point outward on spheres, but since we are inside the sphere, must flip it
+		intersectionNormal.normalize(); // after the various transformations, make sure normal is a unit-length vector (length of 1)
+		intersectionPoint.getPointAlongRay(computerGoalRayOrigin, computerGoalRayDirection, testT);
+		intersectionPoint.addScaledVector(intersectionNormal, 1);
+		rightProbe.copy(intersectionPoint);
+
+		computerGoalRight.copy(rightProbe).sub(computerGoal.position).normalize();
+		computerGoalUp.copy(intersectionNormal);
+		computerGoalForward.crossVectors(computerGoalRight, computerGoalUp).normalize();
+		computerGoalUp.crossVectors(computerGoalForward, computerGoalRight).normalize();
+	}
+
+
+	leftProbe.copy(computerGoal.position).addScaledVector(computerGoalRight, -1);
+	computerGoalRayOrigin.copy(leftProbe);
+	computerGoalRayDirection.copy(computerGoalUp).negate();
+
+	rayObjectOrigin.copy(computerGoalRayOrigin);
+	rayObjectDirection.copy(computerGoalRayDirection);
+	// put the rayObjectOrigin and rayObjectDirection in the object space of the large course
+	// the line below is not needed, because the large course never moves (it is fixed in place)
+	//courseSphere_invMatrix.copy(courseSphere.matrixWorld).invert(); // only needed if this object moves
+	rayObjectOrigin.transformRayOriginAsPoint(courseSphere_invMatrix);
+	rayObjectDirection.transformRayDirectionAsDirection(courseSphere_invMatrix);
+	// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-sphere intersection routine
+	testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
+	if (testT < nearestT)
+	{
+		nearestT = testT;
+		intersectionNormal.transformSurfaceNormal(courseSphere_invMatrix); // bring intersected object-space normal back into world space
+		intersectionNormal.negate(); // normals usually point outward on spheres, but since we are inside the sphere, must flip it
+		intersectionNormal.normalize(); // after the various transformations, make sure normal is a unit-length vector (length of 1)
+		intersectionPoint.getPointAlongRay(computerGoalRayOrigin, computerGoalRayDirection, testT);
+		intersectionPoint.addScaledVector(intersectionNormal, 1);
+		leftProbe.copy(intersectionPoint);
+		
+		computerGoalRight.copy(leftProbe).sub(computerGoal.position).negate().normalize();
+		computerGoalUp.copy(intersectionNormal);
+		computerGoalForward.crossVectors(computerGoalRight, computerGoalUp).normalize();
+		computerGoalUp.crossVectors(computerGoalForward, computerGoalRight).normalize();
+	}
+
+
+	computerGoalOldPosition.copy(computerGoal.position);
+
+
+	
+	computerGoalRotationMatrix.makeBasis(computerGoalRight, computerGoalUp, computerGoalForward);
+	computerGoal.rotation.setFromRotationMatrix(computerGoalRotationMatrix);
+	//computerGoal.updateMatrixWorld();
+
+	// temporarily move computerGoal up out of the ground for final render
+	computerGoal.position.addScaledVector(computerGoalUp, 30);
+	computerGoal.updateMatrixWorld();
+
+	//computerGoalYRotateAngle += 0.1 * frameTime;
+	computerGoalYRotateAngle %= TWO_PI;
+	computerGoal.rotateY(computerGoalYRotateAngle);
+	//computerGoal.rotateX(-Math.PI * 0.5);
+	computerGoal.updateMatrixWorld();
+
+	// if computerGoal is on the ground (touching the large course), set its up velocity to 0
+	if (!computerGoalIsInAir)
+	{
+		computerGoalLocalVelocity.y = 0;
+	}
+
+
+	// send final computerGoal transform (as an inverted matrix), so that the ray tracer can render it in the correct position and orientation
+	pathTracingUniforms.uComputerGoalInvMatrix.value.copy(computerGoal.matrixWorld).invert();
+
+	// after rendering, reset computerGoal position back down so that its center is right on the ground (this helps with ray casting against course)
+	computerGoal.position.addScaledVector(computerGoalUp, -30);
+	// after rendering, reset computerGoal rotation to be default upright (aligned with ground surface normal), so that rotation calculation code above will be easier
+	//computerGoal.rotateX(Math.PI * 0.5);
+
 
 
 	/* 
