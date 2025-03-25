@@ -62,11 +62,13 @@ let ballUp = new THREE.Vector3();
 let ballForward = new THREE.Vector3();
 let ballLocalVelocity = new THREE.Vector3();
 let ballWorldVelocity = new THREE.Vector3();
+let ballStartingPosition = new THREE.Vector3();
 let ballIsInAir = true;
 let ballYRotateAngle = 0;
 
 let playerGoal = new THREE.Object3D();
 let playerGoalRotationMatrix = new THREE.Matrix4();
+let playerGoal_invMatrix = new THREE.Matrix4();
 let playerGoalRayOrigin = new THREE.Vector3();
 let playerGoalRayDirection = new THREE.Vector3();
 let playerGoalOldPosition = new THREE.Vector3();
@@ -82,6 +84,7 @@ let playerGoalYRotateAngle = 0;
 
 let computerGoal = new THREE.Object3D();
 let computerGoalRotationMatrix = new THREE.Matrix4();
+let computerGoal_invMatrix = new THREE.Matrix4();
 let computerGoalRayOrigin = new THREE.Vector3();
 let computerGoalRayDirection = new THREE.Vector3();
 let computerGoalOldPosition = new THREE.Vector3();
@@ -151,7 +154,7 @@ THREE.Vector3.prototype.getPointAlongRay = function(rayOrigin, rayDirection, t)
 
 let vx, vy, vz, d;
 /*
-Vector3.transformRayOriginAsPoint(m4_MatrixInverse) is a method that is called on a THREE.Vector3 
+Vector3.transformAsPoint(m4_MatrixInverse) is a method that is called on a THREE.Vector3 
 parameters: this method takes 1 parameter - a 'm4_MatrixInverse' (of the type THREE.Matrix4)
 return: this method returns the Vector3 that this method was called on, but now this Vector3 has
 been changed by transforming it as a 3D point.
@@ -162,7 +165,7 @@ changed object (its object space).  After the ray's origin is transformed with t
 Mathematically, this is accomplished by applying the transformed object's matrixInverse to the rayOrigin as a 3D point.  The result is a changed Vector3
 that will be used as the new rayOrigin when performing a raycast against a transformed unit-shape (using a simple unit-shape raycast routine, which is easier).
 */
-THREE.Vector3.prototype.transformRayOriginAsPoint = function(m4_MatrixInverse)
+THREE.Vector3.prototype.transformAsPoint = function(m4_MatrixInverse)
 {
 	const el = m4_MatrixInverse.elements;
 	vx = this.x;
@@ -178,7 +181,7 @@ THREE.Vector3.prototype.transformRayOriginAsPoint = function(m4_MatrixInverse)
 };
 
 /*
-Vector3.transformRayDirectionAsDirection(m4_MatrixInverse) is a method that is called on a THREE.Vector3 
+Vector3.transformAsDirection(m4_MatrixInverse) is a method that is called on a THREE.Vector3 
 parameters: this method takes 1 parameter - a 'm4_MatrixInverse' (of the type THREE.Matrix4)
 return: this method returns the Vector3 that this method was called on, but now this Vector3 has
 been changed by transforming it as a pure direction vector (like a small, unit-size arrow pointing in 3D space).
@@ -191,7 +194,7 @@ the one above because it only operates on the directional part of the supplied m
 Vector3 that will be used as the new rayDirection when performing a raycast against a transformed unit-shape (using a simple unit-shape raycast routine, which is easier).
 */
 
-THREE.Vector3.prototype.transformRayDirectionAsDirection = function(m4_MatrixInverse)
+THREE.Vector3.prototype.transformAsDirection = function(m4_MatrixInverse)
 {
 	const el = m4_MatrixInverse.elements;
 	vx = this.x;
@@ -257,7 +260,7 @@ let a = 0;
 let b = 0;
 let c = 0;
 
-function intersectUnitSphere(rayO, rayD, nl)
+function intersectUnitSphere(rayO, rayD, normal)
 {
 	// Unit Sphere implicit equation
 	// X^2 + Y^2 + Z^2 - 1 = 0
@@ -272,15 +275,48 @@ function intersectUnitSphere(rayO, rayD, nl)
 
 	if (t0 > 0)
 	{
-		nl.getPointAlongRay(rayO, rayD, t0);
+		normal.getPointAlongRay(rayO, rayD, t0);
 		return t0;
 	}
 	if (t1 > 0)
 	{
-		nl.getPointAlongRay(rayO, rayD, t1);
+		normal.getPointAlongRay(rayO, rayD, t1);
 		return t1;
 	}
 	
+	return Infinity;
+}
+
+
+let inverseDir = new THREE.Vector3();
+let near = new THREE.Vector3();
+let far = new THREE.Vector3();
+let tmin = new THREE.Vector3();
+let tmax = new THREE.Vector3();
+
+function raycastUnitBox(rayO, rayD)
+{
+	inverseDir.set(1 / rayD.x, 1 / rayD.y, 1 / rayD.z);
+	near.set(-1,-1,-1).sub(rayO);
+	near.multiply(inverseDir);
+	far.set(1, 1, 1).sub(rayO);
+	far.multiply(inverseDir);
+	tmin.copy(near).min(far);
+	tmax.copy(near).max(far);
+	t0 = Math.max(Math.max(tmin.x, tmin.y), tmin.z);
+	t1 = Math.min(Math.min(tmax.x, tmax.y), tmax.z);
+	if (t0 > t1)
+		return Infinity;
+
+	if (t0 > 0.0) // if we are outside the box
+	{
+		return t0;
+	}
+	if (t1 > 0.0) // if we are inside the box
+	{
+		return t1;
+	}
+
 	return Infinity;
 }
 
@@ -336,7 +372,8 @@ function initSceneData()
 
 	// BALL
 	ball.visible = false;
-	ball.position.set(0, 300, 0);
+	ballStartingPosition.set(0, 300, 0);
+	ball.position.copy(ballStartingPosition);
 	ball.scale.set(16, 6, 16);
 	ball.updateMatrixWorld();
 	ballRight.set(1, 0, 0);
@@ -614,8 +651,8 @@ function updateVariablesAndUniforms()
 	// put the rayObjectOrigin and rayObjectDirection in the object space of the large course
 	// the line below is not needed, because the large course never moves (it is fixed in place)
 	//courseSphere_invMatrix.copy(courseSphere.matrixWorld).invert(); // only needed if this object moves
-	rayObjectOrigin.transformRayOriginAsPoint(courseSphere_invMatrix);
-	rayObjectDirection.transformRayDirectionAsDirection(courseSphere_invMatrix);
+	rayObjectOrigin.transformAsPoint(courseSphere_invMatrix);
+	rayObjectDirection.transformAsDirection(courseSphere_invMatrix);
 	// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-sphere intersection routine
 	testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
 	// If the test t value from the raycast comes back smaller than the distance that the glider is trying to cover during
@@ -652,8 +689,8 @@ function updateVariablesAndUniforms()
 	// put the rayObjectOrigin and rayObjectDirection in the object space of the large course
 	// the line below is not needed, because the large course never moves (it is fixed in place)
 	//courseSphere_invMatrix.copy(courseSphere.matrixWorld).invert(); // only needed if this object moves
-	rayObjectOrigin.transformRayOriginAsPoint(courseSphere_invMatrix);
-	rayObjectDirection.transformRayDirectionAsDirection(courseSphere_invMatrix);
+	rayObjectOrigin.transformAsPoint(courseSphere_invMatrix);
+	rayObjectDirection.transformAsDirection(courseSphere_invMatrix);
 	// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-sphere intersection routine
 	testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
 	if (testT < Infinity)
@@ -698,8 +735,8 @@ function updateVariablesAndUniforms()
 	// put the rayObjectOrigin and rayObjectDirection in the object space of the large course
 	// the line below is not needed, because the large course never moves (it is fixed in place)
 	//courseSphere_invMatrix.copy(courseSphere.matrixWorld).invert(); // only needed if this object moves
-	rayObjectOrigin.transformRayOriginAsPoint(courseSphere_invMatrix);
-	rayObjectDirection.transformRayDirectionAsDirection(courseSphere_invMatrix);
+	rayObjectOrigin.transformAsPoint(courseSphere_invMatrix);
+	rayObjectDirection.transformAsDirection(courseSphere_invMatrix);
 	// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-sphere intersection routine
 	testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
 	if (testT < nearestT)
@@ -728,8 +765,8 @@ function updateVariablesAndUniforms()
 	// put the rayObjectOrigin and rayObjectDirection in the object space of the large course
 	// the line below is not needed, because the large course never moves (it is fixed in place)
 	//courseSphere_invMatrix.copy(courseSphere.matrixWorld).invert(); // only needed if this object moves
-	rayObjectOrigin.transformRayOriginAsPoint(courseSphere_invMatrix);
-	rayObjectDirection.transformRayDirectionAsDirection(courseSphere_invMatrix);
+	rayObjectOrigin.transformAsPoint(courseSphere_invMatrix);
+	rayObjectDirection.transformAsDirection(courseSphere_invMatrix);
 	// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-sphere intersection routine
 	testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
 	if (testT < nearestT)
@@ -758,8 +795,8 @@ function updateVariablesAndUniforms()
 	// put the rayObjectOrigin and rayObjectDirection in the object space of the large course
 	// the line below is not needed, because the large course never moves (it is fixed in place)
 	//courseSphere_invMatrix.copy(courseSphere.matrixWorld).invert(); // only needed if this object moves
-	rayObjectOrigin.transformRayOriginAsPoint(courseSphere_invMatrix);
-	rayObjectDirection.transformRayDirectionAsDirection(courseSphere_invMatrix);
+	rayObjectOrigin.transformAsPoint(courseSphere_invMatrix);
+	rayObjectDirection.transformAsDirection(courseSphere_invMatrix);
 	// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-sphere intersection routine
 	testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
 	if (testT < nearestT)
@@ -788,8 +825,8 @@ function updateVariablesAndUniforms()
 	// put the rayObjectOrigin and rayObjectDirection in the object space of the large course
 	// the line below is not needed, because the large course never moves (it is fixed in place)
 	//courseSphere_invMatrix.copy(courseSphere.matrixWorld).invert(); // only needed if this object moves
-	rayObjectOrigin.transformRayOriginAsPoint(courseSphere_invMatrix);
-	rayObjectDirection.transformRayDirectionAsDirection(courseSphere_invMatrix);
+	rayObjectOrigin.transformAsPoint(courseSphere_invMatrix);
+	rayObjectDirection.transformAsDirection(courseSphere_invMatrix);
 	// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-sphere intersection routine
 	testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
 	if (testT < nearestT)
@@ -942,8 +979,8 @@ function updateVariablesAndUniforms()
 	// put the rayObjectOrigin and rayObjectDirection in the object space of the large course
 	// the line below is not needed, because the large course never moves (it is fixed in place)
 	//courseSphere_invMatrix.copy(courseSphere.matrixWorld).invert(); // only needed if this object moves
-	rayObjectOrigin.transformRayOriginAsPoint(courseSphere_invMatrix);
-	rayObjectDirection.transformRayDirectionAsDirection(courseSphere_invMatrix);
+	rayObjectOrigin.transformAsPoint(courseSphere_invMatrix);
+	rayObjectDirection.transformAsDirection(courseSphere_invMatrix);
 	// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-sphere intersection routine
 	testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
 	// If the test t value from the raycast comes back smaller than the distance that the glider is trying to cover during
@@ -980,8 +1017,8 @@ function updateVariablesAndUniforms()
 	// put the rayObjectOrigin and rayObjectDirection in the object space of the large course
 	// the line below is not needed, because the large course never moves (it is fixed in place)
 	//courseSphere_invMatrix.copy(courseSphere.matrixWorld).invert(); // only needed if this object moves
-	rayObjectOrigin.transformRayOriginAsPoint(courseSphere_invMatrix);
-	rayObjectDirection.transformRayDirectionAsDirection(courseSphere_invMatrix);
+	rayObjectOrigin.transformAsPoint(courseSphere_invMatrix);
+	rayObjectDirection.transformAsDirection(courseSphere_invMatrix);
 	// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-sphere intersection routine
 	testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
 	if (testT < Infinity)
@@ -1026,8 +1063,8 @@ function updateVariablesAndUniforms()
 	// put the rayObjectOrigin and rayObjectDirection in the object space of the large course
 	// the line below is not needed, because the large course never moves (it is fixed in place)
 	//courseSphere_invMatrix.copy(courseSphere.matrixWorld).invert(); // only needed if this object moves
-	rayObjectOrigin.transformRayOriginAsPoint(courseSphere_invMatrix);
-	rayObjectDirection.transformRayDirectionAsDirection(courseSphere_invMatrix);
+	rayObjectOrigin.transformAsPoint(courseSphere_invMatrix);
+	rayObjectDirection.transformAsDirection(courseSphere_invMatrix);
 	// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-sphere intersection routine
 	testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
 	if (testT < nearestT)
@@ -1056,8 +1093,8 @@ function updateVariablesAndUniforms()
 	// put the rayObjectOrigin and rayObjectDirection in the object space of the large course
 	// the line below is not needed, because the large course never moves (it is fixed in place)
 	//courseSphere_invMatrix.copy(courseSphere.matrixWorld).invert(); // only needed if this object moves
-	rayObjectOrigin.transformRayOriginAsPoint(courseSphere_invMatrix);
-	rayObjectDirection.transformRayDirectionAsDirection(courseSphere_invMatrix);
+	rayObjectOrigin.transformAsPoint(courseSphere_invMatrix);
+	rayObjectDirection.transformAsDirection(courseSphere_invMatrix);
 	// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-sphere intersection routine
 	testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
 	if (testT < nearestT)
@@ -1086,8 +1123,8 @@ function updateVariablesAndUniforms()
 	// put the rayObjectOrigin and rayObjectDirection in the object space of the large course
 	// the line below is not needed, because the large course never moves (it is fixed in place)
 	//courseSphere_invMatrix.copy(courseSphere.matrixWorld).invert(); // only needed if this object moves
-	rayObjectOrigin.transformRayOriginAsPoint(courseSphere_invMatrix);
-	rayObjectDirection.transformRayDirectionAsDirection(courseSphere_invMatrix);
+	rayObjectOrigin.transformAsPoint(courseSphere_invMatrix);
+	rayObjectDirection.transformAsDirection(courseSphere_invMatrix);
 	// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-sphere intersection routine
 	testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
 	if (testT < nearestT)
@@ -1116,8 +1153,8 @@ function updateVariablesAndUniforms()
 	// put the rayObjectOrigin and rayObjectDirection in the object space of the large course
 	// the line below is not needed, because the large course never moves (it is fixed in place)
 	//courseSphere_invMatrix.copy(courseSphere.matrixWorld).invert(); // only needed if this object moves
-	rayObjectOrigin.transformRayOriginAsPoint(courseSphere_invMatrix);
-	rayObjectDirection.transformRayDirectionAsDirection(courseSphere_invMatrix);
+	rayObjectOrigin.transformAsPoint(courseSphere_invMatrix);
+	rayObjectDirection.transformAsDirection(courseSphere_invMatrix);
 	// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-sphere intersection routine
 	testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
 	if (testT < nearestT)
@@ -1213,13 +1250,66 @@ function updateVariablesAndUniforms()
 	// now make a ray using the ball's old position (rayOrigin) and the direction it is trying to move in (rayDirection)
 	ballRayOrigin.copy(ballOldPosition); // must use ball's old position for this to work
 	ballRayDirection.copy(ballRaySegment).normalize();
+
+	// check for collision between ball and computer A.I.'s goal (red goal)
+
+	rayObjectOrigin.copy(ballRayOrigin);
+	rayObjectOrigin.addScaledVector(ballUp, 10);
+	rayObjectDirection.copy(ballRayDirection);
+	// put the rayObjectOrigin and rayObjectDirection in the object space of the computer A.I.'s goal box
+	computerGoal_invMatrix.copy(computerGoal.matrixWorld).invert(); // only needed if this object moves
+	rayObjectOrigin.transformAsPoint(computerGoal_invMatrix);
+	rayObjectDirection.transformAsDirection(computerGoal_invMatrix);
+	// now that the ray's origin and direction are in object space, we can raycast against the goal box using a more simple unit-box intersection routine
+	testT = raycastUnitBox(rayObjectOrigin, rayObjectDirection);
+	// If the test t value from the raycast comes back smaller than the distance that the ball is trying to cover during
+	//   this animation frame, that means that the ball's future position would step beyond the goal box.
+	//   Therefore, a goal has been made - reset the ball to its starting position
+	if (testT < ballRaySegmentLength)
+	{
+		ballIsInAir = true;
+		ballLocalVelocity.x = 0; ballLocalVelocity.y = 0; ballLocalVelocity.z = 0;
+		ball.position.copy(ballStartingPosition);
+		ball.updateMatrixWorld();
+		ballRight.set(1, 0, 0);
+		ballUp.set(0, 1, 0);
+		ballForward.set(0, 0, 1);
+	}
+
+	// check for collision between ball and player's goal (blue goal)
+
+	rayObjectOrigin.copy(ballRayOrigin);
+	rayObjectOrigin.addScaledVector(ballUp, 10);
+	rayObjectDirection.copy(ballRayDirection);
+	// put the rayObjectOrigin and rayObjectDirection in the object space of the player's goal box
+	playerGoal_invMatrix.copy(playerGoal.matrixWorld).invert(); // only needed if this object moves
+	rayObjectOrigin.transformAsPoint(playerGoal_invMatrix);
+	rayObjectDirection.transformAsDirection(playerGoal_invMatrix);
+	// now that the ray's origin and direction are in object space, we can raycast against the goal box using a more simple unit-box intersection routine
+	testT = raycastUnitBox(rayObjectOrigin, rayObjectDirection);
+	// If the test t value from the raycast comes back smaller than the distance that the ball is trying to cover during
+	//   this animation frame, that means that the ball's future position would step beyond the goal box.
+	//   Therefore, a goal has been made - reset the ball to its starting position
+	if (testT < ballRaySegmentLength)
+	{
+		ballIsInAir = true;
+		ballLocalVelocity.x = 0; ballLocalVelocity.y = 0; ballLocalVelocity.z = 0;
+		ball.position.copy(ballStartingPosition);
+		ball.updateMatrixWorld();
+		ballRight.set(1, 0, 0);
+		ballUp.set(0, 1, 0);
+		ballForward.set(0, 0, 1);
+	}
+
+
+
 	rayObjectOrigin.copy(ballRayOrigin);
 	rayObjectDirection.copy(ballRayDirection);
 	// put the rayObjectOrigin and rayObjectDirection in the object space of the large course
 	// the line below is not needed, because the large course never moves (it is fixed in place)
 	//courseSphere_invMatrix.copy(courseSphere.matrixWorld).invert(); // only needed if this object moves
-	rayObjectOrigin.transformRayOriginAsPoint(courseSphere_invMatrix);
-	rayObjectDirection.transformRayDirectionAsDirection(courseSphere_invMatrix);
+	rayObjectOrigin.transformAsPoint(courseSphere_invMatrix);
+	rayObjectDirection.transformAsDirection(courseSphere_invMatrix);
 	// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-sphere intersection routine
 	testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
 	// If the test t value from the raycast comes back smaller than the distance that the ball is trying to cover during
@@ -1256,8 +1346,8 @@ function updateVariablesAndUniforms()
 	// put the rayObjectOrigin and rayObjectDirection in the object space of the large course
 	// the line below is not needed, because the large course never moves (it is fixed in place)
 	//courseSphere_invMatrix.copy(courseSphere.matrixWorld).invert(); // only needed if this object moves
-	rayObjectOrigin.transformRayOriginAsPoint(courseSphere_invMatrix);
-	rayObjectDirection.transformRayDirectionAsDirection(courseSphere_invMatrix);
+	rayObjectOrigin.transformAsPoint(courseSphere_invMatrix);
+	rayObjectDirection.transformAsDirection(courseSphere_invMatrix);
 	// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-sphere intersection routine
 	testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
 	if (testT < Infinity)
@@ -1302,8 +1392,8 @@ function updateVariablesAndUniforms()
 	// put the rayObjectOrigin and rayObjectDirection in the object space of the large course
 	// the line below is not needed, because the large course never moves (it is fixed in place)
 	//courseSphere_invMatrix.copy(courseSphere.matrixWorld).invert(); // only needed if this object moves
-	rayObjectOrigin.transformRayOriginAsPoint(courseSphere_invMatrix);
-	rayObjectDirection.transformRayDirectionAsDirection(courseSphere_invMatrix);
+	rayObjectOrigin.transformAsPoint(courseSphere_invMatrix);
+	rayObjectDirection.transformAsDirection(courseSphere_invMatrix);
 	// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-sphere intersection routine
 	testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
 	if (testT < nearestT)
@@ -1332,8 +1422,8 @@ function updateVariablesAndUniforms()
 	// put the rayObjectOrigin and rayObjectDirection in the object space of the large course
 	// the line below is not needed, because the large course never moves (it is fixed in place)
 	//courseSphere_invMatrix.copy(courseSphere.matrixWorld).invert(); // only needed if this object moves
-	rayObjectOrigin.transformRayOriginAsPoint(courseSphere_invMatrix);
-	rayObjectDirection.transformRayDirectionAsDirection(courseSphere_invMatrix);
+	rayObjectOrigin.transformAsPoint(courseSphere_invMatrix);
+	rayObjectDirection.transformAsDirection(courseSphere_invMatrix);
 	// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-sphere intersection routine
 	testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
 	if (testT < nearestT)
@@ -1362,8 +1452,8 @@ function updateVariablesAndUniforms()
 	// put the rayObjectOrigin and rayObjectDirection in the object space of the large course
 	// the line below is not needed, because the large course never moves (it is fixed in place)
 	//courseSphere_invMatrix.copy(courseSphere.matrixWorld).invert(); // only needed if this object moves
-	rayObjectOrigin.transformRayOriginAsPoint(courseSphere_invMatrix);
-	rayObjectDirection.transformRayDirectionAsDirection(courseSphere_invMatrix);
+	rayObjectOrigin.transformAsPoint(courseSphere_invMatrix);
+	rayObjectDirection.transformAsDirection(courseSphere_invMatrix);
 	// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-sphere intersection routine
 	testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
 	if (testT < nearestT)
@@ -1392,8 +1482,8 @@ function updateVariablesAndUniforms()
 	// put the rayObjectOrigin and rayObjectDirection in the object space of the large course
 	// the line below is not needed, because the large course never moves (it is fixed in place)
 	//courseSphere_invMatrix.copy(courseSphere.matrixWorld).invert(); // only needed if this object moves
-	rayObjectOrigin.transformRayOriginAsPoint(courseSphere_invMatrix);
-	rayObjectDirection.transformRayDirectionAsDirection(courseSphere_invMatrix);
+	rayObjectOrigin.transformAsPoint(courseSphere_invMatrix);
+	rayObjectDirection.transformAsDirection(courseSphere_invMatrix);
 	// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-sphere intersection routine
 	testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
 	if (testT < nearestT)
@@ -1490,8 +1580,8 @@ function updateVariablesAndUniforms()
 	// put the rayObjectOrigin and rayObjectDirection in the object space of the large course
 	// the line below is not needed, because the large course never moves (it is fixed in place)
 	//courseSphere_invMatrix.copy(courseSphere.matrixWorld).invert(); // only needed if this object moves
-	rayObjectOrigin.transformRayOriginAsPoint(courseSphere_invMatrix);
-	rayObjectDirection.transformRayDirectionAsDirection(courseSphere_invMatrix);
+	rayObjectOrigin.transformAsPoint(courseSphere_invMatrix);
+	rayObjectDirection.transformAsDirection(courseSphere_invMatrix);
 	// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-sphere intersection routine
 	testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
 	// If the test t value from the raycast comes back smaller than the distance that the playerGoal is trying to cover during
@@ -1528,8 +1618,8 @@ function updateVariablesAndUniforms()
 	// put the rayObjectOrigin and rayObjectDirection in the object space of the large course
 	// the line below is not needed, because the large course never moves (it is fixed in place)
 	//courseSphere_invMatrix.copy(courseSphere.matrixWorld).invert(); // only needed if this object moves
-	rayObjectOrigin.transformRayOriginAsPoint(courseSphere_invMatrix);
-	rayObjectDirection.transformRayDirectionAsDirection(courseSphere_invMatrix);
+	rayObjectOrigin.transformAsPoint(courseSphere_invMatrix);
+	rayObjectDirection.transformAsDirection(courseSphere_invMatrix);
 	// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-sphere intersection routine
 	testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
 	if (testT < Infinity)
@@ -1574,8 +1664,8 @@ function updateVariablesAndUniforms()
 	// put the rayObjectOrigin and rayObjectDirection in the object space of the large course
 	// the line below is not needed, because the large course never moves (it is fixed in place)
 	//courseSphere_invMatrix.copy(courseSphere.matrixWorld).invert(); // only needed if this object moves
-	rayObjectOrigin.transformRayOriginAsPoint(courseSphere_invMatrix);
-	rayObjectDirection.transformRayDirectionAsDirection(courseSphere_invMatrix);
+	rayObjectOrigin.transformAsPoint(courseSphere_invMatrix);
+	rayObjectDirection.transformAsDirection(courseSphere_invMatrix);
 	// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-sphere intersection routine
 	testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
 	if (testT < nearestT)
@@ -1604,8 +1694,8 @@ function updateVariablesAndUniforms()
 	// put the rayObjectOrigin and rayObjectDirection in the object space of the large course
 	// the line below is not needed, because the large course never moves (it is fixed in place)
 	//courseSphere_invMatrix.copy(courseSphere.matrixWorld).invert(); // only needed if this object moves
-	rayObjectOrigin.transformRayOriginAsPoint(courseSphere_invMatrix);
-	rayObjectDirection.transformRayDirectionAsDirection(courseSphere_invMatrix);
+	rayObjectOrigin.transformAsPoint(courseSphere_invMatrix);
+	rayObjectDirection.transformAsDirection(courseSphere_invMatrix);
 	// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-sphere intersection routine
 	testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
 	if (testT < nearestT)
@@ -1634,8 +1724,8 @@ function updateVariablesAndUniforms()
 	// put the rayObjectOrigin and rayObjectDirection in the object space of the large course
 	// the line below is not needed, because the large course never moves (it is fixed in place)
 	//courseSphere_invMatrix.copy(courseSphere.matrixWorld).invert(); // only needed if this object moves
-	rayObjectOrigin.transformRayOriginAsPoint(courseSphere_invMatrix);
-	rayObjectDirection.transformRayDirectionAsDirection(courseSphere_invMatrix);
+	rayObjectOrigin.transformAsPoint(courseSphere_invMatrix);
+	rayObjectDirection.transformAsDirection(courseSphere_invMatrix);
 	// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-sphere intersection routine
 	testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
 	if (testT < nearestT)
@@ -1664,8 +1754,8 @@ function updateVariablesAndUniforms()
 	// put the rayObjectOrigin and rayObjectDirection in the object space of the large course
 	// the line below is not needed, because the large course never moves (it is fixed in place)
 	//courseSphere_invMatrix.copy(courseSphere.matrixWorld).invert(); // only needed if this object moves
-	rayObjectOrigin.transformRayOriginAsPoint(courseSphere_invMatrix);
-	rayObjectDirection.transformRayDirectionAsDirection(courseSphere_invMatrix);
+	rayObjectOrigin.transformAsPoint(courseSphere_invMatrix);
+	rayObjectDirection.transformAsDirection(courseSphere_invMatrix);
 	// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-sphere intersection routine
 	testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
 	if (testT < nearestT)
@@ -1751,8 +1841,8 @@ function updateVariablesAndUniforms()
 	// put the rayObjectOrigin and rayObjectDirection in the object space of the large course
 	// the line below is not needed, because the large course never moves (it is fixed in place)
 	//courseSphere_invMatrix.copy(courseSphere.matrixWorld).invert(); // only needed if this object moves
-	rayObjectOrigin.transformRayOriginAsPoint(courseSphere_invMatrix);
-	rayObjectDirection.transformRayDirectionAsDirection(courseSphere_invMatrix);
+	rayObjectOrigin.transformAsPoint(courseSphere_invMatrix);
+	rayObjectDirection.transformAsDirection(courseSphere_invMatrix);
 	// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-sphere intersection routine
 	testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
 	// If the test t value from the raycast comes back smaller than the distance that the computerGoal is trying to cover during
@@ -1789,8 +1879,8 @@ function updateVariablesAndUniforms()
 	// put the rayObjectOrigin and rayObjectDirection in the object space of the large course
 	// the line below is not needed, because the large course never moves (it is fixed in place)
 	//courseSphere_invMatrix.copy(courseSphere.matrixWorld).invert(); // only needed if this object moves
-	rayObjectOrigin.transformRayOriginAsPoint(courseSphere_invMatrix);
-	rayObjectDirection.transformRayDirectionAsDirection(courseSphere_invMatrix);
+	rayObjectOrigin.transformAsPoint(courseSphere_invMatrix);
+	rayObjectDirection.transformAsDirection(courseSphere_invMatrix);
 	// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-sphere intersection routine
 	testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
 	if (testT < Infinity)
@@ -1835,8 +1925,8 @@ function updateVariablesAndUniforms()
 	// put the rayObjectOrigin and rayObjectDirection in the object space of the large course
 	// the line below is not needed, because the large course never moves (it is fixed in place)
 	//courseSphere_invMatrix.copy(courseSphere.matrixWorld).invert(); // only needed if this object moves
-	rayObjectOrigin.transformRayOriginAsPoint(courseSphere_invMatrix);
-	rayObjectDirection.transformRayDirectionAsDirection(courseSphere_invMatrix);
+	rayObjectOrigin.transformAsPoint(courseSphere_invMatrix);
+	rayObjectDirection.transformAsDirection(courseSphere_invMatrix);
 	// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-sphere intersection routine
 	testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
 	if (testT < nearestT)
@@ -1865,8 +1955,8 @@ function updateVariablesAndUniforms()
 	// put the rayObjectOrigin and rayObjectDirection in the object space of the large course
 	// the line below is not needed, because the large course never moves (it is fixed in place)
 	//courseSphere_invMatrix.copy(courseSphere.matrixWorld).invert(); // only needed if this object moves
-	rayObjectOrigin.transformRayOriginAsPoint(courseSphere_invMatrix);
-	rayObjectDirection.transformRayDirectionAsDirection(courseSphere_invMatrix);
+	rayObjectOrigin.transformAsPoint(courseSphere_invMatrix);
+	rayObjectDirection.transformAsDirection(courseSphere_invMatrix);
 	// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-sphere intersection routine
 	testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
 	if (testT < nearestT)
@@ -1895,8 +1985,8 @@ function updateVariablesAndUniforms()
 	// put the rayObjectOrigin and rayObjectDirection in the object space of the large course
 	// the line below is not needed, because the large course never moves (it is fixed in place)
 	//courseSphere_invMatrix.copy(courseSphere.matrixWorld).invert(); // only needed if this object moves
-	rayObjectOrigin.transformRayOriginAsPoint(courseSphere_invMatrix);
-	rayObjectDirection.transformRayDirectionAsDirection(courseSphere_invMatrix);
+	rayObjectOrigin.transformAsPoint(courseSphere_invMatrix);
+	rayObjectDirection.transformAsDirection(courseSphere_invMatrix);
 	// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-sphere intersection routine
 	testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
 	if (testT < nearestT)
@@ -1925,8 +2015,8 @@ function updateVariablesAndUniforms()
 	// put the rayObjectOrigin and rayObjectDirection in the object space of the large course
 	// the line below is not needed, because the large course never moves (it is fixed in place)
 	//courseSphere_invMatrix.copy(courseSphere.matrixWorld).invert(); // only needed if this object moves
-	rayObjectOrigin.transformRayOriginAsPoint(courseSphere_invMatrix);
-	rayObjectDirection.transformRayDirectionAsDirection(courseSphere_invMatrix);
+	rayObjectOrigin.transformAsPoint(courseSphere_invMatrix);
+	rayObjectDirection.transformAsDirection(courseSphere_invMatrix);
 	// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-sphere intersection routine
 	testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
 	if (testT < nearestT)
