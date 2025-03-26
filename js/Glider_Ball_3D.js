@@ -52,6 +52,7 @@ let glider2IsAcceleratingForward = false;
 
 let ball = new THREE.Object3D();
 let ballRotationMatrix = new THREE.Matrix4();
+let ball_invMatrix = new THREE.Matrix4();
 let ballRayOrigin = new THREE.Vector3();
 let ballRayDirection = new THREE.Vector3();
 let ballOldPosition = new THREE.Vector3();
@@ -309,13 +310,10 @@ function raycastUnitBox(rayO, rayD)
 		return Infinity;
 
 	if (t0 > 0.0) // if we are outside the box
-	{
 		return t0;
-	}
+
 	if (t1 > 0.0) // if we are inside the box
-	{
 		return t1;
-	}
 
 	return Infinity;
 }
@@ -337,7 +335,7 @@ function initSceneData()
 
 	// pixelRatio is resolution - range: 0.5(half resolution) to 1.0(full resolution)
 	pixelRatio = mouseControl ? 0.75 : 0.75;
-	//pixelRatio = 0.5; // for TESTING
+	
 	EPS_intersect = 0.01;
 
 	// set camera's field of view
@@ -346,7 +344,7 @@ function initSceneData()
 
 	// COURSE (Sphere-shaped)
 	courseSphere.visible = false; // don't need Three.js to render this - we will ray trace it ourselves
-	courseSphere.position.set(0, 400, 0);
+	courseSphere.position.set(0, 0, 0);
 	courseSphere.scale.set(400, 400, 400);
 	// must call this each time we change an object's transform
 	courseSphere.updateMatrixWorld();
@@ -354,7 +352,7 @@ function initSceneData()
 
 	// GLIDER 1 (player)
 	glider1Base.visible = false;
-	glider1Base.position.set(0, 300, 40);
+	glider1Base.position.set(0, -100, 40);
 	glider1Base.scale.set(20, 22, 6);
 	glider1Base.updateMatrixWorld();
 	glider1BaseRight.set(1, 0, 0);
@@ -363,7 +361,7 @@ function initSceneData()
 
 	// GLIDER 2 (AI controlled)
 	glider2Base.visible = false;
-	glider2Base.position.set(0, 300, -40);
+	glider2Base.position.set(0, -100, -40);
 	glider2Base.scale.set(20, 22, 6);
 	glider2Base.updateMatrixWorld();
 	glider2BaseRight.set(1, 0, 0);
@@ -372,7 +370,7 @@ function initSceneData()
 
 	// BALL
 	ball.visible = false;
-	ballStartingPosition.set(0, 300, 0);
+	ballStartingPosition.set(0, -100, 0);
 	ball.position.copy(ballStartingPosition);
 	ball.scale.set(16, 6, 16);
 	ball.updateMatrixWorld();
@@ -382,7 +380,7 @@ function initSceneData()
 
 	// PLAYER's GOAL
 	playerGoal.visible = false;
-	playerGoal.position.set(300, 400, 0);
+	playerGoal.position.set(300, 0, 0);
 	playerGoal.scale.set(3, 20, 90);
 	playerGoal.updateMatrixWorld();
 	playerGoalRight.set(1, 0, 0);
@@ -391,7 +389,7 @@ function initSceneData()
 
 	// COMPUTER's GOAL
 	computerGoal.visible = false;
-	computerGoal.position.set(-300, 400, 0);
+	computerGoal.position.set(-300, 0, 0);
 	computerGoal.scale.set(3, 20, 90);
 	computerGoal.updateMatrixWorld();
 	computerGoalRight.set(1, 0, 0);
@@ -578,35 +576,7 @@ function updateVariablesAndUniforms()
 		}
 	}
 
-	// PHYSICS for Glider1 vs. Ball
-
-	collisionNormal.subVectors(glider1Base.position, ball.position);
-	separatingDistance = collisionNormal.length();
-	collisionNormal.normalize();
-	relativeVelocity.subVectors(glider1WorldVelocity, ballWorldVelocity);
-	rV_dot_cN = relativeVelocity.dot(collisionNormal);
-
-	if (separatingDistance < 30)
-	{
-		ball.position.copy(glider1Base.position);
-		ball.position.addScaledVector(collisionNormal, -31);
-		glider1Base.position.addScaledVector(collisionNormal, 5);
-
-		if (rV_dot_cN < 0)
-		{
-			combinedInverseMasses = 1 / (gliderMass + ballMass);
-			impulseAmount = 2.5 * combinedInverseMasses * rV_dot_cN / collisionNormal.dot(collisionNormal);
-			collisionNormal.multiplyScalar(impulseAmount);
-			impulseGlider1.copy(collisionNormal).multiplyScalar(-ballMass);
-			impulseBall.copy(collisionNormal).multiplyScalar(gliderMass);
-			
-			glider1LocalVelocity.x += impulseGlider1.dot(glider1ThrustersRight);
-			glider1LocalVelocity.z += impulseGlider1.dot(glider1ThrustersForward);
-
-			ballLocalVelocity.x += impulseBall.dot(ballRight);
-			ballLocalVelocity.z += impulseBall.dot(ballForward); 
-		}
-	}
+	
 	
 	// update glider position
 
@@ -646,6 +616,51 @@ function updateVariablesAndUniforms()
 	// now make a ray using the glider's old position (rayOrigin) and the direction it is trying to move in (rayDirection)
 	glider1RayOrigin.copy(glider1OldPosition); // must use glider's old position for this to work
 	glider1RayDirection.copy(glider1RaySegment).normalize();
+
+
+	// PHYSICS for Glider1 vs. Ball
+
+	rayObjectOrigin.copy(glider1RayOrigin);
+	rayObjectDirection.copy(glider1RayDirection);
+	// put the rayObjectOrigin and rayObjectDirection in the object space of the ball
+	ball_invMatrix.copy(ball.matrixWorld).invert(); // only needed if this object moves
+	rayObjectOrigin.transformAsPoint(ball_invMatrix);
+	rayObjectDirection.transformAsDirection(ball_invMatrix);
+
+	testT = raycastUnitBox(rayObjectOrigin, rayObjectDirection);
+	if (testT < glider1RaySegmentLength)
+	{
+		console.log("collision detected");
+		collisionNormal.subVectors(glider1Base.position, ball.position);
+		collisionNormal.normalize();
+		relativeVelocity.subVectors(glider1WorldVelocity, ballWorldVelocity);
+		rV_dot_cN = relativeVelocity.dot(collisionNormal);
+
+		intersectionPoint.getPointAlongRay(glider1RayOrigin, glider1RayDirection, testT);
+		ball.position.copy(intersectionPoint);
+		ball.position.addScaledVector(collisionNormal, -16);
+		ball.updateMatrixWorld();
+		glider1Base.position.copy(intersectionPoint);
+		glider1Base.position.addScaledVector(collisionNormal, 20);
+		glider1Base.updateMatrixWorld();
+
+		if (rV_dot_cN < 0)
+		{
+			combinedInverseMasses = 1 / (gliderMass + ballMass);
+			impulseAmount = 2.5 * combinedInverseMasses * rV_dot_cN / collisionNormal.dot(collisionNormal);
+			collisionNormal.multiplyScalar(impulseAmount);
+			impulseGlider1.copy(collisionNormal).multiplyScalar(-ballMass);
+			impulseBall.copy(collisionNormal).multiplyScalar(gliderMass);
+			
+			glider1LocalVelocity.x += impulseGlider1.dot(glider1ThrustersRight);
+			glider1LocalVelocity.z += impulseGlider1.dot(glider1ThrustersForward);
+
+			ballLocalVelocity.x += impulseBall.dot(ballRight);
+			ballLocalVelocity.z += impulseBall.dot(ballForward);
+		}
+	}
+
+
 	rayObjectOrigin.copy(glider1RayOrigin);
 	rayObjectDirection.copy(glider1RayDirection);
 	// put the rayObjectOrigin and rayObjectDirection in the object space of the large course
@@ -882,7 +897,6 @@ function updateVariablesAndUniforms()
 	glider1Thrusters.rotateX(-Math.PI * 0.5);
 	glider1Thrusters.updateMatrixWorld();
 
-
 	// send final Glider transform (as an inverted matrix), so that the ray tracer can render it in the correct position and orientation
 	pathTracingUniforms.uGlider1InvMatrix.value.copy(glider1Thrusters.matrixWorld).invert();
 
@@ -890,6 +904,7 @@ function updateVariablesAndUniforms()
 	glider1Thrusters.position.addScaledVector(glider1ThrustersUp, -8);
 	// after rendering, reset glider rotation to be default upright (aligned with ground surface normal), so that rotation calculation code above will be easier
 	glider1Thrusters.rotateX(Math.PI * 0.5);
+	glider1Thrusters.updateMatrixWorld();
 	
 		
 
@@ -1184,7 +1199,6 @@ function updateVariablesAndUniforms()
 	glider2Base.rotation.setFromRotationMatrix(glider2RotationMatrix);
 	glider2Base.updateMatrixWorld();
 	
-
 	glider2Thrusters.position.copy(glider2Base.position);
 	glider2Thrusters.rotation.copy(glider2Base.rotation);
 	glider2Thrusters.scale.copy(glider2Base.scale);
@@ -1219,6 +1233,7 @@ function updateVariablesAndUniforms()
 	glider2Thrusters.position.addScaledVector(glider2ThrustersUp, -8);
 	// after rendering, reset glider rotation to be default upright (aligned with ground surface normal), so that rotation calculation code above will be easier
 	glider2Thrusters.rotateX(Math.PI * 0.5);
+	glider2Thrusters.updateMatrixWorld();
 		
 			
 	
@@ -1254,7 +1269,6 @@ function updateVariablesAndUniforms()
 	// check for collision between ball and computer A.I.'s goal (red goal)
 
 	rayObjectOrigin.copy(ballRayOrigin);
-	rayObjectOrigin.addScaledVector(ballUp, 10);
 	rayObjectDirection.copy(ballRayDirection);
 	// put the rayObjectOrigin and rayObjectDirection in the object space of the computer A.I.'s goal box
 	computerGoal_invMatrix.copy(computerGoal.matrixWorld).invert(); // only needed if this object moves
@@ -1279,7 +1293,6 @@ function updateVariablesAndUniforms()
 	// check for collision between ball and player's goal (blue goal)
 
 	rayObjectOrigin.copy(ballRayOrigin);
-	rayObjectOrigin.addScaledVector(ballUp, 10);
 	rayObjectDirection.copy(ballRayDirection);
 	// put the rayObjectOrigin and rayObjectDirection in the object space of the player's goal box
 	playerGoal_invMatrix.copy(playerGoal.matrixWorld).invert(); // only needed if this object moves
@@ -1518,7 +1531,7 @@ function updateVariablesAndUniforms()
 	
 	ballRotationMatrix.makeBasis(ballRight, ballUp, ballForward);
 	ball.rotation.setFromRotationMatrix(ballRotationMatrix);
-	//ball.updateMatrixWorld();
+	ball.updateMatrixWorld();
 
 	// temporarily move ball up out of the ground for final render
 	ball.position.addScaledVector(ballUp, 10);
@@ -1545,7 +1558,7 @@ function updateVariablesAndUniforms()
 	ball.position.addScaledVector(ballUp, -10);
 	// after rendering, reset ball rotation to be default upright (aligned with ground surface normal), so that rotation calculation code above will be easier
 	//ball.rotateX(Math.PI * 0.5);
-
+	ball.updateMatrixWorld();
 
 
 
@@ -1781,7 +1794,7 @@ function updateVariablesAndUniforms()
 	
 	playerGoalRotationMatrix.makeBasis(playerGoalRight, playerGoalUp, playerGoalForward);
 	playerGoal.rotation.setFromRotationMatrix(playerGoalRotationMatrix);
-	//playerGoal.updateMatrixWorld();
+	playerGoal.updateMatrixWorld();
 
 	// temporarily move playerGoal up out of the ground for final render
 	playerGoal.position.addScaledVector(playerGoalUp, 30);
@@ -1807,7 +1820,7 @@ function updateVariablesAndUniforms()
 	playerGoal.position.addScaledVector(playerGoalUp, -30);
 	// after rendering, reset playerGoal rotation to be default upright (aligned with ground surface normal), so that rotation calculation code above will be easier
 	//playerGoal.rotateX(Math.PI * 0.5);
-
+	playerGoal.updateMatrixWorld();
 
 
 	// UPDATE COMPUTER's GOAL ///////////////////////////////////////////////////////////////////////////////////
@@ -2042,7 +2055,7 @@ function updateVariablesAndUniforms()
 	
 	computerGoalRotationMatrix.makeBasis(computerGoalRight, computerGoalUp, computerGoalForward);
 	computerGoal.rotation.setFromRotationMatrix(computerGoalRotationMatrix);
-	//computerGoal.updateMatrixWorld();
+	computerGoal.updateMatrixWorld();
 
 	// temporarily move computerGoal up out of the ground for final render
 	computerGoal.position.addScaledVector(computerGoalUp, 30);
@@ -2068,7 +2081,7 @@ function updateVariablesAndUniforms()
 	computerGoal.position.addScaledVector(computerGoalUp, -30);
 	// after rendering, reset computerGoal rotation to be default upright (aligned with ground surface normal), so that rotation calculation code above will be easier
 	//computerGoal.rotateX(Math.PI * 0.5);
-
+	computerGoal.updateMatrixWorld();
 
 
 	/* 
