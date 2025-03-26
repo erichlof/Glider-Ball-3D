@@ -242,10 +242,10 @@ vec3 CalculateRadiance( out vec3 objectNormal, out vec3 objectColor, out float o
 	int willNeedReflectionRay = FALSE;
 	int isReflectionTime = FALSE;
 	int reflectionNeedsToBeSharp = FALSE;
-
+	
 
 	lightChoice = spheres[int(rand() * N_LIGHTS)];
-
+	//lightChoice = spheres[0];
 	
 	for (int bounces = 0; bounces < 6; bounces++)
 	{
@@ -498,9 +498,9 @@ void SetupScene(void)
 	vec3 L2 = vec3(1.0, 0.8, 0.2) * lightPower;// Yellow light
 	vec3 L3 = vec3(0.1, 0.7, 1.0) * lightPower;// Blue light
 		
-	spheres[0] = Sphere(30.0, vec3(-200, 250, 50), L1, vec3(0), LIGHT);//spherical white Light1 
-	spheres[1] = Sphere(20.0, vec3( 100, 200,-250), L2, vec3(0), LIGHT);//spherical yellow Light2
-	spheres[2] = Sphere(10.0, vec3( 150, 80, 50), L3, vec3(0), LIGHT);//spherical blue Light3
+	spheres[0] = Sphere(30.0, vec3(-200,-150, 50), L1, vec3(0), LIGHT);//spherical white Light1 
+	spheres[1] = Sphere(20.0, vec3( 100,-200,-250), L2, vec3(0), LIGHT);//spherical yellow Light2
+	spheres[2] = Sphere(10.0, vec3( 150,-320, 50), L3, vec3(0), LIGHT);//spherical blue Light3
 	
 	unitSpheres[0] = UnitSphere(vec3(0), vec3(1.0, 1.0, 1.0), DIFF);//checkered Course
 
