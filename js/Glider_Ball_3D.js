@@ -374,7 +374,7 @@ function initSceneData()
 	ball.visible = false;
 	ballStartingPosition.set(0, -100, 0);
 	ball.position.copy(ballStartingPosition);
-	ball.scale.set(30, 4, 30);
+	ball.scale.set(25, 4, 25);
 	ball.updateMatrixWorld();
 	ballCollisionVolume.position.copy(ball.position);
 	ballCollisionVolume.scale.set(ball.scale.x + 8, ball.scale.y + 8, ball.scale.z + 8);
@@ -386,7 +386,7 @@ function initSceneData()
 	// PLAYER's GOAL
 	playerGoal.visible = false;
 	playerGoal.position.set(300, 0, 0);
-	playerGoal.scale.set(3, 20, 90);
+	playerGoal.scale.set(3, 20, 110);
 	playerGoal.updateMatrixWorld();
 	playerGoalRight.set(1, 0, 0);
 	playerGoalUp.set(0, 1, 0);
@@ -395,7 +395,7 @@ function initSceneData()
 	// COMPUTER's GOAL
 	computerGoal.visible = false;
 	computerGoal.position.set(-300, 0, 0);
-	computerGoal.scale.set(3, 20, 90);
+	computerGoal.scale.set(3, 20, 110);
 	computerGoal.updateMatrixWorld();
 	computerGoalRight.set(1, 0, 0);
 	computerGoalUp.set(0, 1, 0);
@@ -627,11 +627,11 @@ function updateVariablesAndUniforms()
 	// PHYSICS for Glider1 vs. Ball
 
 	rayObjectOrigin.copy(glider1RayOrigin);
-	rayObjectOrigin.addScaledVector(glider1BaseUp, 10);
+	rayObjectOrigin.addScaledVector(glider1BaseUp, 15);
 	rayObjectDirection.copy(glider1RayDirection);
 	// put the rayObjectOrigin and rayObjectDirection in the object space of the ball
 	ballCollisionVolume.position.copy(ball.position);
-	ballCollisionVolume.position.addScaledVector(ballUp, 10);
+	ballCollisionVolume.position.addScaledVector(ballUp, 15);
 	ballCollisionVolume.rotation.copy(ball.rotation);
 	ballCollisionVolume.updateMatrixWorld();
 	ball_invMatrix.copy(ballCollisionVolume.matrixWorld).invert(); // only needed if this object moves
@@ -1543,7 +1543,7 @@ function updateVariablesAndUniforms()
 	ballOldPosition.copy(ball.position);
 
 	ballCollisionVolume.position.copy(ball.position);
-	ballCollisionVolume.position.addScaledVector(ballUp, 10);
+	ballCollisionVolume.position.addScaledVector(ballUp, 15);
 	ballCollisionVolume.rotation.copy(ball.rotation);
 	ballCollisionVolume.updateMatrixWorld();
 	ball_invMatrix.copy(ballCollisionVolume.matrixWorld).invert(); // only needed if this object moves
@@ -1556,7 +1556,7 @@ function updateVariablesAndUniforms()
 	ball.updateMatrixWorld();
 
 	// temporarily move ball up out of the ground for final render
-	ball.position.addScaledVector(ballUp, 10);
+	ball.position.addScaledVector(ballUp, 15);
 	ball.updateMatrixWorld();
 
 	
@@ -1577,7 +1577,7 @@ function updateVariablesAndUniforms()
 	pathTracingUniforms.uBallInvMatrix.value.copy(ball.matrixWorld).invert();
 
 	// after rendering, reset ball position back down so that its center is right on the ground (this helps with ray casting against course)
-	ball.position.addScaledVector(ballUp, -10);
+	ball.position.addScaledVector(ballUp, -15);
 	// after rendering, reset ball rotation to be default upright (aligned with ground surface normal), so that rotation calculation code above will be easier
 	//ball.rotateX(Math.PI * 0.5);
 	ball.updateMatrixWorld();
@@ -2106,7 +2106,8 @@ function updateVariablesAndUniforms()
 	computerGoal.updateMatrixWorld();
 
 	// DEBUG INFO
-	demoInfoElement.innerHTML = "collisions: " + collisionCounter;  
+	//demoInfoElement.innerHTML = "collisions: " + collisionCounter;
+	
 	/* 
 	// DEBUG INFO
 	demoInfoElement.innerHTML = "glider2IsInAir: " + glider2IsInAir + " " + "cameraIsMoving: " + cameraIsMoving + "<br>" + 
