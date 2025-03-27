@@ -51,6 +51,7 @@ let glider2IsAcceleratingUp = false;
 let glider2IsAcceleratingForward = false;
 
 let ball = new THREE.Object3D();
+let ballCollisionVolume = new THREE.Object3D();
 let ballRotationMatrix = new THREE.Matrix4();
 let ball_invMatrix = new THREE.Matrix4();
 let ballRayOrigin = new THREE.Vector3();
@@ -374,6 +375,9 @@ function initSceneData()
 	ball.position.copy(ballStartingPosition);
 	ball.scale.set(16, 6, 16);
 	ball.updateMatrixWorld();
+	ballCollisionVolume.position.copy(ball.position);
+	ballCollisionVolume.scale.set(ball.scale.x + 20, ball.scale.y + 5, ball.scale.z + 20);
+	ballCollisionVolume.updateMatrixWorld();
 	ballRight.set(1, 0, 0);
 	ballUp.set(0, 1, 0);
 	ballForward.set(0, 0, 1);
@@ -623,29 +627,31 @@ function updateVariablesAndUniforms()
 	rayObjectOrigin.copy(glider1RayOrigin);
 	rayObjectDirection.copy(glider1RayDirection);
 	// put the rayObjectOrigin and rayObjectDirection in the object space of the ball
-	ball_invMatrix.copy(ball.matrixWorld).invert(); // only needed if this object moves
+	ballCollisionVolume.position.copy(ball.position);
+	ballCollisionVolume.updateMatrixWorld();
+	ball_invMatrix.copy(ballCollisionVolume.matrixWorld).invert(); // only needed if this object moves
 	rayObjectOrigin.transformAsPoint(ball_invMatrix);
 	rayObjectDirection.transformAsDirection(ball_invMatrix);
 
-	testT = raycastUnitBox(rayObjectOrigin, rayObjectDirection);
+	testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
 	if (testT < glider1RaySegmentLength)
 	{
-		console.log("collision detected");
 		collisionNormal.subVectors(glider1Base.position, ball.position);
 		collisionNormal.normalize();
 		relativeVelocity.subVectors(glider1WorldVelocity, ballWorldVelocity);
 		rV_dot_cN = relativeVelocity.dot(collisionNormal);
 
-		intersectionPoint.getPointAlongRay(glider1RayOrigin, glider1RayDirection, testT);
-		ball.position.copy(intersectionPoint);
-		ball.position.addScaledVector(collisionNormal, -16);
-		ball.updateMatrixWorld();
-		glider1Base.position.copy(intersectionPoint);
-		glider1Base.position.addScaledVector(collisionNormal, 20);
-		glider1Base.updateMatrixWorld();
-
 		if (rV_dot_cN < 0)
 		{
+			console.log("collision detected");
+			intersectionPoint.getPointAlongRay(glider1RayOrigin, glider1RayDirection, testT);
+			ball.position.copy(intersectionPoint);
+			ball.position.addScaledVector(collisionNormal, -16);
+			ball.updateMatrixWorld();
+			glider1Base.position.copy(intersectionPoint);
+			glider1Base.position.addScaledVector(collisionNormal, 20);
+			glider1Base.updateMatrixWorld();
+
 			combinedInverseMasses = 1 / (gliderMass + ballMass);
 			impulseAmount = 2.5 * combinedInverseMasses * rV_dot_cN / collisionNormal.dot(collisionNormal);
 			collisionNormal.multiplyScalar(impulseAmount);
