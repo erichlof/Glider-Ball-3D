@@ -111,6 +111,7 @@ let combinedInverseMasses = 0;
 let impulseAmount = 0;
 let gliderMass = 50;
 let ballMass = 30;
+let collisionCounter = 0;
 
 let worldRight = new THREE.Vector3(1, 0, 0);
 let worldUp = new THREE.Vector3(0, 1, 0);
@@ -373,10 +374,10 @@ function initSceneData()
 	ball.visible = false;
 	ballStartingPosition.set(0, -100, 0);
 	ball.position.copy(ballStartingPosition);
-	ball.scale.set(16, 6, 16);
+	ball.scale.set(30, 4, 30);
 	ball.updateMatrixWorld();
 	ballCollisionVolume.position.copy(ball.position);
-	ballCollisionVolume.scale.set(ball.scale.x + 20, ball.scale.y + 5, ball.scale.z + 20);
+	ballCollisionVolume.scale.set(ball.scale.x + 8, ball.scale.y + 8, ball.scale.z + 8);
 	ballCollisionVolume.updateMatrixWorld();
 	ballRight.set(1, 0, 0);
 	ballUp.set(0, 1, 0);
@@ -409,6 +410,7 @@ function initSceneData()
 	pathTracingUniforms.uBallInvMatrix = { value: new THREE.Matrix4() };
 	pathTracingUniforms.uPlayerGoalInvMatrix = { value: new THREE.Matrix4() };
 	pathTracingUniforms.uComputerGoalInvMatrix = { value: new THREE.Matrix4() };
+	pathTracingUniforms.uBallCollisionVolumeInvMatrix = { value: new THREE.Matrix4() };
 
 } // end function initSceneData()
 
@@ -625,16 +627,20 @@ function updateVariablesAndUniforms()
 	// PHYSICS for Glider1 vs. Ball
 
 	rayObjectOrigin.copy(glider1RayOrigin);
+	rayObjectOrigin.addScaledVector(glider1BaseUp, 10);
 	rayObjectDirection.copy(glider1RayDirection);
 	// put the rayObjectOrigin and rayObjectDirection in the object space of the ball
 	ballCollisionVolume.position.copy(ball.position);
+	ballCollisionVolume.position.addScaledVector(ballUp, 10);
+	ballCollisionVolume.rotation.copy(ball.rotation);
 	ballCollisionVolume.updateMatrixWorld();
 	ball_invMatrix.copy(ballCollisionVolume.matrixWorld).invert(); // only needed if this object moves
+	pathTracingUniforms.uBallCollisionVolumeInvMatrix.value.copy(ball_invMatrix);
 	rayObjectOrigin.transformAsPoint(ball_invMatrix);
 	rayObjectDirection.transformAsDirection(ball_invMatrix);
 
 	testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
-	if (testT < glider1RaySegmentLength)
+	if (testT < glider1RaySegmentLength || testT < 10)
 	{
 		collisionNormal.subVectors(glider1Base.position, ball.position);
 		collisionNormal.normalize();
@@ -643,12 +649,15 @@ function updateVariablesAndUniforms()
 
 		if (rV_dot_cN < 0)
 		{
-			console.log("collision detected");
+			//console.log("collision detected");
+			collisionCounter++;
 			intersectionPoint.getPointAlongRay(glider1RayOrigin, glider1RayDirection, testT);
 			ball.position.copy(intersectionPoint);
-			ball.position.addScaledVector(collisionNormal, -16);
+			ball.position.addScaledVector(ballUp, -10);
+			ball.position.addScaledVector(collisionNormal, -30);
 			ball.updateMatrixWorld();
 			glider1Base.position.copy(intersectionPoint);
+			glider1Base.position.addScaledVector(glider1BaseUp, -10);
 			glider1Base.position.addScaledVector(collisionNormal, 20);
 			glider1Base.updateMatrixWorld();
 
@@ -1533,6 +1542,13 @@ function updateVariablesAndUniforms()
 
 	ballOldPosition.copy(ball.position);
 
+	ballCollisionVolume.position.copy(ball.position);
+	ballCollisionVolume.position.addScaledVector(ballUp, 10);
+	ballCollisionVolume.rotation.copy(ball.rotation);
+	ballCollisionVolume.updateMatrixWorld();
+	ball_invMatrix.copy(ballCollisionVolume.matrixWorld).invert(); // only needed if this object moves
+	pathTracingUniforms.uBallCollisionVolumeInvMatrix.value.copy(ball_invMatrix);
+
 
 	
 	ballRotationMatrix.makeBasis(ballRight, ballUp, ballForward);
@@ -2089,7 +2105,8 @@ function updateVariablesAndUniforms()
 	//computerGoal.rotateX(Math.PI * 0.5);
 	computerGoal.updateMatrixWorld();
 
-
+	// DEBUG INFO
+	demoInfoElement.innerHTML = "collisions: " + collisionCounter;  
 	/* 
 	// DEBUG INFO
 	demoInfoElement.innerHTML = "glider2IsInAir: " + glider2IsInAir + " " + "cameraIsMoving: " + cameraIsMoving + "<br>" + 
