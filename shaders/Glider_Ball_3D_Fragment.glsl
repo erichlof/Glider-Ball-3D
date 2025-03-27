@@ -10,6 +10,7 @@ uniform mat4 uGlider2InvMatrix;
 uniform mat4 uBallInvMatrix;
 uniform mat4 uPlayerGoalInvMatrix;
 uniform mat4 uComputerGoalInvMatrix;
+uniform mat4 uBallCollisionVolumeInvMatrix;
 
 #define N_LIGHTS 3.0
 #define N_SPHERES 3
@@ -164,9 +165,25 @@ float SceneIntersect(out int finalIsRayExiting)
 	{
 		t = d;
 		hitNormal = transpose(mat3(uBallInvMatrix)) * normal;
-		hitEmission = unitBoxes[0].emission;
-		hitColor = unitBoxes[0].color;
-		hitType = unitBoxes[0].type;
+		hitEmission = vec3(1,0,1);//unitBoxes[0].emission;
+		hitColor = vec3(0);//unitBoxes[0].color;
+		hitType = LIGHT;//unitBoxes[0].type;
+		hitObjectID = float(objectCount);
+	}
+	objectCount++;
+
+	// transform ray into ball's collision volume object space
+	rObjOrigin = vec3( uBallCollisionVolumeInvMatrix * vec4(rayOrigin, 1.0) );
+	rObjDirection = vec3( uBallCollisionVolumeInvMatrix * vec4(rayDirection, 0.0) );
+	d = UnitSphereIntersect(rObjOrigin, rObjDirection, normal);
+
+	if (d < t)
+	{
+		t = d;
+		hitNormal = transpose(mat3(uBallCollisionVolumeInvMatrix)) * normal;
+		hitEmission = vec3(0);
+		hitColor = vec3(0.01, 0.0, 0.01);
+		hitType = REFR;
 		hitObjectID = float(objectCount);
 	}
 	objectCount++;
@@ -504,7 +521,7 @@ void SetupScene(void)
 	
 	unitSpheres[0] = UnitSphere(vec3(0), vec3(1.0, 1.0, 1.0), DIFF);//checkered Course
 
-	unitBoxes[0] = UnitBox(vec3(0), vec3(0.01, 1.0, 0.4), SPEC);//Ball
+	unitBoxes[0] = UnitBox(vec3(0), vec3(0.01, 1.0, 0.4), DIFF);//Ball
 	unitBoxes[1] = UnitBox(vec3(0), vec3(0.01, 0.2, 1.0), SPEC);//player's Goal
 	unitBoxes[2] = UnitBox(vec3(0), vec3(1.0, 0.01, 0.2), SPEC);//computer's Goal
 
