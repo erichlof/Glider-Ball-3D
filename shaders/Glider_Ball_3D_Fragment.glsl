@@ -230,7 +230,6 @@ float SceneIntersect(out int finalIsRayExiting)
 vec3 CalculateRadiance( out vec3 objectNormal, out vec3 objectColor, out float objectID, out float pixelSharpness )
 //-----------------------------------------------------------------------------------------------------------------------------
 {
-	Sphere lightChoice;
 
 	vec3 accumCol = vec3(0);
         vec3 mask = vec3(1);
@@ -239,7 +238,6 @@ vec3 CalculateRadiance( out vec3 objectNormal, out vec3 objectColor, out float o
 	vec3 reflectionRayDirection = vec3(0);
 	vec3 checkCol0 = vec3(1);
 	vec3 checkCol1 = vec3(0.5);
-	vec3 dirToLight;
 	vec3 x, n, nl;
         
 	float t;
@@ -247,6 +245,7 @@ vec3 CalculateRadiance( out vec3 objectNormal, out vec3 objectColor, out float o
 	float weight;
 	float thickness = 0.1;
 	float previousObjectID;
+	float newRandom;
 
 	int reflectionBounces = -1;
 	int diffuseCount = 0;
@@ -261,8 +260,6 @@ vec3 CalculateRadiance( out vec3 objectNormal, out vec3 objectColor, out float o
 	int reflectionNeedsToBeSharp = FALSE;
 	
 
-	lightChoice = spheres[int(rand() * N_LIGHTS)];
-	//lightChoice = spheres[0];
 	
 	for (int bounces = 0; bounces < 6; bounces++)
 	{
@@ -377,11 +374,27 @@ vec3 CalculateRadiance( out vec3 objectNormal, out vec3 objectColor, out float o
 				continue;
 			} */
 
-			dirToLight = sampleSphereLight(x, nl, lightChoice, weight);
-			//mask *= diffuseCount == 1 ? 2.0 : 1.0;
-			mask *= weight * N_LIGHTS;
+			//dirToLight = sampleSphereLight(x, nl, lightChoice, weight);
+			////mask *= diffuseCount == 1 ? 2.0 : 1.0;
+			//mask *= weight * N_LIGHTS;
 
-			rayDirection = dirToLight;
+			newRandom = rand();
+			if (newRandom < 0.3333)
+			{
+				rayDirection = sampleSphereLight(x, nl, spheres[0], weight);
+				mask *= weight * N_LIGHTS;
+			}
+			else if (newRandom < 0.6666)
+			{
+				rayDirection = sampleSphereLight(x, nl, spheres[1], weight);
+				mask *= weight * N_LIGHTS;
+			}
+			else
+			{
+				rayDirection = sampleSphereLight(x, nl, spheres[2], weight);
+				mask *= weight * N_LIGHTS;
+			}
+
 			rayOrigin = x + nl * uEPS_intersect;
 
 			sampleLight = TRUE;
@@ -482,13 +495,27 @@ vec3 CalculateRadiance( out vec3 objectNormal, out vec3 objectColor, out float o
 				continue;
 			} */
 			
+			//dirToLight = sampleSphereLight(x, nl, lightChoice, weight);
+			////mask *= diffuseCount == 1 ? 2.0 : 1.0;
+			//mask *= weight * N_LIGHTS;
 			
-			dirToLight = sampleSphereLight(x, nl, lightChoice, weight);
-			
-			//mask *= diffuseCount == 1 ? 2.0 : 1.0;
-			mask *= weight * N_LIGHTS;
-			
-			rayDirection = dirToLight;
+			newRandom = rand();
+			if (newRandom < 0.3333)
+			{
+				rayDirection = sampleSphereLight(x, nl, spheres[0], weight);
+				mask *= weight * N_LIGHTS;
+			}
+			else if (newRandom < 0.6666)
+			{
+				rayDirection = sampleSphereLight(x, nl, spheres[1], weight);
+				mask *= weight * N_LIGHTS;
+			}
+			else
+			{
+				rayDirection = sampleSphereLight(x, nl, spheres[2], weight);
+				mask *= weight * N_LIGHTS;
+			}
+
 			rayOrigin = x + nl * uEPS_intersect;
 
 			sampleLight = TRUE;
