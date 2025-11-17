@@ -11,6 +11,8 @@ uniform mat4 uBallInvMatrix;
 uniform mat4 uPlayerGoalInvMatrix;
 uniform mat4 uComputerGoalInvMatrix;
 uniform mat4 uBallCollisionVolumeInvMatrix;
+uniform mat4 uGlider1CollisionVolumeInvMatrix;
+uniform mat4 uGlider2CollisionVolumeInvMatrix;
 
 #define N_LIGHTS 3.0
 #define N_SPHERES 3
@@ -204,6 +206,22 @@ float SceneIntersect(out int finalIsRayExiting)
 	}
 	objectCount++;
 
+	/* // transform ray into Glider1's collision volume object space
+	rObjOrigin = vec3( uGlider1CollisionVolumeInvMatrix * vec4(rayOrigin, 1.0) );
+	rObjDirection = vec3( uGlider1CollisionVolumeInvMatrix * vec4(rayDirection, 0.0) );
+	d = UnitSphereIntersect(rObjOrigin, rObjDirection, normal);
+
+	if (d < t)
+	{
+		t = d;
+		hitNormal = transpose(mat3(uGlider1CollisionVolumeInvMatrix)) * normal;
+		hitEmission = vec3(0);
+		hitColor = vec3(0.0, 0.0, 1.0);
+		hitType = REFR;
+		hitObjectID = float(objectCount);
+	}
+	objectCount++; */
+
 	// transform ray into glider2's object space
 	rObjOrigin = vec3( uGlider2InvMatrix * vec4(rayOrigin, 1.0) );
 	rObjDirection = vec3( uGlider2InvMatrix * vec4(rayDirection, 0.0) );
@@ -219,6 +237,22 @@ float SceneIntersect(out int finalIsRayExiting)
 		hitObjectID = float(objectCount);
 	}
 	objectCount++;
+/* 
+	// transform ray into Glider2's collision volume object space
+	rObjOrigin = vec3( uGlider2CollisionVolumeInvMatrix * vec4(rayOrigin, 1.0) );
+	rObjDirection = vec3( uGlider2CollisionVolumeInvMatrix * vec4(rayDirection, 0.0) );
+	d = UnitSphereIntersect(rObjOrigin, rObjDirection, normal);
+
+	if (d < t)
+	{
+		t = d;
+		hitNormal = transpose(mat3(uGlider2CollisionVolumeInvMatrix)) * normal;
+		hitEmission = vec3(0);
+		hitColor = vec3(1.0, 0.0, 0.0);
+		hitType = REFR;
+		hitObjectID = float(objectCount);
+	}
+	objectCount++; */
 	
 		
 	return t;
