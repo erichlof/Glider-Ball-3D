@@ -13,6 +13,8 @@ uniform mat4 uComputerGoalInvMatrix;
 uniform mat4 uBallCollisionVolumeInvMatrix;
 uniform mat4 uGlider1CollisionVolumeInvMatrix;
 uniform mat4 uGlider2CollisionVolumeInvMatrix;
+uniform vec3 uCourseMinBounds;
+uniform vec3 uCourseMaxBounds;
 uniform int uCourseShapeType;
 
 #define N_LIGHTS 3.0
@@ -57,6 +59,32 @@ UnitParaboloid unitParaboloids[N_UNIT_PARABOLOIDS];
 
 #include <pathtracing_sample_sphere_light>
 
+
+float UnitSphereInterior_ParamIntersect( vec3 ro, vec3 rd, out vec3 n )
+{
+	vec3 hit;
+	float t0, t1;
+	float a = dot(rd, rd);
+	float b = 2.0 * dot(rd, ro);
+	float c = dot(ro, ro) - 1.0;// radius * radius = 1.0 * 1.0 = 1.0 
+	solveQuadratic(a, b, c, t0, t1);
+
+	hit = ro + (rd * t0);
+	if ( dot(rd, hit) > 0.0 && t0 > 0.0 && all(greaterThanEqual(hit, uCourseMinBounds)) && all(lessThanEqual(hit, uCourseMaxBounds)) )
+	{
+		n = hit;
+		return t0;
+	}
+	
+	hit = ro + (rd * t1);
+	if ( t1 > 0.0 && all(greaterThanEqual(hit, uCourseMinBounds)) && all(lessThanEqual(hit, uCourseMaxBounds)) )
+	{
+		n = hit;
+		return t1;
+	}
+
+	return INFINITY;
+}
 
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -112,11 +140,11 @@ float SceneIntersect(out int finalIsRayExiting)
 	// transform ray into courseShape's object space
 	rObjOrigin = vec3( uCourseShape_invMatrix * vec4(rayOrigin, 1.0) );
 	rObjDirection = vec3( uCourseShape_invMatrix * vec4(rayDirection, 0.0) );
-	d = UnitSphereIntersect(rObjOrigin, rObjDirection, normal);
+	d = UnitSphereInterior_ParamIntersect(rObjOrigin, rObjDirection, normal);
 	if (d < t)
 	{
 		t = d;
-		hitNormal = transpose(mat3(uCourseShape_invMatrix)) * normal;
+		hitNormal = transpose(mat3(uCourseShape_invMatrix)) * normal;	
 		hitEmission = unitSpheres[0].emission;
 		hitPos = rayOrigin + (t * rayDirection);
 		q = clamp( mod( dot( floor(hitPos.xz * 0.04), vec2(1.0) ), 2.0 ) , 0.0, 1.0 );
@@ -298,11 +326,10 @@ vec3 CalculateRadiance( out vec3 objectNormal, out vec3 objectColor, out float o
 		t = SceneIntersect(isRayExiting);
 		
 
-		/* // TODO: handle rays escaping to the black background on open-shaped courses
-		if (t == INFINITY)
-		{
-                        break;
-		} */
+		if (bounces == 0 && t == INFINITY)
+		{ // this keeps the boundary edges between the open course shape and the black background sharp 
+                        pixelSharpness = 1.0;
+		}
 
 		// useful data 
 		n = normalize(hitNormal);
