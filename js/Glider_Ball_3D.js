@@ -1,12 +1,11 @@
 // scene/demo-specific variables go here
-let courseSphere = new THREE.Object3D();
-let courseSphere_invMatrix = new THREE.Matrix4();
+let courseShape = new THREE.Object3D();
+let courseShape_invMatrix = new THREE.Matrix4();
 let rayObjectOrigin = new THREE.Vector3();
 let rayObjectDirection = new THREE.Vector3();
 let intersectionPoint = new THREE.Vector3();
 let intersectionNormal = new THREE.Vector3();
-let tempVec1 = new THREE.Vector3();
-let tempVec2 = new THREE.Vector3();
+let tempVec = new THREE.Vector3();
 
 let glider1Base = new THREE.Object3D();
 let glider1CollisionVolume = new THREE.Object3D();
@@ -26,6 +25,7 @@ let glider1ThrustersUp = new THREE.Vector3(0,1,0);
 let glider1ThrustersForward = new THREE.Vector3(0,0,1);
 let glider1LocalVelocity = new THREE.Vector3();
 let glider1WorldVelocity = new THREE.Vector3();
+let glider1StartingPosition = new THREE.Vector3();
 let glider1IsInAir = true;
 let glider1IsAcceleratingRight = false;
 let glider1IsAcceleratingUp = false;
@@ -49,6 +49,7 @@ let glider2ThrustersUp = new THREE.Vector3(0,1,0);
 let glider2ThrustersForward = new THREE.Vector3(0,0,1);
 let glider2LocalVelocity = new THREE.Vector3();
 let glider2WorldVelocity = new THREE.Vector3();
+let glider2StartingPosition = new THREE.Vector3();
 let glider2IsInAir = true;
 let glider2IsAcceleratingRight = false;
 let glider2IsAcceleratingUp = false;
@@ -85,6 +86,7 @@ let playerGoalUp = new THREE.Vector3();
 let playerGoalForward = new THREE.Vector3();
 let playerGoalLocalVelocity = new THREE.Vector3();
 let playerGoalWorldVelocity = new THREE.Vector3();
+let playerGoalStartingPosition = new THREE.Vector3();
 let playerGoalIsInAir = true;
 let playerGoalYRotateAngle = 0;
 
@@ -101,6 +103,7 @@ let computerGoalUp = new THREE.Vector3();
 let computerGoalForward = new THREE.Vector3();
 let computerGoalLocalVelocity = new THREE.Vector3();
 let computerGoalWorldVelocity = new THREE.Vector3();
+let computerGoalStartingPosition = new THREE.Vector3();
 let computerGoalIsInAir = true;
 let computerGoalYRotateAngle = 0;
 
@@ -114,8 +117,8 @@ let rV_dot_cN = 0;
 let separatingDistance = 0;
 let combinedInverseMasses = 0;
 let impulseAmount = 0;
-let gliderMass = 100;//50;
-let ballMass = 10;//30;
+let gliderMass = 100;
+let ballMass = 10;
 let collisionCounter = 0;
 
 let worldRight = new THREE.Vector3(1, 0, 0);
@@ -125,6 +128,17 @@ let canPress_Space = true;
 let jumpWasTriggered = false;
 let roundBeginFlag = true;
 
+let course_TypeObject, course_TypeController;
+let needChangeCourseType = false;
+let courseShapeType = 0;
+let courseUniformScale = 500;
+let scale_Folder;
+let course_ScaleUniformController, course_ScaleUniformObject;
+let course_ScaleXController, course_ScaleXObject;
+let course_ScaleYController, course_ScaleYObject;
+let course_ScaleZController, course_ScaleZObject;
+let needChangeCourseScaleUniform = false;
+let needChangeCourseScale = false;
 
 
 let demoInfoElement = document.getElementById('demoInfo');
@@ -320,6 +334,47 @@ function raycastUnitBox(rayO, rayD)
 
 	return Infinity;
 }
+/* 
+function intersectUnitBox(rayO, rayD, normal)
+{
+	inverseDir.set(1 / rayD.x, 1 / rayD.y, 1 / rayD.z);
+	near.set(-1,-1,-1).sub(rayO);
+	near.multiply(inverseDir);
+	far.set(1, 1, 1).sub(rayO);
+	far.multiply(inverseDir);
+	tmin.copy(near).min(far);
+	tmax.copy(near).max(far);
+	t0 = Math.max(Math.max(tmin.x, tmin.y), tmin.z);
+	t1 = Math.min(Math.min(tmax.x, tmax.y), tmax.z);
+	if (t0 > t1)
+		return Infinity;
+
+	if (t0 > 0.0) // if we are outside the box
+	{
+		intersectionPoint.getPointAlongRay(rayO, rayD, t0); // intersection in box's object space, vec3(-1,-1,-1) to vec3(+1,+1,+1)
+		// start out with default Z normal of (0,0,-1) or (0,0,+1)
+		normal.set(0, 0, intersectionPoint.z);
+		if (Math.abs(intersectionPoint.x) > Math.abs(intersectionPoint.y) && Math.abs(intersectionPoint.x) >= Math.abs(intersectionPoint.z))
+			normal.set(intersectionPoint.x, 0, 0);	
+		else if (Math.abs(intersectionPoint.y) > Math.abs(intersectionPoint.x) && Math.abs(intersectionPoint.y) >= Math.abs(intersectionPoint.z))
+			normal.set(0, intersectionPoint.y, 0);
+		return t0;
+	}
+		
+	if (t1 > 0.0) // if we are inside the box
+	{
+		intersectionPoint.getPointAlongRay(rayO, rayD, t1); // intersection in box's object space, vec3(-1,-1,-1) to vec3(+1,+1,+1)
+		// start out with default Z normal of (0,0,-1) or (0,0,+1)
+		normal.set(0, 0, intersectionPoint.z);
+		if (Math.abs(intersectionPoint.x) > Math.abs(intersectionPoint.y) && Math.abs(intersectionPoint.x) >= Math.abs(intersectionPoint.z))
+			normal.set(intersectionPoint.x, 0, 0);	
+		else if (Math.abs(intersectionPoint.y) > Math.abs(intersectionPoint.x) && Math.abs(intersectionPoint.y) >= Math.abs(intersectionPoint.z))
+			normal.set(0, intersectionPoint.y, 0);
+		return t1;
+	}
+		
+	return Infinity;
+} */
 
 
 
@@ -345,18 +400,19 @@ function initSceneData()
 	worldCamera.fov = 80;
 
 
-	// COURSE (Sphere-shaped)
-	courseSphere.visible = false; // don't need Three.js to render this - we will ray trace it ourselves
-	courseSphere.position.set(0, 0, 0);
+	// COURSE 
+	courseShape.visible = false; // don't need Three.js to render this - we will ray trace it ourselves
+	courseShape.position.set(0, 0, 0);
 	 	 // ellipsoid (600, 300, 600)
-	courseSphere.scale.set(600, 600, 600);
+	courseShape.scale.set(500, 500, 500); // Sphere-shaped
 	// must call this each time we change an object's transform
-	courseSphere.updateMatrixWorld();
-	courseSphere_invMatrix.copy(courseSphere.matrixWorld).invert();
+	courseShape.updateMatrixWorld();
+	courseShape_invMatrix.copy(courseShape.matrixWorld).invert();
 
 	// GLIDER 1 (player)
 	glider1Base.visible = false;
-	glider1Base.position.set(0, -100, 100);
+	glider1StartingPosition.set(0, -50, 75);
+	glider1Base.position.copy(glider1StartingPosition);
 	glider1Base.scale.set(20, 22, 6);
 	glider1Base.updateMatrixWorld();
 	glider1CollisionVolume.position.copy(glider1Base.position);
@@ -368,7 +424,8 @@ function initSceneData()
 
 	// GLIDER 2 (AI controlled)
 	glider2Base.visible = false;
-	glider2Base.position.set(0, -100, -100);
+	glider2StartingPosition.set(0, -50, -75);
+	glider2Base.position.copy(glider2StartingPosition);
 	glider2Base.scale.set(20, 22, 6);
 	glider2Base.updateMatrixWorld();
 	glider2CollisionVolume.position.copy(glider2Base.position);
@@ -380,7 +437,7 @@ function initSceneData()
 
 	// BALL
 	ball.visible = false;
-	ballStartingPosition.set(0, -100, 0);
+	ballStartingPosition.set(0, -50, 0);
 	ball.position.copy(ballStartingPosition);
 	ball.scale.set(25, 4, 25);
 	ball.updateMatrixWorld();
@@ -393,7 +450,8 @@ function initSceneData()
 
 	// PLAYER's GOAL
 	playerGoal.visible = false;
-	playerGoal.position.set(300, 0, 0);
+	playerGoalStartingPosition.set(75, -10, 0);
+	playerGoal.position.copy(playerGoalStartingPosition);
 	playerGoal.scale.set(3, 20, 110);
 	playerGoal.updateMatrixWorld();
 	playerGoalRight.set(1, 0, 0);
@@ -402,7 +460,8 @@ function initSceneData()
 
 	// COMPUTER's GOAL
 	computerGoal.visible = false;
-	computerGoal.position.set(-300, 0, 0);
+	computerGoalStartingPosition.set(-75, -10, 0);
+	computerGoal.position.copy(computerGoalStartingPosition);
 	computerGoal.scale.set(3, 20, 110);
 	computerGoal.updateMatrixWorld();
 	computerGoalRight.set(1, 0, 0);
@@ -410,9 +469,34 @@ function initSceneData()
 	computerGoalForward.set(0, 0, 1);
 
 	
+	// In addition to the default GUI on all demos/games, add any special GUI elements that this particular game requires
+
+	course_TypeObject = { Course_Type: 'Sphere' };
+	course_ScaleUniformObject = { uniformScale: 500 };
+	course_ScaleXObject = { scaleX: 500 };
+	course_ScaleYObject = { scaleY: 500 };
+	course_ScaleZObject = { scaleZ: 500 };
+
+	function handleCourseTypeChange() { needChangeCourseType = true; }
+	function handleCourseScaleUniformChange() { needChangeCourseScaleUniform = true; }
+	function handleCourseScaleChange() { needChangeCourseScale = true; }
+
+	course_TypeController = gui.add(course_TypeObject, 'Course_Type', ['Sphere', 'Ellipsoid']).onChange(handleCourseTypeChange);
+	
+	scale_Folder = gui.addFolder('Scale');
+	course_ScaleUniformController = scale_Folder.add(course_ScaleUniformObject, 'uniformScale', 200, 1500, 1).onChange(handleCourseScaleUniformChange);
+	course_ScaleXController = scale_Folder.add(course_ScaleXObject, 'scaleX', 200, 1500, 1).onChange(handleCourseScaleChange);
+	course_ScaleYController = scale_Folder.add(course_ScaleYObject, 'scaleY', 200, 1500, 1).onChange(handleCourseScaleChange);
+	course_ScaleZController = scale_Folder.add(course_ScaleZObject, 'scaleZ', 200, 1500, 1).onChange(handleCourseScaleChange);
+
+
+	handleCourseTypeChange();
+	handleCourseScaleUniformChange();
+	handleCourseScaleChange();
+
 
 	// scene/demo-specific uniforms go here
-	pathTracingUniforms.uCourseSphere_invMatrix = { value: courseSphere_invMatrix };
+	pathTracingUniforms.uCourseShape_invMatrix = { value: courseShape_invMatrix };
 	pathTracingUniforms.uGlider1InvMatrix = { value: new THREE.Matrix4() };
 	pathTracingUniforms.uGlider2InvMatrix = { value: new THREE.Matrix4() };
 	pathTracingUniforms.uBallInvMatrix = { value: new THREE.Matrix4() };
@@ -421,6 +505,7 @@ function initSceneData()
 	pathTracingUniforms.uBallCollisionVolumeInvMatrix = { value: new THREE.Matrix4() };
 	pathTracingUniforms.uGlider1CollisionVolumeInvMatrix = { value: new THREE.Matrix4() };
 	pathTracingUniforms.uGlider2CollisionVolumeInvMatrix = { value: new THREE.Matrix4() };
+	pathTracingUniforms.UCourseShapeType = { value: 0 };
 
 } // end function initSceneData()
 
@@ -429,6 +514,63 @@ function initSceneData()
 // called automatically from within the animate() function (located in InitCommon.js file)
 function updateVariablesAndUniforms()
 {
+	// handle any GUI menu changes
+
+	if (needChangeCourseType)
+	{
+		courseShapeType = course_TypeController.getValue();
+
+		if (courseShapeType == 'Sphere')
+		{
+			course_ScaleXController.setValue(500);
+			course_ScaleYController.setValue(500);
+			course_ScaleZController.setValue(500);
+			pathTracingUniforms.UCourseShapeType.value = 0;
+		}
+		else if (courseShapeType == 'Ellipsoid')
+		{
+			course_ScaleXController.setValue(600);
+			course_ScaleYController.setValue(300);
+			course_ScaleZController.setValue(600);
+			pathTracingUniforms.UCourseShapeType.value = 1;
+		}
+
+		cameraIsMoving = true;
+		needChangeCourseType = false;
+	}
+
+	if (needChangeCourseScaleUniform)
+	{
+		courseUniformScale = course_ScaleUniformController.getValue();
+		courseShape.scale.set(courseUniformScale, courseUniformScale, courseUniformScale);
+
+		course_ScaleXController.setValue(courseUniformScale);
+		course_ScaleYController.setValue(courseUniformScale);
+		course_ScaleZController.setValue(courseUniformScale);
+
+		courseShape.updateMatrixWorld();
+		courseShape_invMatrix.copy(courseShape.matrixWorld).invert();
+		pathTracingUniforms.uCourseShape_invMatrix.value.copy(courseShape_invMatrix);
+
+		cameraIsMoving = true;
+		needChangeCourseScaleUniform = false;
+	}
+
+	if (needChangeCourseScale)
+	{
+		courseShape.scale.set(course_ScaleXController.getValue(),
+			course_ScaleYController.getValue(),
+			course_ScaleZController.getValue());
+
+		courseShape.updateMatrixWorld();
+		courseShape_invMatrix.copy(courseShape.matrixWorld).invert();
+		pathTracingUniforms.uCourseShape_invMatrix.value.copy(courseShape_invMatrix);
+
+		cameraIsMoving = true;
+		needChangeCourseScale = false;
+	}
+
+
 
 	// reset some variables at start of game loop
 	glider1IsAcceleratingRight = false;
@@ -452,6 +594,7 @@ function updateVariablesAndUniforms()
 		// behavior is piloting your spaceship in the classic Asteroids arcade game.  The spacecraft travels only in the thrust direction and keeps floating
 		// in that direction until applying an opposing thrust or an artificial 'friction' force. The Asteroids ship slows from friction, even though there's none in space.
 		
+		//if (!glider1IsInAir)
 		{
 			if ((keyPressed('KeyS') || button4Pressed) && !(keyPressed('KeyW') || button3Pressed))
 			{
@@ -509,11 +652,60 @@ function updateVariablesAndUniforms()
 			}
 		} */
 
-		if (keyPressed('KeyI'))
+
+		//if (!glider2IsInAir)
 		{
-			glider2LocalVelocity.z -= (300 * frameTime);
-			glider2IsAcceleratingForward = true;
+			if ((keyPressed('KeyI') || button4Pressed) && !(keyPressed('KeyK') || button3Pressed))
+			{
+				glider2LocalVelocity.z += (glider2ThrustersForward.dot(glider2BaseForward) * -300 * frameTime); 
+				glider2LocalVelocity.x += (glider2ThrustersForward.dot(glider2BaseRight) * -300 * frameTime);
+				glider2IsAcceleratingForward = true;
+				
+			}
+			if ((keyPressed('KeyK') || button3Pressed) && !(keyPressed('KeyI') || button4Pressed))
+			{
+				glider2LocalVelocity.z += (glider2ThrustersForward.dot(glider2BaseForward) * 300 * frameTime); 
+				glider2LocalVelocity.x += (glider2ThrustersForward.dot(glider2BaseRight) * 300 * frameTime);
+				glider2IsAcceleratingForward = true;
+			}
+			if ((keyPressed('KeyJ') || button1Pressed) && !(keyPressed('KeyL') || button2Pressed))
+			{
+				glider2LocalVelocity.z += (glider2ThrustersRight.dot(glider2BaseForward) * -300 * frameTime); 
+				glider2LocalVelocity.x += (glider2ThrustersRight.dot(glider2BaseRight) * -300 * frameTime);
+				glider2IsAcceleratingRight = true;
+			}
+			if ((keyPressed('KeyL') || button2Pressed) && !(keyPressed('KeyJ') || button1Pressed))
+			{
+				glider2LocalVelocity.z += (glider2ThrustersRight.dot(glider2BaseForward) * 300 * frameTime); 
+				glider2LocalVelocity.x += (glider2ThrustersRight.dot(glider2BaseRight) * 300 * frameTime);
+				glider2IsAcceleratingRight = true;
+			}
 		}
+
+		//if (!glider2IsInAir)
+		/* {
+			if ((keyPressed('KeyW') || button3Pressed) && !(keyPressed('KeyS') || button4Pressed))
+			{
+				glider1LocalVelocity.z -= (300 * frameTime); 
+				glider1IsAcceleratingForward = true;
+				
+			}
+			if ((keyPressed('KeyS') || button4Pressed) && !(keyPressed('KeyW') || button3Pressed))
+			{
+				glider1LocalVelocity.z += (300 * frameTime); 
+				glider1IsAcceleratingForward = true;
+			}
+			if ((keyPressed('KeyA') || button1Pressed) && !(keyPressed('KeyD') || button2Pressed))
+			{
+				glider1LocalVelocity.x -= (300 * frameTime);
+				glider1IsAcceleratingRight = true;
+			}
+			if ((keyPressed('KeyD') || button2Pressed) && !(keyPressed('KeyA') || button1Pressed))
+			{ 
+				glider1LocalVelocity.x += (300 * frameTime);
+				glider1IsAcceleratingRight = true;
+			}
+		} */
 		
 	} // end if (!isPaused)
 
@@ -553,7 +745,6 @@ function updateVariablesAndUniforms()
 		glider1IsAcceleratingUp = true;
 		jumpWasTriggered = false;
 	}
-
 	
 	// apply friction to glider1's Local velocity
 	if (!glider1IsAcceleratingForward && !glider1IsAcceleratingUp && !glider1IsAcceleratingRight)
@@ -563,7 +754,6 @@ function updateVariablesAndUniforms()
 	}
 
 
-	
 	// update glider1's World velocity and position 
 
 	// Use the following code for setting position according to glider world positional basis (basis vectors only based on glider Up vector). Will behave more like the real world,
@@ -581,8 +771,6 @@ function updateVariablesAndUniforms()
 	glider1WorldVelocity.addScaledVector(glider1BaseForward, glider1LocalVelocity.z);
 	
 	glider1Base.position.addScaledVector(glider1WorldVelocity, frameTime);
-
-	//glider1Base.updateMatrixWorld();
  	
 
 	// Or use the following code for setting position according to glider1Thrusters rotational basis (which way glider is facing). Will constantly steer the glider in that
@@ -598,11 +786,11 @@ function updateVariablesAndUniforms()
 	glider1Base.position.addScaledVector(glider1WorldVelocity, frameTime); */
 	
 
-	// now that the glider has moved, record its new position minus its old position as a line segment
+	// now that the glider1 has moved, record its new position minus its old position (from the previous frame) as a line segment
 	glider1RaySegment.copy(glider1Base.position).sub(glider1OldPosition);
 	glider1RaySegmentLength = glider1RaySegment.length(); // will be used later as an out-of-bounds check
 
-	// now make a ray using the glider's old position (rayOrigin) and the direction it is trying to move in (rayDirection)
+	// now make a ray using the glider1's old position (rayOrigin) and the direction it is trying to move in (rayDirection)
 	glider1RayOrigin.copy(glider1OldPosition); // must use glider's old position for this to work
 	glider1RayDirection.copy(glider1RaySegment).normalize();
 
@@ -648,7 +836,7 @@ function updateVariablesAndUniforms()
 			glider1Base.position.copy(intersectionPoint);
 			//glider1Base.position.addScaledVector(glider1BaseUp, -15);
 			glider1Base.position.addScaledVector(unitCollisionNormal, glider1CollisionVolume.scale.x);
-			glider1Base.updateMatrixWorld();
+			//glider1Base.updateMatrixWorld();
 
 			combinedInverseMasses = 1 / (gliderMass + gliderMass);
 			impulseAmount = -2 * 0.02 * rV_dot_cN * combinedInverseMasses; // / collisionNormal.dot(collisionNormal);
@@ -660,8 +848,8 @@ function updateVariablesAndUniforms()
 			glider1LocalVelocity.y += impulseGlider1.dot(glider1BaseUp);
 			glider1LocalVelocity.z += impulseGlider1.dot(glider1BaseForward);
 
-			glider2LocalVelocity.x -= impulseGlider2.dot(glider2BaseRight);
-			glider2LocalVelocity.z -= impulseGlider2.dot(glider2BaseForward);
+			glider2LocalVelocity.x += impulseGlider2.dot(glider2BaseRight);
+			glider2LocalVelocity.z += impulseGlider2.dot(glider2BaseForward);
 		}
 	}
 
@@ -697,7 +885,7 @@ function updateVariablesAndUniforms()
 			glider1Base.position.copy(intersectionPoint);
 			///glider1Base.position.addScaledVector(glider1BaseUp, -15);
 			glider1Base.position.addScaledVector(unitCollisionNormal, glider1CollisionVolume.scale.x);
-			glider1Base.updateMatrixWorld();
+			//glider1Base.updateMatrixWorld();
 
 			combinedInverseMasses = 1 / (gliderMass + ballMass);
 			impulseAmount = -2 * 0.04 * rV_dot_cN * combinedInverseMasses;// / collisionNormal.dot(collisionNormal);
@@ -713,43 +901,68 @@ function updateVariablesAndUniforms()
 			ballLocalVelocity.z += impulseBall.dot(ballForward);
 		}
 	}
+
+
+	// now that the glider1 has possibly moved again (due to physics interactions), record its new position minus its old position as a line segment
+	glider1RaySegment.copy(glider1Base.position).sub(glider1OldPosition);
+	glider1RaySegmentLength = glider1RaySegment.length(); // will be used later as an out-of-bounds check
+
+	// now make a ray using the glider1's old position (rayOrigin) and the direction it is trying to move in (rayDirection)
+	glider1RayOrigin.copy(glider1OldPosition); // must use glider's old position for this to work
+	glider1RayDirection.copy(glider1RaySegment).normalize();
+
 	
+	// CHECK FOR GLIDER1 OUT-OF-BOUNDS (see if glider1's current position has left the course)
 
 	// first check glider1 forward motion probe for intersection with course (a ray is cast from glider1's position in the direction of its forward motion)
-	
-	rayObjectOrigin.copy(glider1RayOrigin);
-	rayObjectDirection.copy(glider1RayDirection);
-	// put the rayObjectOrigin and rayObjectDirection in the object space of the large course
-	// the line below is not needed, because the large course never moves (it is fixed in place)
-	//courseSphere_invMatrix.copy(courseSphere.matrixWorld).invert(); // only needed if this object moves
-	rayObjectOrigin.transformAsPoint(courseSphere_invMatrix);
-	rayObjectDirection.transformAsDirection(courseSphere_invMatrix);
-	// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-sphere intersection routine
-	testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
-	// If the test t value from the raycast comes back smaller than the distance that the glider is trying to cover during
-	//   this animation frame, that means that the glider's future position would step out of bounds of the course.
-	//   Therefore, we must snap the glider back into position at the raycast intersectionPoint on the course surface.
-	if (testT < glider1RaySegmentLength)
+	if (glider1RaySegmentLength > 0) // if glider1 hasn't moved at all (segment length == 0), don't bother with this check
 	{
-		glider1IsInAir = false;
-		glider1LocalVelocity.y = 0;
-		intersectionNormal.transformSurfaceNormal(courseSphere_invMatrix); // bring intersected object-space normal back into world space
-		intersectionNormal.negate(); // normals usually point outward on spheres, but since we are inside the sphere, must flip it
-		intersectionNormal.normalize(); // after the various transformations, make sure normal is a unit-length vector (length of 1)
-		intersectionPoint.getPointAlongRay(glider1RayOrigin, glider1RayDirection, testT);
-		intersectionPoint.addScaledVector(intersectionNormal, 1);
-		glider1Base.position.copy(intersectionPoint);
-		glider1BaseUp.copy(intersectionNormal);
-		glider1BaseRight.crossVectors(glider1BaseUp, glider1BaseForward).normalize();
-		glider1BaseForward.crossVectors(glider1BaseRight, glider1BaseUp).normalize();
-	}
-	if (testT == Infinity)
-	{// bail out and snap the glider back to its old position
-		glider1Base.position.copy(glider1OldPosition);
-	}
+		rayObjectOrigin.copy(glider1RayOrigin);
+		rayObjectDirection.copy(glider1RayDirection);
+		// put the rayObjectOrigin and rayObjectDirection in the object space of the large course
+		// the line below is not needed, because the large course never moves (it is fixed in place)
+		//courseShape_invMatrix.copy(courseShape.matrixWorld).invert(); // only needed if this object moves
+		rayObjectOrigin.transformAsPoint(courseShape_invMatrix);
+		rayObjectDirection.transformAsDirection(courseShape_invMatrix);
+		// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-shape intersection routine
+		testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
+		
+		// If the test t value from the raycast comes back smaller than the distance that the glider is trying to cover during
+		//   this animation frame, that means that the glider's future position would step out of bounds of the course.
+		//   Therefore, we must snap the glider back into position at the raycast intersectionPoint on the course surface.
+		if (testT < glider1RaySegmentLength)
+		{
+			glider1IsInAir = false;
+			glider1LocalVelocity.y = 0;
+			intersectionNormal.transformSurfaceNormal(courseShape_invMatrix); // bring intersected object-space normal back into world space
+			intersectionNormal.negate(); // normals usually point outward on shapes, but since we are inside the shape, must flip it
+			intersectionNormal.normalize(); // after the various transformations, make sure normal is a unit-length vector (length of 1)
+			intersectionPoint.getPointAlongRay(glider1RayOrigin, glider1RayDirection, testT);
+			intersectionPoint.addScaledVector(intersectionNormal, 1);
+			glider1Base.position.copy(intersectionPoint);
+			//glider1Base.updateMatrixWorld();
+			glider1BaseUp.copy(intersectionNormal);
+			glider1BaseRight.crossVectors(glider1BaseUp, glider1BaseForward).normalize();
+			glider1BaseForward.crossVectors(glider1BaseRight, glider1BaseUp).normalize();
+		}
+		if (testT == Infinity)
+		{// bail out and snap the glider1 back to its starting position
+			//console.log("Glider1 bailed out");
+			glider1IsInAir = true;
+			glider1LocalVelocity.set(0, 0, 0);
+			glider1Base.position.copy(glider1StartingPosition);
+			//glider1Base.updateMatrixWorld();
+			glider1BaseRight.set(1, 0, 0);
+			glider1BaseUp.set(0, 1, 0);
+			glider1BaseForward.set(0, 0, 1);
+		}
+	} // end if (glider1RaySegmentLength > 0)
 
 	
-	// now check glider1 base center probe for intersection with course (a ray is cast from glider1's position downward towards the floor beneath)
+	// CHECK FOR GLIDER1 BASE vs. LARGE COURSE INTERACTIONS
+	// handling these interactions is what makes the glider1 glide smoothly on the surface of the large course
+
+	// check glider1 base center probe for intersection with course (a ray is cast from glider1's position downward towards the floor beneath)
 	
 	glider1RayOrigin.copy(glider1Base.position);
 	glider1RayDirection.copy(glider1BaseUp).negate();
@@ -758,15 +971,16 @@ function updateVariablesAndUniforms()
 	rayObjectDirection.copy(glider1RayDirection);
 	// put the rayObjectOrigin and rayObjectDirection in the object space of the large course
 	// the line below is not needed, because the large course never moves (it is fixed in place)
-	//courseSphere_invMatrix.copy(courseSphere.matrixWorld).invert(); // only needed if this object moves
-	rayObjectOrigin.transformAsPoint(courseSphere_invMatrix);
-	rayObjectDirection.transformAsDirection(courseSphere_invMatrix);
-	// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-sphere intersection routine
+	//courseShape_invMatrix.copy(courseShape.matrixWorld).invert(); // only needed if this object moves
+	rayObjectOrigin.transformAsPoint(courseShape_invMatrix);
+	rayObjectDirection.transformAsDirection(courseShape_invMatrix);
+	// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-shape intersection routine
 	testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
+	
 	if (testT < Infinity)
 	{
-		intersectionNormal.transformSurfaceNormal(courseSphere_invMatrix); // bring intersected object-space normal back into world space
-		intersectionNormal.negate(); // normals usually point outward on spheres, but since we are inside the sphere, must flip it
+		intersectionNormal.transformSurfaceNormal(courseShape_invMatrix); // bring intersected object-space normal back into world space
+		intersectionNormal.negate(); // normals usually point outward on shapes, but since we are inside the shape, must flip it
 		intersectionNormal.normalize(); // after the various transformations, make sure normal is a unit-length vector (length of 1)
 		intersectionPoint.getPointAlongRay(glider1RayOrigin, glider1RayDirection, testT);
 		intersectionPoint.addScaledVector(intersectionNormal, 1);
@@ -774,53 +988,52 @@ function updateVariablesAndUniforms()
 		glider1BaseRight.crossVectors(glider1BaseUp, glider1BaseForward).normalize();
 		glider1BaseForward.crossVectors(glider1BaseRight, glider1BaseUp).normalize();
 	}
-	if (testT < 1)
+	if (testT <= 1)
 	{
 		glider1IsInAir = false;
 		glider1LocalVelocity.y = 0;
 		glider1Base.position.copy(intersectionPoint);
 	}
-	if (testT > 2)
+	if (testT > 1)
 	{
 		glider1IsInAir = true;
 	}
-		
-	if (testT == Infinity)
-	{// bail out and snap the glider back to its old position
+	/* if (testT == Infinity)
+	{// bail out and snap the glider1 back to its old position
+		console.log("Glider1 base could not intersect with the ground below it");
 		glider1Base.position.copy(glider1OldPosition);
-	}
+	} */
+
 	
 
-	// now that glider position is in its final place for this frame, copy it to glider1OldPosition
+	// now that the glider1 position is in its final place for this frame, copy it to glider1OldPosition
 	glider1OldPosition.copy(glider1Base.position);
 
-
+	// build up a rotation matrix, using the glider's 3 basis vectors (right,up,forward) that were calculated as it moves around the course
 	glider1RotationMatrix.makeBasis(glider1BaseRight, glider1BaseUp, glider1BaseForward);
 	glider1Base.rotation.setFromRotationMatrix(glider1RotationMatrix);
 	glider1Base.updateMatrixWorld();
-	
-
+	// copy glider's transform into the 'Thrusters' transform, which is kind of like a space vehicle's rocket engine propellant in the back
 	glider1Thrusters.position.copy(glider1Base.position);
 	glider1Thrusters.rotation.copy(glider1Base.rotation);
 	glider1Thrusters.scale.copy(glider1Base.scale);
-
-	glider1Thrusters.rotateY(inputRotationHorizontal);
+	// the glider's thrusters can rotate separately from the glider's fixed base, which only slowly rotates as glider moves around the course
+	glider1Thrusters.rotateY(inputRotationHorizontal); // allows player to rotate the glider with mouse
 	glider1Thrusters.updateMatrixWorld();
 	glider1Thrusters.matrixWorld.extractBasis(glider1ThrustersRight, glider1ThrustersUp, glider1ThrustersForward);
 	glider1ThrustersRight.normalize(); glider1ThrustersUp.normalize(); glider1ThrustersForward.normalize();
 
 
-
 	// temporarily move glider up out of the ground for final render
 	glider1Thrusters.position.addScaledVector(glider1ThrustersUp, 8);
-	glider1Thrusters.updateMatrixWorld();
-
+	
+	// move 3rd-person camera back and up from player's glider
 	cameraControlsObject.position.copy(glider1Thrusters.position);
 	cameraControlsObject.position.addScaledVector(glider1ThrustersForward, 70);
 	cameraControlsObject.position.addScaledVector(glider1ThrustersUp, 20);
-	
+	// match the 3rd-person camera rotation to player's glider rotation
 	cameraControlsObject.rotation.copy(glider1Thrusters.rotation);
-	cameraControlsPitchObject.rotation.x = inputRotationVertical;
+	cameraControlsPitchObject.rotation.x = inputRotationVertical; // glider doesn't rotate on x axis, but camera can (look up and down)
 	// rotate glider paraboloid (temporary stand-in for more complex game model), so its apex faces in the forward direction
 	glider1Thrusters.rotateX(-Math.PI * 0.5);
 	glider1Thrusters.updateMatrixWorld();
@@ -836,24 +1049,25 @@ function updateVariablesAndUniforms()
 	
 		
 
+
 	// UPDATE GLIDER 2 ////////////////////////////////////////////////////////////////////////////////
 
-	
-	// if glider is on the ground (touching the large course), allow player to jump again
+
+	// if glider2 is on the ground (touching the large course), allow computer player to jump again
 	if (!glider2IsInAir)
 	{
 		glider2LocalVelocity.y = 0;
 		glider2IsAcceleratingUp = false;
 		//canPress_Space = true;
 	}
-	// if in air, apply gravity (actually anti-gravity: pulls Glider down to the large course surface in all directions)
+	// if in air, apply gravity (actually anti-gravity: pulls Glider2 down to the large course surface in all directions)
 	if (glider2IsInAir)
 	{
 		//canPress_Space = false;
 		glider2LocalVelocity.y -= (200 * frameTime);
 		glider2IsAcceleratingUp = true;
 	}
-	// if a legal jump action was triggered, apply a short, upward impulse to glider
+	// if a legal jump action was triggered, apply a short, upward impulse to glider2
 	/* if (jumpWasTriggered)
 	{
 		glider2IsInAir = true;
@@ -861,7 +1075,6 @@ function updateVariablesAndUniforms()
 		glider2IsAcceleratingUp = true;
 		jumpWasTriggered = false;
 	} */
-
 	
 	// apply friction to glider2
 	if (!glider2IsAcceleratingForward && !glider2IsAcceleratingUp && !glider2IsAcceleratingRight)
@@ -871,22 +1084,22 @@ function updateVariablesAndUniforms()
 	}
 
 
-	// update glider position
+	// update glider2 position
 
 	glider2WorldVelocity.set(0, 0, 0);
-	glider2WorldVelocity.addScaledVector(glider2ThrustersRight, glider2LocalVelocity.x);
-	glider2WorldVelocity.addScaledVector(glider2ThrustersUp, glider2LocalVelocity.y);
-	glider2WorldVelocity.addScaledVector(glider2ThrustersForward, glider2LocalVelocity.z);
+	glider2WorldVelocity.addScaledVector(glider2BaseRight, glider2LocalVelocity.x);
+	glider2WorldVelocity.addScaledVector(glider2BaseUp, glider2LocalVelocity.y);
+	glider2WorldVelocity.addScaledVector(glider2BaseForward, glider2LocalVelocity.z);
 	
 	glider2Base.position.addScaledVector(glider2WorldVelocity, frameTime);
 	
 
-	// now that the glider has moved, record its new position minus its old position as a line segment
+	// now that the glider2 has moved, record its new position minus its old position as a line segment
 	glider2RaySegment.copy(glider2Base.position).sub(glider2OldPosition);
 	glider2RaySegmentLength = glider2RaySegment.length(); // will be used later as an out-of-bounds check
 
-	// now make a ray using the glider's old position (rayOrigin) and the direction it is trying to move in (rayDirection)
-	glider2RayOrigin.copy(glider2OldPosition); // must use glider's old position for this to work
+	// now make a ray using the glider2's old position (rayOrigin) and the direction it is trying to move in (rayDirection)
+	glider2RayOrigin.copy(glider2OldPosition); // must use glider2's old position for this to work
 	glider2RayDirection.copy(glider2RaySegment).normalize();
 
 
@@ -931,7 +1144,7 @@ function updateVariablesAndUniforms()
 			glider2Base.position.copy(intersectionPoint);
 			//glider2Base.position.addScaledVector(glider2BaseUp, -15);
 			glider2Base.position.addScaledVector(unitCollisionNormal, glider2CollisionVolume.scale.x);
-			glider2Base.updateMatrixWorld();
+			//glider2Base.updateMatrixWorld();
 
 			combinedInverseMasses = 1 / (gliderMass + gliderMass);
 			impulseAmount = -2 * 0.02 * rV_dot_cN * combinedInverseMasses; // / collisionNormal.dot(collisionNormal);
@@ -943,8 +1156,8 @@ function updateVariablesAndUniforms()
 			glider2LocalVelocity.y += impulseGlider2.dot(glider2BaseUp);
 			glider2LocalVelocity.z += impulseGlider2.dot(glider2BaseForward);
 
-			glider1LocalVelocity.x -= impulseGlider1.dot(glider1BaseRight);
-			glider1LocalVelocity.z -= impulseGlider1.dot(glider1BaseForward);
+			glider1LocalVelocity.x += impulseGlider1.dot(glider1BaseRight);
+			glider1LocalVelocity.z += impulseGlider1.dot(glider1BaseForward);
 		}
 	}
 
@@ -980,7 +1193,7 @@ function updateVariablesAndUniforms()
 			glider2Base.position.copy(intersectionPoint);
 			///glider2Base.position.addScaledVector(glider2BaseUp, -15);
 			glider2Base.position.addScaledVector(unitCollisionNormal, glider2CollisionVolume.scale.x);
-			glider2Base.updateMatrixWorld();
+			//glider2Base.updateMatrixWorld();
 
 			combinedInverseMasses = 1 / (gliderMass + ballMass);
 			impulseAmount = -2 * 0.04 * rV_dot_cN * combinedInverseMasses;// / collisionNormal.dot(collisionNormal);
@@ -997,41 +1210,63 @@ function updateVariablesAndUniforms()
 		}
 	}
 
+	// now that the glider2 has possibly moved again (due to physics interactions), record its new position minus its old position as a line segment
+	glider2RaySegment.copy(glider2Base.position).sub(glider2OldPosition);
+	glider2RaySegmentLength = glider2RaySegment.length(); // will be used later as an out-of-bounds check
 
-	// first check glider2 forward motion probe for intersection with course (a ray is cast from glider2's position in the direction of its forward motion)
-	
-	rayObjectOrigin.copy(glider2RayOrigin);
-	rayObjectDirection.copy(glider2RayDirection);
-	// put the rayObjectOrigin and rayObjectDirection in the object space of the large course
-	// the line below is not needed, because the large course never moves (it is fixed in place)
-	//courseSphere_invMatrix.copy(courseSphere.matrixWorld).invert(); // only needed if this object moves
-	rayObjectOrigin.transformAsPoint(courseSphere_invMatrix);
-	rayObjectDirection.transformAsDirection(courseSphere_invMatrix);
-	// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-sphere intersection routine
-	testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
-	// If the test t value from the raycast comes back smaller than the distance that the glider is trying to cover during
-	//   this animation frame, that means that the glider's future position would step out of bounds of the course.
-	//   Therefore, we must snap the glider back into position at the raycast intersectionPoint on the course surface.
-	if (testT < glider2RaySegmentLength)
+	// now make a ray using the glider2's old position (rayOrigin) and the direction it is trying to move in (rayDirection)
+	glider2RayOrigin.copy(glider2OldPosition); // must use glider2's old position for this to work
+	glider2RayDirection.copy(glider2RaySegment).normalize();
+
+
+	// CHECK FOR GLIDER2 OUT-OF-BOUNDS (see if glider2's current position has left the course)
+
+	if (glider2RaySegmentLength > 0) // if glider2 hasn't moved at all (segment length == 0), don't bother with this check
 	{
-		glider2IsInAir = false;
-		glider2LocalVelocity.y = 0;
-		intersectionNormal.transformSurfaceNormal(courseSphere_invMatrix); // bring intersected object-space normal back into world space
-		intersectionNormal.negate(); // normals usually point outward on spheres, but since we are inside the sphere, must flip it
-		intersectionNormal.normalize(); // after the various transformations, make sure normal is a unit-length vector (length of 1)
-		intersectionPoint.getPointAlongRay(glider2RayOrigin, glider2RayDirection, testT);
-		intersectionPoint.addScaledVector(intersectionNormal, 1);
-		glider2Base.position.copy(intersectionPoint);
-		glider2BaseUp.copy(intersectionNormal);
-		glider2BaseRight.crossVectors(glider2BaseUp, glider2BaseForward).normalize();
-		glider2BaseForward.crossVectors(glider2BaseRight, glider2BaseUp).normalize();
-	}
-	if (testT == Infinity)
-	{// bail out and snap the glider back to its old position
-		glider2Base.position.copy(glider2OldPosition);
-	}
+		// first check glider2 forward motion probe for intersection with course (a ray is cast from glider2's position in the direction of its forward motion)
+		rayObjectOrigin.copy(glider2RayOrigin);
+		rayObjectDirection.copy(glider2RayDirection);
+		// put the rayObjectOrigin and rayObjectDirection in the object space of the large course
+		// the line below is not needed, because the large course never moves (it is fixed in place)
+		//courseShape_invMatrix.copy(courseShape.matrixWorld).invert(); // only needed if this object moves
+		rayObjectOrigin.transformAsPoint(courseShape_invMatrix);
+		rayObjectDirection.transformAsDirection(courseShape_invMatrix);
+		// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-shape intersection routine
+		testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
+		
+		// If the test t value from the raycast comes back smaller than the distance that the glider2 is trying to cover during
+		//   this animation frame, that means that the glider2's future position would step out of bounds of the course.
+		//   Therefore, we must snap the glider back into position at the raycast intersectionPoint on the course surface.
+		if (testT < glider2RaySegmentLength)
+		{
+			glider2IsInAir = false;
+			glider2LocalVelocity.y = 0;
+			intersectionNormal.transformSurfaceNormal(courseShape_invMatrix); // bring intersected object-space normal back into world space
+			intersectionNormal.negate(); // normals usually point outward on shapes, but since we are inside the shape, must flip it
+			intersectionNormal.normalize(); // after the various transformations, make sure normal is a unit-length vector (length of 1)
+			intersectionPoint.getPointAlongRay(glider2RayOrigin, glider2RayDirection, testT);
+			intersectionPoint.addScaledVector(intersectionNormal, 1);
+			glider2Base.position.copy(intersectionPoint);
+			glider2BaseUp.copy(intersectionNormal);
+			glider2BaseRight.crossVectors(glider2BaseUp, glider2BaseForward).normalize();
+			glider2BaseForward.crossVectors(glider2BaseRight, glider2BaseUp).normalize();
+		}
+		if (testT == Infinity)
+		{// bail out and snap the glider2 back to its starting position
+			//console.log("Glider2 bailed out");
+			glider2IsInAir = true;
+			glider2LocalVelocity.set(0, 0, 0);
+			glider2Base.position.copy(glider2StartingPosition);
+			glider2BaseRight.set(1, 0, 0);
+			glider2BaseUp.set(0, 1, 0);
+			glider2BaseForward.set(0, 0, 1);
+		}
+	} // end if (glider2RaySegmentLength > 0)
 
-	
+
+	// CHECK FOR GLIDER2 BASE vs. LARGE COURSE INTERACTIONS
+	// handling these interactions is what makes the glider2 glide smoothly on the surface of the large course
+
 	// now check glider2 base center probe for intersection with course (a ray is cast from glider2's position downward towards the floor beneath)
 	
 	glider2RayOrigin.copy(glider2Base.position);
@@ -1041,15 +1276,16 @@ function updateVariablesAndUniforms()
 	rayObjectDirection.copy(glider2RayDirection);
 	// put the rayObjectOrigin and rayObjectDirection in the object space of the large course
 	// the line below is not needed, because the large course never moves (it is fixed in place)
-	//courseSphere_invMatrix.copy(courseSphere.matrixWorld).invert(); // only needed if this object moves
-	rayObjectOrigin.transformAsPoint(courseSphere_invMatrix);
-	rayObjectDirection.transformAsDirection(courseSphere_invMatrix);
-	// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-sphere intersection routine
+	//courseShape_invMatrix.copy(courseShape.matrixWorld).invert(); // only needed if this object moves
+	rayObjectOrigin.transformAsPoint(courseShape_invMatrix);
+	rayObjectDirection.transformAsDirection(courseShape_invMatrix);
+	// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-shape intersection routine
 	testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
+	
 	if (testT < Infinity)
 	{
-		intersectionNormal.transformSurfaceNormal(courseSphere_invMatrix); // bring intersected object-space normal back into world space
-		intersectionNormal.negate(); // normals usually point outward on spheres, but since we are inside the sphere, must flip it
+		intersectionNormal.transformSurfaceNormal(courseShape_invMatrix); // bring intersected object-space normal back into world space
+		intersectionNormal.negate(); // normals usually point outward on shapes, but since we are inside the shape, must flip it
 		intersectionNormal.normalize(); // after the various transformations, make sure normal is a unit-length vector (length of 1)
 		intersectionPoint.getPointAlongRay(glider2RayOrigin, glider2RayDirection, testT);
 		intersectionPoint.addScaledVector(intersectionNormal, 1);
@@ -1063,21 +1299,19 @@ function updateVariablesAndUniforms()
 		glider2LocalVelocity.y = 0;
 		glider2Base.position.copy(intersectionPoint);
 	}
-	if (testT > 2)
+	if (testT > 1)
 	{
 		glider2IsInAir = true;
 	}
-		
-	if (testT == Infinity)
-	{// bail out and snap the glider back to its old position
+	/* if (testT == Infinity)
+	{// bail out and snap the glider2 back to its old position
+		console.log("Glider2 base could not intersect with the ground below it");
 		glider2Base.position.copy(glider2OldPosition);
-	}
-	
+	} */
 
-	
-	// now that glider position is in its final place for this frame, copy it to glider2OldPosition
+
+	// now that the glider2 position is in its final place for this frame, copy it to glider2OldPosition
 	glider2OldPosition.copy(glider2Base.position);
-
 
 	glider2RotationMatrix.makeBasis(glider2BaseRight, glider2BaseUp, glider2BaseForward);
 	glider2Base.rotation.setFromRotationMatrix(glider2RotationMatrix);
@@ -1088,15 +1322,15 @@ function updateVariablesAndUniforms()
 	glider2Thrusters.scale.copy(glider2Base.scale);
 
 	glider2Thrusters.rotateY(Math.PI);
-	//glider2Thrusters.rotateY(inputRotationHorizontal);
+	glider2Thrusters.rotateY(inputRotationHorizontal);
+	//glider2Thrusters.rotateY(ballYRotateAngle);
 	glider2Thrusters.updateMatrixWorld();
 	glider2Thrusters.matrixWorld.extractBasis(glider2ThrustersRight, glider2ThrustersUp, glider2ThrustersForward);
 	glider2ThrustersRight.normalize(); glider2ThrustersUp.normalize(); glider2ThrustersForward.normalize();
 
 	
-	// temporarily move glider up out of the ground for final render
+	// temporarily move glider2 up out of the ground for final render
 	glider2Thrusters.position.addScaledVector(glider2ThrustersUp, 8);
-	glider2Thrusters.updateMatrixWorld();
 
 	// cameraControlsObject.position.copy(glider2Thrusters.position);
 	// cameraControlsObject.position.addScaledVector(glider2ThrustersForward, 70);
@@ -1104,23 +1338,21 @@ function updateVariablesAndUniforms()
 	// cameraControlsObject.rotation.copy(glider2Thrusters.rotation);
 	// cameraControlsPitchObject.rotation.x = inputRotationVertical;
 
-	// rotate glider paraboloid (temporary stand-in for more complex game model), so its apex faces in the forward direction
+	// rotate glider2 paraboloid (temporary stand-in for more complex game model), so its apex faces in the forward direction
 	glider2Thrusters.rotateX(-Math.PI * 0.5);
 	glider2Thrusters.updateMatrixWorld();
 
-
-	// send final Glider transform (as an inverted matrix), so that the ray tracer can render it in the correct position and orientation
+	// send final Glider2 transform (as an inverted matrix), so that the ray tracer can render it in the correct position and orientation
 	pathTracingUniforms.uGlider2InvMatrix.value.copy(glider2Thrusters.matrixWorld).invert();
 
-	// after rendering, reset glider position back down so that its center is right on the ground (this helps with ray casting against course)
+	// after rendering, reset glider2 position back down so that its center is right on the ground (this helps with ray casting against course)
 	glider2Thrusters.position.addScaledVector(glider2ThrustersUp, -8);
-	// after rendering, reset glider rotation to be default upright (aligned with ground surface normal), so that rotation calculation code above will be easier
+	// after rendering, reset glider2 rotation to be default upright (aligned with ground surface normal), so that rotation calculation code above will be easier
 	glider2Thrusters.rotateX(Math.PI * 0.5);
 	glider2Thrusters.updateMatrixWorld();
 		
-			
 	
-	
+
 
 	// UPDATE BALL ///////////////////////////////////////////////////////////////////////////////////
 
@@ -1131,7 +1363,6 @@ function updateVariablesAndUniforms()
 	}
 
 	
-	
 	ballWorldVelocity.set(0, 0, 0);
 	ballWorldVelocity.addScaledVector(ballRight, ballLocalVelocity.x);
 	ballWorldVelocity.addScaledVector(ballUp, ballLocalVelocity.y);
@@ -1141,8 +1372,7 @@ function updateVariablesAndUniforms()
 
 
 	// now that the ball has moved, record its new position minus its old position as a line segment
-	ballRaySegment.copy(ball.position);
-	ballRaySegment.sub(ballOldPosition);
+	ballRaySegment.copy(ball.position).sub(ballOldPosition);
 	ballRaySegmentLength = ballRaySegment.length(); // will be used later as an out-of-bounds check
 
 	// now make a ray using the ball's old position (rayOrigin) and the direction it is trying to move in (rayDirection)
@@ -1165,9 +1395,8 @@ function updateVariablesAndUniforms()
 	if (testT < ballRaySegmentLength)
 	{
 		ballIsInAir = true;
-		ballLocalVelocity.x = 0; ballLocalVelocity.y = 0; ballLocalVelocity.z = 0;
+		ballLocalVelocity.set(0, 0, 0);
 		ball.position.copy(ballStartingPosition);
-		ball.updateMatrixWorld();
 		ballRight.set(1, 0, 0);
 		ballUp.set(0, 1, 0);
 		ballForward.set(0, 0, 1);
@@ -1189,9 +1418,8 @@ function updateVariablesAndUniforms()
 	if (testT < ballRaySegmentLength)
 	{
 		ballIsInAir = true;
-		ballLocalVelocity.x = 0; ballLocalVelocity.y = 0; ballLocalVelocity.z = 0;
+		ballLocalVelocity.set(0, 0, 0);
 		ball.position.copy(ballStartingPosition);
-		ball.updateMatrixWorld();
 		ballRight.set(1, 0, 0);
 		ballUp.set(0, 1, 0);
 		ballForward.set(0, 0, 1);
@@ -1232,7 +1460,7 @@ function updateVariablesAndUniforms()
 			ball.position.copy(intersectionPoint);
 			///ball.position.addScaledVector(ballUp, -15);
 			ball.position.addScaledVector(unitCollisionNormal, ballCollisionVolume.scale.x);
-			ball.updateMatrixWorld();
+			//ball.updateMatrixWorld();
 
 			combinedInverseMasses = 1 / (ballMass + gliderMass);
 			impulseAmount = -2 * 0.02 * rV_dot_cN * combinedInverseMasses;// / collisionNormal.dot(collisionNormal);
@@ -1283,7 +1511,7 @@ function updateVariablesAndUniforms()
 			ball.position.copy(intersectionPoint);
 			///ball.position.addScaledVector(ballUp, -15);
 			ball.position.addScaledVector(unitCollisionNormal, ballCollisionVolume.scale.x);
-			ball.updateMatrixWorld();
+			//ball.updateMatrixWorld();
 
 			combinedInverseMasses = 1 / (ballMass + gliderMass);
 			impulseAmount = -2 * 0.02 * rV_dot_cN * combinedInverseMasses;// / collisionNormal.dot(collisionNormal);
@@ -1295,45 +1523,67 @@ function updateVariablesAndUniforms()
 			ballLocalVelocity.y += impulseBall.dot(ballUp);
 			ballLocalVelocity.z += impulseBall.dot(ballForward);
 
-			glider2LocalVelocity.x -= impulseGlider2.dot(glider2BaseRight);
-			glider2LocalVelocity.z -= impulseGlider2.dot(glider2BaseForward);
+			glider2LocalVelocity.x += impulseGlider2.dot(glider2BaseRight);
+			glider2LocalVelocity.z += impulseGlider2.dot(glider2BaseForward);
 		}
 	}
 
+	// now that the ball has possibly moved again (due to physics interactions), record its new position minus its old position as a line segment
+	ballRaySegment.copy(ball.position).sub(ballOldPosition);
+	ballRaySegmentLength = ballRaySegment.length(); // will be used later as an out-of-bounds check
 
-	// first check ball forward motion probe for intersection with course (a ray is cast from ball's position in the direction of its forward motion)
+	// now make a ray using the ball's old position (rayOrigin) and the direction it is trying to move in (rayDirection)
+	ballRayOrigin.copy(ballOldPosition); // must use ball's old position for this to work
+	ballRayDirection.copy(ballRaySegment).normalize();
 
-	rayObjectOrigin.copy(ballRayOrigin);
-	rayObjectDirection.copy(ballRayDirection);
-	// put the rayObjectOrigin and rayObjectDirection in the object space of the large course
-	// the line below is not needed, because the large course never moves (it is fixed in place)
-	//courseSphere_invMatrix.copy(courseSphere.matrixWorld).invert(); // only needed if this object moves
-	rayObjectOrigin.transformAsPoint(courseSphere_invMatrix);
-	rayObjectDirection.transformAsDirection(courseSphere_invMatrix);
-	// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-sphere intersection routine
-	testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
-	// If the test t value from the raycast comes back smaller than the distance that the ball is trying to cover during
-	//   this animation frame, that means that the ball's future position would step out of bounds of the course.
-	//   Therefore, we must snap the ball back into position at the raycast intersectionPoint on the course surface.
-	if (testT < ballRaySegmentLength)
+
+	// CHECK FOR BALL OUT-OF-BOUNDS (see if ball's current position has left the course)
+
+	if (ballRaySegmentLength > 0) // if ball hasn't moved at all (segment length == 0), don't bother with this check
 	{
-		ballIsInAir = false;
-		ballLocalVelocity.y = 0;
-		intersectionNormal.transformSurfaceNormal(courseSphere_invMatrix); // bring intersected object-space normal back into world space
-		intersectionNormal.negate(); // normals usually point outward on spheres, but since we are inside the sphere, must flip it
-		intersectionNormal.normalize(); // after the various transformations, make sure normal is a unit-length vector (length of 1)
-		intersectionPoint.getPointAlongRay(ballRayOrigin, ballRayDirection, testT);
-		intersectionPoint.addScaledVector(intersectionNormal, 1);
-		ball.position.copy(intersectionPoint);
-		ballUp.copy(intersectionNormal);
-		ballRight.crossVectors(ballUp, ballForward).normalize();
-		ballForward.crossVectors(ballRight, ballUp).normalize();
-	}
-	if (testT == Infinity)
-	{// bail out and snap the ball back to its old position
-		ball.position.copy(ballOldPosition);
-	}
+		// first check ball forward motion probe for intersection with course (a ray is cast from ball's position in the direction of its forward motion)
+		rayObjectOrigin.copy(ballRayOrigin);
+		rayObjectDirection.copy(ballRayDirection);
+		// put the rayObjectOrigin and rayObjectDirection in the object space of the large course
+		// the line below is not needed, because the large course never moves (it is fixed in place)
+		//courseShape_invMatrix.copy(courseShape.matrixWorld).invert(); // only needed if this object moves
+		rayObjectOrigin.transformAsPoint(courseShape_invMatrix);
+		rayObjectDirection.transformAsDirection(courseShape_invMatrix);
+		// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-shape intersection routine
+		testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
+		
+		// If the test t value from the raycast comes back smaller than the distance that the ball is trying to cover during
+		//   this animation frame, that means that the ball's future position would step out of bounds of the course.
+		//   Therefore, we must snap the ball back into position at the raycast intersectionPoint on the course surface.
+		if (testT < ballRaySegmentLength)
+		{
+			ballIsInAir = false;
+			ballLocalVelocity.y = 0;
+			intersectionNormal.transformSurfaceNormal(courseShape_invMatrix); // bring intersected object-space normal back into world space
+			intersectionNormal.negate(); // normals usually point outward on shapes, but since we are inside the shape, must flip it
+			intersectionNormal.normalize(); // after the various transformations, make sure normal is a unit-length vector (length of 1)
+			intersectionPoint.getPointAlongRay(ballRayOrigin, ballRayDirection, testT);
+			intersectionPoint.addScaledVector(intersectionNormal, 1);
+			ball.position.copy(intersectionPoint);
+			ballUp.copy(intersectionNormal);
+			ballRight.crossVectors(ballUp, ballForward).normalize();
+			ballForward.crossVectors(ballRight, ballUp).normalize();
+		}
+		if (testT == Infinity)
+		{// bail out and snap the ball back to its starting position
+			//console.log("Ball bailed out");
+			ballIsInAir = true;
+			ballLocalVelocity.set(0, 0, 0);
+			ball.position.copy(ballStartingPosition);
+			ballRight.set(1, 0, 0);
+			ballUp.set(0, 1, 0);
+			ballForward.set(0, 0, 1);
+		}
+	} // end if (ballRaySegmentLength > 0)
 
+
+	// CHECK FOR BALL vs. LARGE COURSE INTERACTIONS
+	// handling these interactions is what makes the ball glide smoothly on the surface of the large course
 	
 	// now check ball base center probe for intersection with course (a ray is cast from ball's position downward towards the floor beneath)
 	
@@ -1344,15 +1594,16 @@ function updateVariablesAndUniforms()
 	rayObjectDirection.copy(ballRayDirection);
 	// put the rayObjectOrigin and rayObjectDirection in the object space of the large course
 	// the line below is not needed, because the large course never moves (it is fixed in place)
-	//courseSphere_invMatrix.copy(courseSphere.matrixWorld).invert(); // only needed if this object moves
-	rayObjectOrigin.transformAsPoint(courseSphere_invMatrix);
-	rayObjectDirection.transformAsDirection(courseSphere_invMatrix);
-	// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-sphere intersection routine
+	//courseShape_invMatrix.copy(courseShape.matrixWorld).invert(); // only needed if this object moves
+	rayObjectOrigin.transformAsPoint(courseShape_invMatrix);
+	rayObjectDirection.transformAsDirection(courseShape_invMatrix);
+	// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-shape intersection routine
 	testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
+	
 	if (testT < Infinity)
 	{
-		intersectionNormal.transformSurfaceNormal(courseSphere_invMatrix); // bring intersected object-space normal back into world space
-		intersectionNormal.negate(); // normals usually point outward on spheres, but since we are inside the sphere, must flip it
+		intersectionNormal.transformSurfaceNormal(courseShape_invMatrix); // bring intersected object-space normal back into world space
+		intersectionNormal.negate(); // normals usually point outward on shapes, but since we are inside the shape, must flip it
 		intersectionNormal.normalize(); // after the various transformations, make sure normal is a unit-length vector (length of 1)
 		intersectionPoint.getPointAlongRay(ballRayOrigin, ballRayDirection, testT);
 		intersectionPoint.addScaledVector(intersectionNormal, 1);
@@ -1366,18 +1617,17 @@ function updateVariablesAndUniforms()
 		ballLocalVelocity.y = 0;
 		ball.position.copy(intersectionPoint);
 	}
-	if (testT > 2)
+	if (testT > 1)
 	{
 		ballIsInAir = true;
 	}
-		
-	if (testT == Infinity)
+	/* if (testT == Infinity)
 	{// bail out and snap the ball back to its old position
+		console.log("Ball could not intersect with the ground below it");
 		ball.position.copy(ballOldPosition);
-	}
+	} */
 	
 	
-
 	// apply friction to ball
 	if (!ballIsInAir)
 	{
@@ -1388,14 +1638,13 @@ function updateVariablesAndUniforms()
 
 	ballOldPosition.copy(ball.position);
 
-	
 	ballRotationMatrix.makeBasis(ballRight, ballUp, ballForward);
 	ball.rotation.setFromRotationMatrix(ballRotationMatrix);
 	ball.updateMatrixWorld();
 
 	// temporarily move ball up out of the ground for final render
 	ball.position.addScaledVector(ballUp, 15);
-	ball.updateMatrixWorld();
+	//ball.updateMatrixWorld();
 
 	
 	ballYRotateAngle += 1 * frameTime;
@@ -1410,7 +1659,6 @@ function updateVariablesAndUniforms()
 		ballLocalVelocity.y = 0;
 	}
 
-
 	// send final ball transform (as an inverted matrix), so that the ray tracer can render it in the correct position and orientation
 	pathTracingUniforms.uBallInvMatrix.value.copy(ball.matrixWorld).invert();
 
@@ -1419,6 +1667,7 @@ function updateVariablesAndUniforms()
 	// after rendering, reset ball rotation to be default upright (aligned with ground surface normal), so that rotation calculation code above will be easier
 	//ball.rotateX(Math.PI * 0.5);
 	ball.updateMatrixWorld();
+
 
 
 
@@ -1441,8 +1690,7 @@ function updateVariablesAndUniforms()
 
 
 	// now that the playerGoal has moved, record its new position minus its old position as a line segment
-	playerGoalRaySegment.copy(playerGoal.position);
-	playerGoalRaySegment.sub(playerGoalOldPosition);
+	playerGoalRaySegment.copy(playerGoal.position).sub(playerGoalOldPosition);
 	playerGoalRaySegmentLength = playerGoalRaySegment.length(); // will be used later as an out-of-bounds check
 
 	// now make a ray using the playerGoal's old position (rayOrigin) and the direction it is trying to move in (rayDirection)
@@ -1450,39 +1698,53 @@ function updateVariablesAndUniforms()
 	playerGoalRayDirection.copy(playerGoalRaySegment).normalize();
 
 
-	// first check playerGoal forward motion probe for intersection with course (a ray is cast from playerGoal's position in the direction of its forward motion)
+	// CHECK FOR PLAYER GOAL OUT-OF-BOUNDS (see if playerGoal's current position has left the course)
 
-	rayObjectOrigin.copy(playerGoalRayOrigin);
-	rayObjectDirection.copy(playerGoalRayDirection);
-	// put the rayObjectOrigin and rayObjectDirection in the object space of the large course
-	// the line below is not needed, because the large course never moves (it is fixed in place)
-	//courseSphere_invMatrix.copy(courseSphere.matrixWorld).invert(); // only needed if this object moves
-	rayObjectOrigin.transformAsPoint(courseSphere_invMatrix);
-	rayObjectDirection.transformAsDirection(courseSphere_invMatrix);
-	// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-sphere intersection routine
-	testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
-	// If the test t value from the raycast comes back smaller than the distance that the playerGoal is trying to cover during
-	//   this animation frame, that means that the playerGoal's future position would step out of bounds of the course.
-	//   Therefore, we must snap the playerGoal back into position at the raycast intersectionPoint on the course surface.
-	if (testT < playerGoalRaySegmentLength)
+	if (playerGoalRaySegmentLength > 0) // if playerGoal hasn't moved at all (segment length == 0), don't bother with this check
 	{
-		playerGoalIsInAir = false;
-		playerGoalLocalVelocity.y = 0;
-		intersectionNormal.transformSurfaceNormal(courseSphere_invMatrix); // bring intersected object-space normal back into world space
-		intersectionNormal.negate(); // normals usually point outward on spheres, but since we are inside the sphere, must flip it
-		intersectionNormal.normalize(); // after the various transformations, make sure normal is a unit-length vector (length of 1)
-		intersectionPoint.getPointAlongRay(playerGoalRayOrigin, playerGoalRayDirection, testT);
-		intersectionPoint.addScaledVector(intersectionNormal, 1);
-		playerGoal.position.copy(intersectionPoint);
-		playerGoalUp.copy(intersectionNormal);
-		playerGoalRight.crossVectors(playerGoalUp, playerGoalForward).normalize();
-		playerGoalForward.crossVectors(playerGoalRight, playerGoalUp).normalize();
-	}
-	if (testT == Infinity)
-	{// bail out and snap the playerGoal back to its old position
-		playerGoal.position.copy(playerGoalOldPosition);
-	}
+		// first check playerGoal forward motion probe for intersection with course (a ray is cast from playerGoal's position in the direction of its forward motion)
+		rayObjectOrigin.copy(playerGoalRayOrigin);
+		rayObjectDirection.copy(playerGoalRayDirection);
+		// put the rayObjectOrigin and rayObjectDirection in the object space of the large course
+		// the line below is not needed, because the large course never moves (it is fixed in place)
+		//courseShape_invMatrix.copy(courseShape.matrixWorld).invert(); // only needed if this object moves
+		rayObjectOrigin.transformAsPoint(courseShape_invMatrix);
+		rayObjectDirection.transformAsDirection(courseShape_invMatrix);
+		// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-shape intersection routine
+		testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
+		
+		// If the test t value from the raycast comes back smaller than the distance that the playerGoal is trying to cover during
+		//   this animation frame, that means that the playerGoal's future position would step out of bounds of the course.
+		//   Therefore, we must snap the playerGoal back into position at the raycast intersectionPoint on the course surface.
+		if (testT < playerGoalRaySegmentLength)
+		{
+			playerGoalIsInAir = false;
+			playerGoalLocalVelocity.y = 0;
+			intersectionNormal.transformSurfaceNormal(courseShape_invMatrix); // bring intersected object-space normal back into world space
+			intersectionNormal.negate(); // normals usually point outward on shapes, but since we are inside the shape, must flip it
+			intersectionNormal.normalize(); // after the various transformations, make sure normal is a unit-length vector (length of 1)
+			intersectionPoint.getPointAlongRay(playerGoalRayOrigin, playerGoalRayDirection, testT);
+			intersectionPoint.addScaledVector(intersectionNormal, 1);
+			playerGoal.position.copy(intersectionPoint);
+			playerGoalUp.copy(intersectionNormal);
+			playerGoalRight.crossVectors(playerGoalUp, playerGoalForward).normalize();
+			playerGoalForward.crossVectors(playerGoalRight, playerGoalUp).normalize();
+		}
+		if (testT == Infinity)
+		{// bail out and snap the playerGoal back to its starting position
+			//console.log("PlayerGoal bailed out");
+			playerGoalIsInAir = true;
+			playerGoalLocalVelocity.set(0, 0, 0);
+			playerGoal.position.copy(playerGoalStartingPosition);
+			playerGoalRight.set(1, 0, 0);
+			playerGoalUp.set(0, 1, 0);
+			playerGoalForward.set(0, 0, 1);
+		}
+	} // end if (playerGoalRaySegmentLength > 0)
+	
 
+	// CHECK FOR PLAYER GOAL vs. LARGE COURSE INTERACTIONS
+	// handling these interactions is what makes the playerGoal glide smoothly on the surface of the large course
 	
 	// now check playerGoal base center probe for intersection with course (a ray is cast from playerGoal's position downward towards the floor beneath)
 	
@@ -1493,15 +1755,16 @@ function updateVariablesAndUniforms()
 	rayObjectDirection.copy(playerGoalRayDirection);
 	// put the rayObjectOrigin and rayObjectDirection in the object space of the large course
 	// the line below is not needed, because the large course never moves (it is fixed in place)
-	//courseSphere_invMatrix.copy(courseSphere.matrixWorld).invert(); // only needed if this object moves
-	rayObjectOrigin.transformAsPoint(courseSphere_invMatrix);
-	rayObjectDirection.transformAsDirection(courseSphere_invMatrix);
-	// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-sphere intersection routine
+	//courseShape_invMatrix.copy(courseShape.matrixWorld).invert(); // only needed if this object moves
+	rayObjectOrigin.transformAsPoint(courseShape_invMatrix);
+	rayObjectDirection.transformAsDirection(courseShape_invMatrix);
+	// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-shape intersection routine
 	testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
+	
 	if (testT < Infinity)
 	{
-		intersectionNormal.transformSurfaceNormal(courseSphere_invMatrix); // bring intersected object-space normal back into world space
-		intersectionNormal.negate(); // normals usually point outward on spheres, but since we are inside the sphere, must flip it
+		intersectionNormal.transformSurfaceNormal(courseShape_invMatrix); // bring intersected object-space normal back into world space
+		intersectionNormal.negate(); // normals usually point outward on shapes, but since we are inside the shape, must flip it
 		intersectionNormal.normalize(); // after the various transformations, make sure normal is a unit-length vector (length of 1)
 		intersectionPoint.getPointAlongRay(playerGoalRayOrigin, playerGoalRayDirection, testT);
 		intersectionPoint.addScaledVector(intersectionNormal, 1);
@@ -1515,21 +1778,18 @@ function updateVariablesAndUniforms()
 		playerGoalLocalVelocity.y = 0;
 		playerGoal.position.copy(intersectionPoint);
 	}
-	if (testT > 2)
+	if (testT > 1)
 	{
 		playerGoalIsInAir = true;
 	}
-		
-	if (testT == Infinity)
+	/* if (testT == Infinity)
 	{// bail out and snap the playerGoal back to its old position
+		console.log("playerGoal could not intersect with the ground below it");
 		playerGoal.position.copy(playerGoalOldPosition);
-	}
+	} */
 	
 
-
 	playerGoalOldPosition.copy(playerGoal.position);
-
-
 	
 	playerGoalRotationMatrix.makeBasis(playerGoalRight, playerGoalUp, playerGoalForward);
 	playerGoal.rotation.setFromRotationMatrix(playerGoalRotationMatrix);
@@ -1539,11 +1799,10 @@ function updateVariablesAndUniforms()
 	playerGoal.position.addScaledVector(playerGoalUp, 30);
 	playerGoal.updateMatrixWorld();
 
-	//playerGoalYRotateAngle += 0.1 * frameTime;
-	playerGoalYRotateAngle %= TWO_PI;
-	playerGoal.rotateY(playerGoalYRotateAngle);
-	//playerGoal.rotateX(-Math.PI * 0.5);
-	playerGoal.updateMatrixWorld();
+	// playerGoalYRotateAngle += 0.1 * frameTime;
+	// playerGoalYRotateAngle %= TWO_PI;
+	// playerGoal.rotateY(playerGoalYRotateAngle);
+	// playerGoal.updateMatrixWorld();
 
 	// if playerGoal is on the ground (touching the large course), set its up velocity to 0
 	if (!playerGoalIsInAir)
@@ -1560,6 +1819,7 @@ function updateVariablesAndUniforms()
 	// after rendering, reset playerGoal rotation to be default upright (aligned with ground surface normal), so that rotation calculation code above will be easier
 	//playerGoal.rotateX(Math.PI * 0.5);
 	playerGoal.updateMatrixWorld();
+
 
 
 	// UPDATE COMPUTER's GOAL ///////////////////////////////////////////////////////////////////////////////////
@@ -1581,47 +1841,61 @@ function updateVariablesAndUniforms()
 
 
 	// now that the computerGoal has moved, record its new position minus its old position as a line segment
-	computerGoalRaySegment.copy(computerGoal.position);
-	computerGoalRaySegment.sub(computerGoalOldPosition);
+	computerGoalRaySegment.copy(computerGoal.position).sub(computerGoalOldPosition);
 	computerGoalRaySegmentLength = computerGoalRaySegment.length(); // will be used later as an out-of-bounds check
 
 	// now make a ray using the computerGoal's old position (rayOrigin) and the direction it is trying to move in (rayDirection)
 	computerGoalRayOrigin.copy(computerGoalOldPosition); // must use computerGoal's old position for this to work
 	computerGoalRayDirection.copy(computerGoalRaySegment).normalize();
 
-	// first check computerGoal forward motion probe for intersection with course (a ray is cast from computerGoal's position in the direction of its forward motion)
 
-	rayObjectOrigin.copy(computerGoalRayOrigin);
-	rayObjectDirection.copy(computerGoalRayDirection);
-	// put the rayObjectOrigin and rayObjectDirection in the object space of the large course
-	// the line below is not needed, because the large course never moves (it is fixed in place)
-	//courseSphere_invMatrix.copy(courseSphere.matrixWorld).invert(); // only needed if this object moves
-	rayObjectOrigin.transformAsPoint(courseSphere_invMatrix);
-	rayObjectDirection.transformAsDirection(courseSphere_invMatrix);
-	// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-sphere intersection routine
-	testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
-	// If the test t value from the raycast comes back smaller than the distance that the computerGoal is trying to cover during
-	//   this animation frame, that means that the computerGoal's future position would step out of bounds of the course.
-	//   Therefore, we must snap the computerGoal back into position at the raycast intersectionPoint on the course surface.
-	if (testT < computerGoalRaySegmentLength)
+	// CHECK FOR COMPUTER GOAL OUT-OF-BOUNDS (see if computerGoal's current position has left the course)
+
+	if (computerGoalRaySegmentLength > 0) // if computerGoal hasn't moved at all (segment length == 0), don't bother with this check
 	{
-		computerGoalIsInAir = false;
-		computerGoalLocalVelocity.y = 0;
-		intersectionNormal.transformSurfaceNormal(courseSphere_invMatrix); // bring intersected object-space normal back into world space
-		intersectionNormal.negate(); // normals usually point outward on spheres, but since we are inside the sphere, must flip it
-		intersectionNormal.normalize(); // after the various transformations, make sure normal is a unit-length vector (length of 1)
-		intersectionPoint.getPointAlongRay(computerGoalRayOrigin, computerGoalRayDirection, testT);
-		intersectionPoint.addScaledVector(intersectionNormal, 1);
-		computerGoal.position.copy(intersectionPoint);
-		computerGoalUp.copy(intersectionNormal);
-		computerGoalRight.crossVectors(computerGoalUp, computerGoalForward).normalize();
-		computerGoalForward.crossVectors(computerGoalRight, computerGoalUp).normalize();
-	}
-	if (testT == Infinity)
-	{// bail out and snap the computerGoal back to its old position
-		computerGoal.position.copy(computerGoalOldPosition);
-	}
+		// first check computerGoal forward motion probe for intersection with course (a ray is cast from computerGoal's position in the direction of its forward motion)
+		rayObjectOrigin.copy(computerGoalRayOrigin);
+		rayObjectDirection.copy(computerGoalRayDirection);
+		// put the rayObjectOrigin and rayObjectDirection in the object space of the large course
+		// the line below is not needed, because the large course never moves (it is fixed in place)
+		//courseShape_invMatrix.copy(courseShape.matrixWorld).invert(); // only needed if this object moves
+		rayObjectOrigin.transformAsPoint(courseShape_invMatrix);
+		rayObjectDirection.transformAsDirection(courseShape_invMatrix);
+		// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-shape intersection routine
+		testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
+		
+		// If the test t value from the raycast comes back smaller than the distance that the computerGoal is trying to cover during
+		//   this animation frame, that means that the computerGoal's future position would step out of bounds of the course.
+		//   Therefore, we must snap the computerGoal back into position at the raycast intersectionPoint on the course surface.
+		if (testT < computerGoalRaySegmentLength)
+		{
+			computerGoalIsInAir = false;
+			computerGoalLocalVelocity.y = 0;
+			intersectionNormal.transformSurfaceNormal(courseShape_invMatrix); // bring intersected object-space normal back into world space
+			intersectionNormal.negate(); // normals usually point outward on shapes, but since we are inside the shape, must flip it
+			intersectionNormal.normalize(); // after the various transformations, make sure normal is a unit-length vector (length of 1)
+			intersectionPoint.getPointAlongRay(computerGoalRayOrigin, computerGoalRayDirection, testT);
+			intersectionPoint.addScaledVector(intersectionNormal, 1);
+			computerGoal.position.copy(intersectionPoint);
+			computerGoalUp.copy(intersectionNormal);
+			computerGoalRight.crossVectors(computerGoalUp, computerGoalForward).normalize();
+			computerGoalForward.crossVectors(computerGoalRight, computerGoalUp).normalize();
+		}
+		if (testT == Infinity)
+		{// bail out and snap the computerGoal back to its starting position
+			//console.log("ComputerGoal bailed out");
+			computerGoalIsInAir = true;
+			computerGoalLocalVelocity.set(0, 0, 0);
+			computerGoal.position.copy(computerGoalStartingPosition);
+			computerGoalRight.set(1, 0, 0);
+			computerGoalUp.set(0, 1, 0);
+			computerGoalForward.set(0, 0, 1);
+		}
+	} // end if (computerGoalRaySegmentLength > 0)
 
+	
+	// CHECK FOR COMPUTER GOAL vs. LARGE COURSE INTERACTIONS
+	// handling these interactions is what makes the computerGoal glide smoothly on the surface of the large course
 	
 	// now check computerGoal base center probe for intersection with course (a ray is cast from computerGoal's position downward towards the floor beneath)
 	
@@ -1632,15 +1906,16 @@ function updateVariablesAndUniforms()
 	rayObjectDirection.copy(computerGoalRayDirection);
 	// put the rayObjectOrigin and rayObjectDirection in the object space of the large course
 	// the line below is not needed, because the large course never moves (it is fixed in place)
-	//courseSphere_invMatrix.copy(courseSphere.matrixWorld).invert(); // only needed if this object moves
-	rayObjectOrigin.transformAsPoint(courseSphere_invMatrix);
-	rayObjectDirection.transformAsDirection(courseSphere_invMatrix);
-	// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-sphere intersection routine
+	//courseShape_invMatrix.copy(courseShape.matrixWorld).invert(); // only needed if this object moves
+	rayObjectOrigin.transformAsPoint(courseShape_invMatrix);
+	rayObjectDirection.transformAsDirection(courseShape_invMatrix);
+	// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-shape intersection routine
 	testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
+	
 	if (testT < Infinity)
 	{
-		intersectionNormal.transformSurfaceNormal(courseSphere_invMatrix); // bring intersected object-space normal back into world space
-		intersectionNormal.negate(); // normals usually point outward on spheres, but since we are inside the sphere, must flip it
+		intersectionNormal.transformSurfaceNormal(courseShape_invMatrix); // bring intersected object-space normal back into world space
+		intersectionNormal.negate(); // normals usually point outward on shapes, but since we are inside the shape, must flip it
 		intersectionNormal.normalize(); // after the various transformations, make sure normal is a unit-length vector (length of 1)
 		intersectionPoint.getPointAlongRay(computerGoalRayOrigin, computerGoalRayDirection, testT);
 		intersectionPoint.addScaledVector(intersectionNormal, 1);
@@ -1654,21 +1929,19 @@ function updateVariablesAndUniforms()
 		computerGoalLocalVelocity.y = 0;
 		computerGoal.position.copy(intersectionPoint);
 	}
-	if (testT > 2)
+	if (testT > 1)
 	{
 		computerGoalIsInAir = true;
 	}
-		
-	if (testT == Infinity)
+	/* if (testT == Infinity)
 	{// bail out and snap the computerGoal back to its old position
+		console.log("computerGoal could not intersect with the ground below it");
 		computerGoal.position.copy(computerGoalOldPosition);
-	}
+	} */
 	
 
 	computerGoalOldPosition.copy(computerGoal.position);
 
-
-	
 	computerGoalRotationMatrix.makeBasis(computerGoalRight, computerGoalUp, computerGoalForward);
 	computerGoal.rotation.setFromRotationMatrix(computerGoalRotationMatrix);
 	computerGoal.updateMatrixWorld();
@@ -1677,18 +1950,16 @@ function updateVariablesAndUniforms()
 	computerGoal.position.addScaledVector(computerGoalUp, 30);
 	computerGoal.updateMatrixWorld();
 
-	//computerGoalYRotateAngle += 0.1 * frameTime;
-	computerGoalYRotateAngle %= TWO_PI;
-	computerGoal.rotateY(computerGoalYRotateAngle);
-	//computerGoal.rotateX(-Math.PI * 0.5);
-	computerGoal.updateMatrixWorld();
+	// computerGoalYRotateAngle += 0.1 * frameTime;
+	// computerGoalYRotateAngle %= TWO_PI;
+	// computerGoal.rotateY(computerGoalYRotateAngle);
+	// computerGoal.updateMatrixWorld();
 
 	// if computerGoal is on the ground (touching the large course), set its up velocity to 0
 	if (!computerGoalIsInAir)
 	{
 		computerGoalLocalVelocity.y = 0;
 	}
-
 
 	// send final computerGoal transform (as an inverted matrix), so that the ray tracer can render it in the correct position and orientation
 	pathTracingUniforms.uComputerGoalInvMatrix.value.copy(computerGoal.matrixWorld).invert();
@@ -1699,19 +1970,20 @@ function updateVariablesAndUniforms()
 	//computerGoal.rotateX(Math.PI * 0.5);
 	computerGoal.updateMatrixWorld();
 
+	
+
+	
 	// DEBUG INFO
 	demoInfoElement.innerHTML = "collisions: " + collisionCounter;
-	
-	
-	// DEBUG INFO
-	/* demoInfoElement.innerHTML = "glider1IsInAir: " + glider1IsInAir + " " + "cameraIsMoving: " + cameraIsMoving + "<br>" + 
+
+	demoInfoElement.innerHTML += " glider1IsInAir: " + glider1IsInAir + " " + "cameraIsMoving: " + cameraIsMoving + "<br>" + 
 	"glider1BaseRight: " + "(" + glider1BaseRight.x.toFixed(1) + " " + glider1BaseRight.y.toFixed(1) + " " + glider1BaseRight.z.toFixed(1) + ")" + " " + 
 	"glider1BaseUp: " + "(" + glider1BaseUp.x.toFixed(1) + " " + glider1BaseUp.y.toFixed(1) + " " + glider1BaseUp.z.toFixed(1) + ")" + " " + 
 	"glider1BaseForward: " + "(" + glider1BaseForward.x.toFixed(1) + " " + glider1BaseForward.y.toFixed(1) + " " + glider1BaseForward.z.toFixed(1) + ")" + "<br>" + 
 	
 	"glider1LocalVelocity: " + "(" + glider1LocalVelocity.x.toFixed(1) + " " + glider1LocalVelocity.y.toFixed(1) + " " + glider1LocalVelocity.z.toFixed(1) + ")" + "<br>" + 
 	"glider1WorldVelocity: " + "(" + glider1WorldVelocity.x.toFixed(1) + " " + glider1WorldVelocity.y.toFixed(1) + " " + glider1WorldVelocity.z.toFixed(1) + ")";
- 	*/
+ 	
 
 	/* demoInfoElement.innerHTML = "glider2IsInAir: " + glider2IsInAir + " " + "cameraIsMoving: " + cameraIsMoving + "<br>" + 
 	"glider2BaseRight: " + "(" + glider2BaseRight.x.toFixed(1) + " " + glider2BaseRight.y.toFixed(1) + " " + glider2BaseRight.z.toFixed(1) + ")" + " " + 
