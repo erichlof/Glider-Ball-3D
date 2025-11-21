@@ -4,7 +4,7 @@ precision highp sampler2D;
 
 #include <pathtracing_uniforms_and_defines>
 
-uniform mat4 uCourseSphere_invMatrix;
+uniform mat4 uCourseShape_invMatrix;
 uniform mat4 uGlider1InvMatrix;
 uniform mat4 uGlider2InvMatrix;
 uniform mat4 uBallInvMatrix;
@@ -13,6 +13,7 @@ uniform mat4 uComputerGoalInvMatrix;
 uniform mat4 uBallCollisionVolumeInvMatrix;
 uniform mat4 uGlider1CollisionVolumeInvMatrix;
 uniform mat4 uGlider2CollisionVolumeInvMatrix;
+uniform int uCourseShapeType;
 
 #define N_LIGHTS 3.0
 #define N_SPHERES 3
@@ -108,15 +109,14 @@ float SceneIntersect(out int finalIsRayExiting)
 	}
 	objectCount++;
 
-	// transform ray into courseSphere's object space
-	rObjOrigin = vec3( uCourseSphere_invMatrix * vec4(rayOrigin, 1.0) );
-	rObjDirection = vec3( uCourseSphere_invMatrix * vec4(rayDirection, 0.0) );
+	// transform ray into courseShape's object space
+	rObjOrigin = vec3( uCourseShape_invMatrix * vec4(rayOrigin, 1.0) );
+	rObjDirection = vec3( uCourseShape_invMatrix * vec4(rayDirection, 0.0) );
 	d = UnitSphereIntersect(rObjOrigin, rObjDirection, normal);
-
 	if (d < t)
 	{
 		t = d;
-		hitNormal = transpose(mat3(uCourseSphere_invMatrix)) * normal;
+		hitNormal = transpose(mat3(uCourseShape_invMatrix)) * normal;
 		hitEmission = unitSpheres[0].emission;
 		hitPos = rayOrigin + (t * rayDirection);
 		q = clamp( mod( dot( floor(hitPos.xz * 0.04), vec2(1.0) ), 2.0 ) , 0.0, 1.0 );
@@ -130,7 +130,6 @@ float SceneIntersect(out int finalIsRayExiting)
 	rObjOrigin = vec3( uPlayerGoalInvMatrix * vec4(rayOrigin, 1.0) );
 	rObjDirection = vec3( uPlayerGoalInvMatrix * vec4(rayDirection, 0.0) );
 	d = UnitBoxIntersect(rObjOrigin, rObjDirection, normal);
-
 	if (d < t)
 	{
 		t = d;
@@ -146,7 +145,6 @@ float SceneIntersect(out int finalIsRayExiting)
 	rObjOrigin = vec3( uComputerGoalInvMatrix * vec4(rayOrigin, 1.0) );
 	rObjDirection = vec3( uComputerGoalInvMatrix * vec4(rayDirection, 0.0) );
 	d = UnitBoxIntersect(rObjOrigin, rObjDirection, normal);
-
 	if (d < t)
 	{
 		t = d;
@@ -162,7 +160,6 @@ float SceneIntersect(out int finalIsRayExiting)
 	rObjOrigin = vec3( uBallInvMatrix * vec4(rayOrigin, 1.0) );
 	rObjDirection = vec3( uBallInvMatrix * vec4(rayDirection, 0.0) );
 	d = UnitBoxIntersect(rObjOrigin, rObjDirection, normal);
-
 	if (d < t)
 	{
 		t = d;
@@ -178,7 +175,6 @@ float SceneIntersect(out int finalIsRayExiting)
 	rObjOrigin = vec3( uBallCollisionVolumeInvMatrix * vec4(rayOrigin, 1.0) );
 	rObjDirection = vec3( uBallCollisionVolumeInvMatrix * vec4(rayDirection, 0.0) );
 	d = UnitSphereIntersect(rObjOrigin, rObjDirection, normal);
-
 	if (d < t)
 	{
 		t = d;
@@ -194,7 +190,6 @@ float SceneIntersect(out int finalIsRayExiting)
 	rObjOrigin = vec3( uGlider1InvMatrix * vec4(rayOrigin, 1.0) );
 	rObjDirection = vec3( uGlider1InvMatrix * vec4(rayDirection, 0.0) );
 	d = UnitParaboloidIntersect(rObjOrigin, rObjDirection, normal);
-
 	if (d < t)
 	{
 		t = d;
@@ -210,7 +205,6 @@ float SceneIntersect(out int finalIsRayExiting)
 	rObjOrigin = vec3( uGlider1CollisionVolumeInvMatrix * vec4(rayOrigin, 1.0) );
 	rObjDirection = vec3( uGlider1CollisionVolumeInvMatrix * vec4(rayDirection, 0.0) );
 	d = UnitSphereIntersect(rObjOrigin, rObjDirection, normal);
-
 	if (d < t)
 	{
 		t = d;
@@ -226,7 +220,6 @@ float SceneIntersect(out int finalIsRayExiting)
 	rObjOrigin = vec3( uGlider2InvMatrix * vec4(rayOrigin, 1.0) );
 	rObjDirection = vec3( uGlider2InvMatrix * vec4(rayDirection, 0.0) );
 	d = UnitParaboloidIntersect(rObjOrigin, rObjDirection, normal);
-
 	if (d < t)
 	{
 		t = d;
@@ -242,7 +235,6 @@ float SceneIntersect(out int finalIsRayExiting)
 	rObjOrigin = vec3( uGlider2CollisionVolumeInvMatrix * vec4(rayOrigin, 1.0) );
 	rObjDirection = vec3( uGlider2CollisionVolumeInvMatrix * vec4(rayDirection, 0.0) );
 	d = UnitSphereIntersect(rObjOrigin, rObjDirection, normal);
-
 	if (d < t)
 	{
 		t = d;
