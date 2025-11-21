@@ -1,6 +1,8 @@
 // scene/demo-specific variables go here
 let courseShape = new THREE.Object3D();
 let courseShape_invMatrix = new THREE.Matrix4();
+let courseMinBounds = new THREE.Vector3(-1, -1, -1);
+let courseMaxBounds = new THREE.Vector3( 1, 1, 1);
 let rayObjectOrigin = new THREE.Vector3();
 let rayObjectDirection = new THREE.Vector3();
 let intersectionPoint = new THREE.Vector3();
@@ -437,7 +439,8 @@ function initSceneData()
 
 	// BALL
 	ball.visible = false;
-	ballStartingPosition.set(0, -50, 0);
+	ballStartingPosition.set(0, -50, 1); // give the ball a little nudge in the Z direction, otherwise weird 'sticking' bug happens
+			// I think it has to with the transform basis that must be created when the ball collides with the ground initially
 	ball.position.copy(ballStartingPosition);
 	ball.scale.set(25, 4, 25);
 	ball.updateMatrixWorld();
@@ -505,6 +508,8 @@ function initSceneData()
 	pathTracingUniforms.uBallCollisionVolumeInvMatrix = { value: new THREE.Matrix4() };
 	pathTracingUniforms.uGlider1CollisionVolumeInvMatrix = { value: new THREE.Matrix4() };
 	pathTracingUniforms.uGlider2CollisionVolumeInvMatrix = { value: new THREE.Matrix4() };
+	pathTracingUniforms.uCourseMinBounds = { value: courseMinBounds };
+	pathTracingUniforms.uCourseMaxBounds = { value: courseMaxBounds };
 	pathTracingUniforms.UCourseShapeType = { value: 0 };
 
 } // end function initSceneData()
@@ -849,6 +854,7 @@ function updateVariablesAndUniforms()
 			glider1LocalVelocity.z += impulseGlider1.dot(glider1BaseForward);
 
 			glider2LocalVelocity.x += impulseGlider2.dot(glider2BaseRight);
+			glider2LocalVelocity.y += impulseGlider2.dot(glider2BaseUp);
 			glider2LocalVelocity.z += impulseGlider2.dot(glider2BaseForward);
 		}
 	}
@@ -898,9 +904,83 @@ function updateVariablesAndUniforms()
 			glider1LocalVelocity.z += impulseGlider1.dot(glider1BaseForward);
 
 			ballLocalVelocity.x += impulseBall.dot(ballRight);
+			ballLocalVelocity.y += impulseBall.dot(ballUp);
 			ballLocalVelocity.z += impulseBall.dot(ballForward);
 		}
 	}
+
+	// CHECK FOR GLIDER1 vs MIN/MAX BOUNDARY WALLS
+
+	if (glider1RaySegmentLength > 0)	
+	{
+		if (glider1Base.position.x > (courseShape.scale.x * courseMaxBounds.x))
+		{
+			glider1Base.position.x = (courseShape.scale.x * courseMaxBounds.x);
+			unitCollisionNormal.set(-1, 0, 0);
+			impulseGlider1.copy(glider1WorldVelocity);
+			impulseGlider1.reflect(unitCollisionNormal);
+			tempVec.copy(impulseGlider1).normalize();
+			impulseGlider1.multiplyScalar( Math.max(0.3, 1-tempVec.dot(unitCollisionNormal)) );
+			glider1LocalVelocity.x = impulseGlider1.dot(glider1BaseRight);
+			glider1LocalVelocity.z = impulseGlider1.dot(glider1BaseForward);
+		}
+		else if (glider1Base.position.x < (courseShape.scale.x * courseMinBounds.x))
+		{
+			glider1Base.position.x = (courseShape.scale.x * courseMinBounds.x);
+			unitCollisionNormal.set(1, 0, 0);
+			impulseGlider1.copy(glider1WorldVelocity);
+			impulseGlider1.reflect(unitCollisionNormal);
+			tempVec.copy(impulseGlider1).normalize();
+			impulseGlider1.multiplyScalar( Math.max(0.3, 1-tempVec.dot(unitCollisionNormal)) );
+			glider1LocalVelocity.x = impulseGlider1.dot(glider1BaseRight);
+			glider1LocalVelocity.z = impulseGlider1.dot(glider1BaseForward);
+		}
+		else if (glider1Base.position.y > (courseShape.scale.y * courseMaxBounds.y))
+		{
+			glider1Base.position.y = (courseShape.scale.y * courseMaxBounds.y);
+			unitCollisionNormal.set(0, -1, 0);
+			impulseGlider1.copy(glider1WorldVelocity);
+			impulseGlider1.reflect(unitCollisionNormal);
+			tempVec.copy(impulseGlider1).normalize();
+			impulseGlider1.multiplyScalar( Math.max(0.3, 1-tempVec.dot(unitCollisionNormal)) );
+			glider1LocalVelocity.x = impulseGlider1.dot(glider1BaseRight);
+			glider1LocalVelocity.z = impulseGlider1.dot(glider1BaseForward);
+		}
+		else if (glider1Base.position.y < (courseShape.scale.y * courseMinBounds.y))
+		{
+			glider1Base.position.y = (courseShape.scale.y * courseMinBounds.y);
+			unitCollisionNormal.set(0, 1, 0);
+			impulseGlider1.copy(glider1WorldVelocity);
+			impulseGlider1.reflect(unitCollisionNormal);
+			tempVec.copy(impulseGlider1).normalize();
+			impulseGlider1.multiplyScalar( Math.max(0.3, 1-tempVec.dot(unitCollisionNormal)) );
+			glider1LocalVelocity.x = impulseGlider1.dot(glider1BaseRight);
+			glider1LocalVelocity.z = impulseGlider1.dot(glider1BaseForward);
+		}
+		else if (glider1Base.position.z > (courseShape.scale.z * courseMaxBounds.z))
+		{
+			glider1Base.position.z = (courseShape.scale.z * courseMaxBounds.z);
+			unitCollisionNormal.set(0, 0, -1);
+			impulseGlider1.copy(glider1WorldVelocity);
+			impulseGlider1.reflect(unitCollisionNormal);
+			tempVec.copy(impulseGlider1).normalize();
+			impulseGlider1.multiplyScalar( Math.max(0.3, 1-tempVec.dot(unitCollisionNormal)) );
+			glider1LocalVelocity.x = impulseGlider1.dot(glider1BaseRight);
+			glider1LocalVelocity.z = impulseGlider1.dot(glider1BaseForward);
+		}
+		else if (glider1Base.position.z < (courseShape.scale.z * courseMinBounds.z))
+		{
+			glider1Base.position.z = (courseShape.scale.z * courseMinBounds.z);
+			unitCollisionNormal.set(0, 0, 1);
+			impulseGlider1.copy(glider1WorldVelocity);
+			impulseGlider1.reflect(unitCollisionNormal);
+			tempVec.copy(impulseGlider1).normalize();
+			impulseGlider1.multiplyScalar( Math.max(0.3, 1-tempVec.dot(unitCollisionNormal)) );
+			glider1LocalVelocity.x = impulseGlider1.dot(glider1BaseRight);
+			glider1LocalVelocity.z = impulseGlider1.dot(glider1BaseForward);
+		}
+	} // end if (glider1RaySegmentLength > 0)
+		
 
 
 	// now that the glider1 has possibly moved again (due to physics interactions), record its new position minus its old position as a line segment
@@ -1157,6 +1237,7 @@ function updateVariablesAndUniforms()
 			glider2LocalVelocity.z += impulseGlider2.dot(glider2BaseForward);
 
 			glider1LocalVelocity.x += impulseGlider1.dot(glider1BaseRight);
+			glider1LocalVelocity.y += impulseGlider1.dot(glider1BaseUp);
 			glider1LocalVelocity.z += impulseGlider1.dot(glider1BaseForward);
 		}
 	}
@@ -1206,9 +1287,84 @@ function updateVariablesAndUniforms()
 			glider2LocalVelocity.z += impulseGlider2.dot(glider2BaseForward);
 
 			ballLocalVelocity.x += impulseBall.dot(ballRight);
+			ballLocalVelocity.y += impulseBall.dot(ballUp);
 			ballLocalVelocity.z += impulseBall.dot(ballForward);
 		}
 	}
+
+
+	// CHECK FOR GLIDER2 vs MIN/MAX BOUNDARY WALLS
+	
+	if (glider2RaySegmentLength > 0)	
+	{
+		if (glider2Base.position.x > (courseShape.scale.x * courseMaxBounds.x))
+		{
+			glider2Base.position.x = (courseShape.scale.x * courseMaxBounds.x);
+			unitCollisionNormal.set(-1, 0, 0);
+			impulseGlider2.copy(glider2WorldVelocity);
+			impulseGlider2.reflect(unitCollisionNormal);
+			tempVec.copy(impulseGlider2).normalize();
+			impulseGlider2.multiplyScalar( Math.max(0.3, 1-tempVec.dot(unitCollisionNormal)) );
+			glider2LocalVelocity.x = impulseGlider2.dot(glider2BaseRight);
+			glider2LocalVelocity.z = impulseGlider2.dot(glider2BaseForward);
+		}
+		else if (glider2Base.position.x < (courseShape.scale.x * courseMinBounds.x))
+		{
+			glider2Base.position.x = (courseShape.scale.x * courseMinBounds.x);
+			unitCollisionNormal.set(1, 0, 0);
+			impulseGlider2.copy(glider2WorldVelocity);
+			impulseGlider2.reflect(unitCollisionNormal);
+			tempVec.copy(impulseGlider2).normalize();
+			impulseGlider2.multiplyScalar( Math.max(0.3, 1-tempVec.dot(unitCollisionNormal)) );
+			glider2LocalVelocity.x = impulseGlider2.dot(glider2BaseRight);
+			glider2LocalVelocity.z = impulseGlider2.dot(glider2BaseForward);
+		}
+		else if (glider2Base.position.y > (courseShape.scale.y * courseMaxBounds.y))
+		{
+			glider2Base.position.y = (courseShape.scale.y * courseMaxBounds.y);
+			unitCollisionNormal.set(0, -1, 0);
+			impulseGlider2.copy(glider2WorldVelocity);
+			impulseGlider2.reflect(unitCollisionNormal);
+			tempVec.copy(impulseGlider2).normalize();
+			impulseGlider2.multiplyScalar( Math.max(0.3, 1-tempVec.dot(unitCollisionNormal)) );
+			glider2LocalVelocity.x = impulseGlider2.dot(glider2BaseRight);
+			glider2LocalVelocity.z = impulseGlider2.dot(glider2BaseForward);
+		}
+		else if (glider2Base.position.y < (courseShape.scale.y * courseMinBounds.y))
+		{
+			glider2Base.position.y = (courseShape.scale.y * courseMinBounds.y);
+			unitCollisionNormal.set(0, 1, 0);
+			impulseGlider2.copy(glider2WorldVelocity);
+			impulseGlider2.reflect(unitCollisionNormal);
+			tempVec.copy(impulseGlider2).normalize();
+			impulseGlider2.multiplyScalar( Math.max(0.3, 1-tempVec.dot(unitCollisionNormal)) );
+			glider2LocalVelocity.x = impulseGlider2.dot(glider2BaseRight);
+			glider2LocalVelocity.z = impulseGlider2.dot(glider2BaseForward);
+		}
+		else if (glider2Base.position.z > (courseShape.scale.z * courseMaxBounds.z))
+		{
+			glider2Base.position.z = (courseShape.scale.z * courseMaxBounds.z);
+			unitCollisionNormal.set(0, 0, -1);
+			impulseGlider2.copy(glider2WorldVelocity);
+			impulseGlider2.reflect(unitCollisionNormal);
+			tempVec.copy(impulseGlider2).normalize();
+			impulseGlider2.multiplyScalar( Math.max(0.3, 1-tempVec.dot(unitCollisionNormal)) );
+			glider2LocalVelocity.x = impulseGlider2.dot(glider2BaseRight);
+			glider2LocalVelocity.z = impulseGlider2.dot(glider2BaseForward);
+		}
+		else if (glider2Base.position.z < (courseShape.scale.z * courseMinBounds.z))
+		{
+			glider2Base.position.z = (courseShape.scale.z * courseMinBounds.z);
+			unitCollisionNormal.set(0, 0, 1);
+			impulseGlider2.copy(glider2WorldVelocity);
+			impulseGlider2.reflect(unitCollisionNormal);
+			tempVec.copy(impulseGlider2).normalize();
+			impulseGlider2.multiplyScalar( Math.max(0.3, 1-tempVec.dot(unitCollisionNormal)) );
+			glider2LocalVelocity.x = impulseGlider2.dot(glider2BaseRight);
+			glider2LocalVelocity.z = impulseGlider2.dot(glider2BaseForward);
+		}
+	} // end if (glider2RaySegmentLength > 0)
+
 
 	// now that the glider2 has possibly moved again (due to physics interactions), record its new position minus its old position as a line segment
 	glider2RaySegment.copy(glider2Base.position).sub(glider2OldPosition);
@@ -1473,6 +1629,7 @@ function updateVariablesAndUniforms()
 			ballLocalVelocity.z += impulseBall.dot(ballForward);
 
 			glider1LocalVelocity.x += impulseGlider1.dot(glider1BaseRight);
+			glider1LocalVelocity.y += impulseGlider1.dot(glider1BaseUp);
 			glider1LocalVelocity.z += impulseGlider1.dot(glider1BaseForward);
 		}
 	}
@@ -1524,9 +1681,84 @@ function updateVariablesAndUniforms()
 			ballLocalVelocity.z += impulseBall.dot(ballForward);
 
 			glider2LocalVelocity.x += impulseGlider2.dot(glider2BaseRight);
+			glider2LocalVelocity.y += impulseGlider2.dot(glider2BaseUp);
 			glider2LocalVelocity.z += impulseGlider2.dot(glider2BaseForward);
 		}
 	}
+
+
+	// CHECK FOR BALL vs MIN/MAX BOUNDARY WALLS
+	
+	if (ballRaySegmentLength > 0)	
+	{
+		if (ball.position.x > (courseShape.scale.x * courseMaxBounds.x))
+		{
+			ball.position.x = (courseShape.scale.x * courseMaxBounds.x);
+			unitCollisionNormal.set(-1, 0, 0);
+			impulseBall.copy(ballWorldVelocity);
+			impulseBall.reflect(unitCollisionNormal);
+			tempVec.copy(impulseBall).normalize();
+			impulseBall.multiplyScalar( Math.max(0.5, 1-tempVec.dot(unitCollisionNormal)) );
+			ballLocalVelocity.x = impulseBall.dot(ballRight);
+			ballLocalVelocity.z = impulseBall.dot(ballForward);
+		}
+		else if (ball.position.x < (courseShape.scale.x * courseMinBounds.x))
+		{
+			ball.position.x = (courseShape.scale.x * courseMinBounds.x);
+			unitCollisionNormal.set(1, 0, 0);
+			impulseBall.copy(ballWorldVelocity);
+			impulseBall.reflect(unitCollisionNormal);
+			tempVec.copy(impulseBall).normalize();
+			impulseBall.multiplyScalar( Math.max(0.5, 1-tempVec.dot(unitCollisionNormal)) );
+			ballLocalVelocity.x = impulseBall.dot(ballRight);
+			ballLocalVelocity.z = impulseBall.dot(ballForward);
+		}
+		else if (ball.position.y > (courseShape.scale.y * courseMaxBounds.y))
+		{
+			ball.position.y = (courseShape.scale.y * courseMaxBounds.y);
+			unitCollisionNormal.set(0, -1, 0);
+			impulseBall.copy(ballWorldVelocity);
+			impulseBall.reflect(unitCollisionNormal);
+			tempVec.copy(impulseBall).normalize();
+			impulseBall.multiplyScalar( Math.max(0.5, 1-tempVec.dot(unitCollisionNormal)) );
+			ballLocalVelocity.x = impulseBall.dot(ballRight);
+			ballLocalVelocity.z = impulseBall.dot(ballForward);
+		}
+		else if (ball.position.y < (courseShape.scale.y * courseMinBounds.y))
+		{
+			ball.position.y = (courseShape.scale.y * courseMinBounds.y);
+			unitCollisionNormal.set(0, 1, 0);
+			impulseBall.copy(ballWorldVelocity);
+			impulseBall.reflect(unitCollisionNormal);
+			tempVec.copy(impulseBall).normalize();
+			impulseBall.multiplyScalar( Math.max(0.5, 1-tempVec.dot(unitCollisionNormal)) );
+			ballLocalVelocity.x = impulseBall.dot(ballRight);
+			ballLocalVelocity.z = impulseBall.dot(ballForward);
+		}
+		else if (ball.position.z > (courseShape.scale.z * courseMaxBounds.z))
+		{
+			ball.position.z = (courseShape.scale.z * courseMaxBounds.z);
+			unitCollisionNormal.set(0, 0, -1);
+			impulseBall.copy(ballWorldVelocity);
+			impulseBall.reflect(unitCollisionNormal);
+			tempVec.copy(impulseBall).normalize();
+			impulseBall.multiplyScalar( Math.max(0.5, 1-tempVec.dot(unitCollisionNormal)) );
+			ballLocalVelocity.x = impulseBall.dot(ballRight);
+			ballLocalVelocity.z = impulseBall.dot(ballForward);
+		}
+		else if (ball.position.z < (courseShape.scale.z * courseMinBounds.z))
+		{
+			ball.position.z = (courseShape.scale.z * courseMinBounds.z);
+			unitCollisionNormal.set(0, 0, 1);
+			impulseBall.copy(ballWorldVelocity);
+			impulseBall.reflect(unitCollisionNormal);
+			tempVec.copy(impulseBall).normalize();
+			impulseBall.multiplyScalar( Math.max(0.5, 1-tempVec.dot(unitCollisionNormal)) );
+			ballLocalVelocity.x = impulseBall.dot(ballRight);
+			ballLocalVelocity.z = impulseBall.dot(ballForward);
+		}
+	} // end if (ballRaySegmentLength > 0)
+
 
 	// now that the ball has possibly moved again (due to physics interactions), record its new position minus its old position as a line segment
 	ballRaySegment.copy(ball.position).sub(ballOldPosition);
