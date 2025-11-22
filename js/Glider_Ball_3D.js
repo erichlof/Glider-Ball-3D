@@ -3,6 +3,7 @@ let courseShape = new THREE.Object3D();
 let courseShape_invMatrix = new THREE.Matrix4();
 let courseMinBounds = new THREE.Vector3(-1, -1, -1);
 let courseMaxBounds = new THREE.Vector3( 1, 1, 1);
+
 let rayObjectOrigin = new THREE.Vector3();
 let rayObjectDirection = new THREE.Vector3();
 let intersectionPoint = new THREE.Vector3();
@@ -128,7 +129,7 @@ let worldUp = new THREE.Vector3(0, 1, 0);
 let worldForward = new THREE.Vector3(0, 0, 1);
 let canPress_Space = true;
 let jumpWasTriggered = false;
-let roundBeginFlag = true;
+let levelBeginFlag = true;
 
 let course_TypeObject, course_TypeController;
 let needChangeCourseType = false;
@@ -141,7 +142,14 @@ let course_ScaleYController, course_ScaleYObject;
 let course_ScaleZController, course_ScaleZObject;
 let needChangeCourseScaleUniform = false;
 let needChangeCourseScale = false;
-
+let course_ClipMinXObject, course_ClipMinXController;
+let course_ClipMaxXObject, course_ClipMaxXController;
+let course_ClipMinYObject, course_ClipMinYController;
+let course_ClipMaxYObject, course_ClipMaxYController;
+let course_ClipMinZObject, course_ClipMinZController;
+let course_ClipMaxZObject, course_ClipMaxZController;
+let needChangeCourseClipXYZBounds = false;
+let level_RestartObject;
 
 let demoInfoElement = document.getElementById('demoInfo');
 
@@ -379,6 +387,10 @@ function intersectUnitBox(rayO, rayD, normal)
 } */
 
 
+function beginLevel()
+{
+	levelBeginFlag = true;
+}
 
 
 // called automatically from within initTHREEjs() function (located in InitCommon.js file)
@@ -405,7 +417,6 @@ function initSceneData()
 	// COURSE 
 	courseShape.visible = false; // don't need Three.js to render this - we will ray trace it ourselves
 	courseShape.position.set(0, 0, 0);
-	 	 // ellipsoid (600, 300, 600)
 	courseShape.scale.set(500, 500, 500); // Sphere-shaped
 	// must call this each time we change an object's transform
 	courseShape.updateMatrixWorld();
@@ -413,63 +424,27 @@ function initSceneData()
 
 	// GLIDER 1 (player)
 	glider1Base.visible = false;
-	glider1StartingPosition.set(0, -50, 75);
-	glider1Base.position.copy(glider1StartingPosition);
 	glider1Base.scale.set(20, 22, 6);
-	glider1Base.updateMatrixWorld();
-	glider1CollisionVolume.position.copy(glider1Base.position);
 	glider1CollisionVolume.scale.set(25, 25, 25);
-	glider1CollisionVolume.updateMatrixWorld();
-	glider1BaseRight.set(1, 0, 0);
-	glider1BaseUp.set(0, 1, 0);
-	glider1BaseForward.set(0, 0, 1);
 
 	// GLIDER 2 (AI controlled)
 	glider2Base.visible = false;
-	glider2StartingPosition.set(0, -50, -75);
-	glider2Base.position.copy(glider2StartingPosition);
 	glider2Base.scale.set(20, 22, 6);
-	glider2Base.updateMatrixWorld();
-	glider2CollisionVolume.position.copy(glider2Base.position);
 	glider2CollisionVolume.scale.set(25, 25, 25);
-	glider2CollisionVolume.updateMatrixWorld();
-	glider2BaseRight.set(1, 0, 0);
-	glider2BaseUp.set(0, 1, 0);
-	glider2BaseForward.set(0, 0, 1);
 
 	// BALL
 	ball.visible = false;
-	ballStartingPosition.set(0, -50, 1); // give the ball a little nudge in the Z direction, otherwise weird 'sticking' bug happens
-			// I think it has to with the transform basis that must be created when the ball collides with the ground initially
-	ball.position.copy(ballStartingPosition);
 	ball.scale.set(25, 4, 25);
-	ball.updateMatrixWorld();
-	ballCollisionVolume.position.copy(ball.position);
 	ballCollisionVolume.scale.set(33, 33, 33);
-	ballCollisionVolume.updateMatrixWorld();
-	ballRight.set(1, 0, 0);
-	ballUp.set(0, 1, 0);
-	ballForward.set(0, 0, 1);
 
 	// PLAYER's GOAL
 	playerGoal.visible = false;
-	playerGoalStartingPosition.set(75, -10, 0);
-	playerGoal.position.copy(playerGoalStartingPosition);
 	playerGoal.scale.set(3, 20, 110);
-	playerGoal.updateMatrixWorld();
-	playerGoalRight.set(1, 0, 0);
-	playerGoalUp.set(0, 1, 0);
-	playerGoalForward.set(0, 0, 1);
 
 	// COMPUTER's GOAL
 	computerGoal.visible = false;
-	computerGoalStartingPosition.set(-75, -10, 0);
-	computerGoal.position.copy(computerGoalStartingPosition);
 	computerGoal.scale.set(3, 20, 110);
-	computerGoal.updateMatrixWorld();
-	computerGoalRight.set(1, 0, 0);
-	computerGoalUp.set(0, 1, 0);
-	computerGoalForward.set(0, 0, 1);
+	
 
 	
 	// In addition to the default GUI on all demos/games, add any special GUI elements that this particular game requires
@@ -479,10 +454,18 @@ function initSceneData()
 	course_ScaleXObject = { scaleX: 500 };
 	course_ScaleYObject = { scaleY: 500 };
 	course_ScaleZObject = { scaleZ: 500 };
+	course_ClipMinXObject = { clipMinX: -1.0 };
+	course_ClipMaxXObject = { clipMaxX: 1.0 };
+	course_ClipMinYObject = { clipMinY: -1.0 };
+	course_ClipMaxYObject = { clipMaxY: 1.0 };
+	course_ClipMinZObject = { clipMinZ: -1.0 };
+	course_ClipMaxZObject = { clipMaxZ: 1.0 };
+	level_RestartObject = { 'restart level' : beginLevel };
 
 	function handleCourseTypeChange() { needChangeCourseType = true; }
 	function handleCourseScaleUniformChange() { needChangeCourseScaleUniform = true; }
 	function handleCourseScaleChange() { needChangeCourseScale = true; }
+	function handleCourseClipXYZChange() { needChangeCourseClipXYZBounds = true; }
 
 	course_TypeController = gui.add(course_TypeObject, 'Course_Type', ['Sphere', 'Ellipsoid']).onChange(handleCourseTypeChange);
 	
@@ -492,11 +475,19 @@ function initSceneData()
 	course_ScaleYController = scale_Folder.add(course_ScaleYObject, 'scaleY', 200, 1500, 1).onChange(handleCourseScaleChange);
 	course_ScaleZController = scale_Folder.add(course_ScaleZObject, 'scaleZ', 200, 1500, 1).onChange(handleCourseScaleChange);
 
+	course_ClipMinXController = gui.add(course_ClipMinXObject, 'clipMinX',-1.0,-0.1, 0.01).onChange(handleCourseClipXYZChange);
+	course_ClipMaxXController = gui.add(course_ClipMaxXObject, 'clipMaxX', 0.1, 1.0, 0.01).onChange(handleCourseClipXYZChange);
+	course_ClipMinYController = gui.add(course_ClipMinYObject, 'clipMinY',-1.0,-0.1, 0.01).onChange(handleCourseClipXYZChange);
+	course_ClipMaxYController = gui.add(course_ClipMaxYObject, 'clipMaxY', 0.1, 1.0, 0.01).onChange(handleCourseClipXYZChange);
+	course_ClipMinZController = gui.add(course_ClipMinZObject, 'clipMinZ',-1.0,-0.1, 0.01).onChange(handleCourseClipXYZChange);
+	course_ClipMaxZController = gui.add(course_ClipMaxZObject, 'clipMaxZ', 0.1, 1.0, 0.01).onChange(handleCourseClipXYZChange);
+
+	gui.add(level_RestartObject, 'restart level');
 
 	handleCourseTypeChange();
 	handleCourseScaleUniformChange();
 	handleCourseScaleChange();
-
+	handleCourseClipXYZChange();
 
 	// scene/demo-specific uniforms go here
 	pathTracingUniforms.uCourseShape_invMatrix = { value: courseShape_invMatrix };
@@ -574,6 +565,72 @@ function updateVariablesAndUniforms()
 		cameraIsMoving = true;
 		needChangeCourseScale = false;
 	}
+
+	if (needChangeCourseClipXYZBounds)
+	{
+		courseMinBounds.set(course_ClipMinXController.getValue(),
+				    course_ClipMinYController.getValue(),
+				    course_ClipMinZController.getValue());
+
+		courseMaxBounds.set(course_ClipMaxXController.getValue(),
+				    course_ClipMaxYController.getValue(),
+				    course_ClipMaxZController.getValue());
+
+		pathTracingUniforms.uCourseMinBounds.value.copy(courseMinBounds);
+		pathTracingUniforms.uCourseMaxBounds.value.copy(courseMaxBounds);
+
+		cameraIsMoving = true;
+		needChangeCourseClipXYZBounds = false;
+	}
+
+
+	if (levelBeginFlag)
+	{
+		// GLIDER 1 (player)
+		glider1StartingPosition.set(1, -50, 75);
+		glider1Base.position.copy(glider1StartingPosition);
+		glider1CollisionVolume.position.copy(glider1Base.position);
+		glider1BaseRight.set(1, 0, 0);
+		glider1BaseUp.set(0, 1, 0);
+		glider1BaseForward.set(0, 0, 1);
+		glider1LocalVelocity.set(0, 0, 0);
+
+		// GLIDER 2 (AI controlled)
+		glider2StartingPosition.set(-1, -50, -75);
+		glider2Base.position.copy(glider2StartingPosition);
+		glider2CollisionVolume.position.copy(glider2Base.position);
+		glider2BaseRight.set(1, 0, 0);
+		glider2BaseUp.set(0, 1, 0);
+		glider2BaseForward.set(0, 0, 1);
+		glider2LocalVelocity.set(0, 0, 0);
+
+		// BALL
+		ballStartingPosition.set(1, -50, 1);
+		ball.position.copy(ballStartingPosition);
+		ballCollisionVolume.position.copy(ball.position);
+		ballRight.set(1, 0, 0);
+		ballUp.set(0, 1, 0);
+		ballForward.set(0, 0, 1);
+		ballLocalVelocity.set(0, 0, 0);
+
+		// PLAYER's GOAL
+		playerGoalStartingPosition.set(75, -10, 0);
+		playerGoal.position.copy(playerGoalStartingPosition);
+		playerGoalRight.set(1, 0, 0);
+		playerGoalUp.set(0, 1, 0);
+		playerGoalForward.set(0, 0, 1);
+		playerGoalLocalVelocity.set(0, 0, 0);
+
+		// COMPUTER's GOAL
+		computerGoalStartingPosition.set(-75, -10, 0);
+		computerGoal.position.copy(computerGoalStartingPosition);
+		computerGoalRight.set(1, 0, 0);
+		computerGoalUp.set(0, 1, 0);
+		computerGoalForward.set(0, 0, 1);
+		computerGoalLocalVelocity.set(0, 0, 0);
+
+		levelBeginFlag = false;
+	} // end if (levelBeginFlag)
 
 
 
