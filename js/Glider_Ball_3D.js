@@ -634,6 +634,8 @@ function updateVariablesAndUniforms()
 
 
 
+	// START OF GAME LOOP
+
 	// reset some variables at start of game loop
 	glider1IsAcceleratingRight = false;
 	glider1IsAcceleratingUp = false;
@@ -715,28 +717,30 @@ function updateVariablesAndUniforms()
 		} */
 
 
+		// Note: the following is temporary input code for testing red opponent glider movement
+		// will be removed when red opponent glider is fully controlled by AI code
 		//if (!glider2IsInAir)
 		{
-			if ((keyPressed('KeyI') || button4Pressed) && !(keyPressed('KeyK') || button3Pressed))
+			if ( keyPressed('KeyI') && !keyPressed('KeyK') )
 			{
 				glider2LocalVelocity.z += (glider2ThrustersForward.dot(glider2BaseForward) * -300 * frameTime); 
 				glider2LocalVelocity.x += (glider2ThrustersForward.dot(glider2BaseRight) * -300 * frameTime);
 				glider2IsAcceleratingForward = true;
 				
 			}
-			if ((keyPressed('KeyK') || button3Pressed) && !(keyPressed('KeyI') || button4Pressed))
+			if ( keyPressed('KeyK') && !keyPressed('KeyI') )
 			{
 				glider2LocalVelocity.z += (glider2ThrustersForward.dot(glider2BaseForward) * 300 * frameTime); 
 				glider2LocalVelocity.x += (glider2ThrustersForward.dot(glider2BaseRight) * 300 * frameTime);
 				glider2IsAcceleratingForward = true;
 			}
-			if ((keyPressed('KeyJ') || button1Pressed) && !(keyPressed('KeyL') || button2Pressed))
+			if ( keyPressed('KeyJ') && !keyPressed('KeyL') )
 			{
 				glider2LocalVelocity.z += (glider2ThrustersRight.dot(glider2BaseForward) * -300 * frameTime); 
 				glider2LocalVelocity.x += (glider2ThrustersRight.dot(glider2BaseRight) * -300 * frameTime);
 				glider2IsAcceleratingRight = true;
 			}
-			if ((keyPressed('KeyL') || button2Pressed) && !(keyPressed('KeyJ') || button1Pressed))
+			if ( keyPressed('KeyL') && !keyPressed('KeyJ') )
 			{
 				glider2LocalVelocity.z += (glider2ThrustersRight.dot(glider2BaseForward) * 300 * frameTime); 
 				glider2LocalVelocity.x += (glider2ThrustersRight.dot(glider2BaseRight) * 300 * frameTime);
@@ -2263,6 +2267,7 @@ function updateVariablesAndUniforms()
 
 	
 	// DEBUG INFO
+	
 	demoInfoElement.innerHTML = "collisions: " + collisionCounter;
 
 	demoInfoElement.innerHTML += " glider1IsInAir: " + glider1IsInAir + " " + "cameraIsMoving: " + cameraIsMoving + "<br>" + 
