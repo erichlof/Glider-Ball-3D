@@ -972,7 +972,7 @@ function updateVariablesAndUniforms()
 
 	// CHECK FOR GLIDER1 vs MIN/MAX BOUNDARY WALLS
 
-	if (glider1RaySegmentLength > 0)	
+	//if (glider1RaySegmentLength > 0)	
 	{
 		if (glider1Base.position.x > (courseShape.scale.x * courseMaxBounds.x))
 		{
@@ -1356,7 +1356,7 @@ function updateVariablesAndUniforms()
 
 	// CHECK FOR GLIDER2 vs MIN/MAX BOUNDARY WALLS
 	
-	if (glider2RaySegmentLength > 0)	
+	//if (glider2RaySegmentLength > 0)	
 	{
 		if (glider2Base.position.x > (courseShape.scale.x * courseMaxBounds.x))
 		{
@@ -1750,7 +1750,7 @@ function updateVariablesAndUniforms()
 
 	// CHECK FOR BALL vs MIN/MAX BOUNDARY WALLS
 	
-	if (ballRaySegmentLength > 0)	
+	//if (ballRaySegmentLength > 0)	
 	{
 		if (ball.position.x > (courseShape.scale.x * courseMaxBounds.x))
 		{
