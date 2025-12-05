@@ -1,14 +1,14 @@
 // scene/demo-specific variables go here
-let courseShape = new THREE.Object3D();
-let courseShape_invMatrix = new THREE.Matrix4();
-let courseMinBounds = new THREE.Vector3(-1, -1, -1);
-let courseMaxBounds = new THREE.Vector3( 1, 1, 1);
-
 let rayObjectOrigin = new THREE.Vector3();
 let rayObjectDirection = new THREE.Vector3();
 let intersectionPoint = new THREE.Vector3();
 let intersectionNormal = new THREE.Vector3();
 let tempVec = new THREE.Vector3();
+
+let courseShape = new THREE.Object3D();
+let courseShape_invMatrix = new THREE.Matrix4();
+let courseMinBounds = new THREE.Vector3(-1, -1, -1);
+let courseMaxBounds = new THREE.Vector3( 1, 1, 1);
 
 let glider1Base = new THREE.Object3D();
 let glider1CollisionVolume = new THREE.Object3D();
@@ -113,6 +113,8 @@ let computerGoalYRotateAngle = 0;
 let impulseGlider1 = new THREE.Vector3();
 let impulseGlider2 = new THREE.Vector3();
 let impulseBall = new THREE.Vector3();
+let impulsePlayerGoal = new THREE.Vector3();
+let impulseComputerGoal = new THREE.Vector3();
 let relativeVelocity = new THREE.Vector3();
 let unitCollisionNormal = new THREE.Vector3();
 let collisionNormal = new THREE.Vector3();
@@ -124,9 +126,6 @@ let gliderMass = 100;
 let ballMass = 10;
 let collisionCounter = 0;
 
-let worldRight = new THREE.Vector3(1, 0, 0);
-let worldUp = new THREE.Vector3(0, 1, 0);
-let worldForward = new THREE.Vector3(0, 0, 1);
 let canPress_Space = true;
 let jumpWasTriggered = false;
 let levelBeginFlag = true;
@@ -153,244 +152,19 @@ let level_RestartObject;
 
 let demoInfoElement = document.getElementById('demoInfo');
 
-// first, add some new methods to Three.js' Vector3 class
 
-/*
-Vector3.getPointAlongRay(rayOrigin, rayDirection, t) is a method that is called on a THREE.Vector3
-parameters: this method takes 3 parameters - a 'rayOrigin' and a 'rayDirection' (both of type THREE.Vector3),
-and a 't' value (a float number greater than 0)
-The rayOrigin is a point in 3D space where the ray begins. The rayDirection is a 3D direction vector that defines 
-the direction the ray is pointing in. Note: since the rayDirection is a pure direction vector, it is assumed to be normalized (length of 1) 
-before calling this method.  If rayDirection is not normalized to unit length, this method will return incorrect results.
-The t parameter can be any real number greater than 0, because a t value of 0 would return no distance along the ray (the rayOrigin itself), 
-while negative numbers for t would produce points behind the ray, which is almost never desired.  Positive values of t that are closer to 0 will
-give points very near the starting rayOrigin, while larger t values will give points farther and farther out along the rayDirection vector.
-return: this method returns the Vector3 that this method was called on, but now this Vector3 has
-been changed to a position (point in 3D space) that is the distance (t) out along the specified ray (rayOrigin, rayDirection).
-The equation that makes this function work is:  pointAlongRay = rayOrigin + (t * rayDirection)
-*/
-THREE.Vector3.prototype.getPointAlongRay = function(rayOrigin, rayDirection, t)
+let courseT = 0;
+function intersectCourse()
 {
-	// note: rayDirection is assumed to be normalized (a Vector3 of unit length, or length of 1)
-	this.x = rayOrigin.x + (t * rayDirection.x);
-	this.y = rayOrigin.y + (t * rayDirection.y);
-	this.z = rayOrigin.z + (t * rayDirection.z);
-	return this;
-};
+	courseT = Infinity;
+	if (courseShapeType == 'Sphere' || courseShapeType == 'Ellipsoid')
+		courseT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
+	else if (courseShapeType == 'Cylinder')
+		courseT = intersectUnitCylinder(rayObjectOrigin, rayObjectDirection, intersectionNormal);
 
-
-
-let vx, vy, vz, d;
-/*
-Vector3.transformAsPoint(m4_MatrixInverse) is a method that is called on a THREE.Vector3 
-parameters: this method takes 1 parameter - a 'm4_MatrixInverse' (of the type THREE.Matrix4)
-return: this method returns the Vector3 that this method was called on, but now this Vector3 has
-been changed by transforming it as a 3D point.
-This method is useful when instancing unit size objects (unit sphere, unit cylinder, etc) that have been 
-transformed by a user-specified transform matrix which has changed the original unit object (its position, rotation, scale, shear).
-When raycasting against such transformed objects, we must first transform the ray's origin into the reference of this 
-changed object (its object space).  After the ray's origin is transformed with this method, we can get a correct raycast result from the changed object. 
-Mathematically, this is accomplished by applying the transformed object's matrixInverse to the rayOrigin as a 3D point.  The result is a changed Vector3
-that will be used as the new rayOrigin when performing a raycast against a transformed unit-shape (using a simple unit-shape raycast routine, which is easier).
-*/
-THREE.Vector3.prototype.transformAsPoint = function(m4_MatrixInverse)
-{
-	const el = m4_MatrixInverse.elements;
-	vx = this.x;
-	vy = this.y;
-	vz = this.z;
-
-	d = 1 / (vx * el[3] + vy * el[7] + vz * el[11] + el[15]);
-
-	this.x = (vx * el[0] + vy * el[4] + vz * el[8] + el[12]) * d;
-	this.y = (vx * el[1] + vy * el[5] + vz * el[9] + el[13]) * d;
-	this.z = (vx * el[2] + vy * el[6] + vz * el[10] + el[14]) * d;
-	return this;
-};
-
-/*
-Vector3.transformAsDirection(m4_MatrixInverse) is a method that is called on a THREE.Vector3 
-parameters: this method takes 1 parameter - a 'm4_MatrixInverse' (of the type THREE.Matrix4)
-return: this method returns the Vector3 that this method was called on, but now this Vector3 has
-been changed by transforming it as a pure direction vector (like a small, unit-size arrow pointing in 3D space).
-This method is useful when instancing unit size objects (unit sphere, unit cylinder, etc) that have been 
-transformed by a user-specified transform matrix which has changed the original unit object (its position, rotation, scale, shear).
-When raycasting against such transformed objects, we must also transform the ray's direction into the reference of this 
-changed object (its object space).  After the ray's direction is transformed with this method, we can get a correct raycast result from the changed object. 
-Mathematically, this is accomplished by applying the transformed object's matrixInverse to the rayDirection as a pure direction vector.  This method differs from
-the one above because it only operates on the directional part of the supplied matrix (as opposed to the positional part used above).  The result is a changed 
-Vector3 that will be used as the new rayDirection when performing a raycast against a transformed unit-shape (using a simple unit-shape raycast routine, which is easier).
-*/
-
-THREE.Vector3.prototype.transformAsDirection = function(m4_MatrixInverse)
-{
-	const el = m4_MatrixInverse.elements;
-	vx = this.x;
-	vy = this.y;
-	vz = this.z;
-
-	this.x = vx * el[0] + vy * el[4] + vz * el[8];
-	this.y = vx * el[1] + vy * el[5] + vz * el[9];
-	this.z = vx * el[2] + vy * el[6] + vz * el[10];
-	return this;
-};
-
-/*
-Vector3.transformSurfaceNormal(m4_MatrixInverse) is a method that is called on a THREE.Vector3 
-parameters: this method takes 1 parameter - a 'm4_MatrixInverse' (of the type THREE.Matrix4)
-return: this method returns the Vector3 that this method was called on, but now this Vector3 has
-been changed by transforming it as a surface-normal direction vector (like a small arrow pointing at 90 degrees from its surface in 3D space).
-This method is useful when instancing unit size objects (unit sphere, unit cylinder, etc) that have been 
-transformed by a user-specified transform matrix that has changed the original unit object (its position, rotation, scale, shear).
-After raycasting against such transformed objects with the transformed rayOrigin and rayDirection in object space (see above 2 methods), 
-we must bring the intersection surface normal (in object space) back into 3D world space.  Surface-normal vectors are special and must be handled differently from other direction vectors. 
-It is not enough to simply multiply the object-space surface normal by the user-specified transform matrix.  This would result in incorrect world-space normals that do not point exactly 
-90 degrees from their surface.  Rather, we must apply the 'inverse transpose' of that transform matrix to the object-space normal, in order to correctly bring it back into world space. 
-Mathematically, this is accomplished by applying the Transpose of the transformed object's matrixInverse to the surface-normal vector (the Vector3 that this method was called on) as a pure 
-direction vector. The result is a changed Vector3 that will be the new surface normal of the transformed object (it will point exactly 90 degrees from its surface, even after transformations).
-*/
-
-THREE.Vector3.prototype.transformSurfaceNormal = function(m4_MatrixInverse)
-{
-	const el = m4_MatrixInverse.elements;
-	vx = this.x;
-	vy = this.y;
-	vz = this.z;
-	// multiply the surface normal vector by the Transpose of this matrixInverse instead (matrix rows and columns are simply switched - compare with the function above)
-	this.x = vx * el[0] + vy * el[1] + vz * el[2];
-	this.y = vx * el[4] + vy * el[5] + vz * el[6];
-	this.z = vx * el[8] + vy * el[9] + vz * el[10];
-};
-
-
-let t = Infinity;
-let testT = Infinity;
-let nearestT = Infinity;
-
-let invA, neg_halfB, u2, u;
-let t0, t1;
-function solveQuadratic(A, B, C)
-{
-	invA = 1 / A;
-	B *= invA;
-	C *= invA;
-	neg_halfB = -B * 0.5;
-	u2 = neg_halfB * neg_halfB - C;
-	if (u2 < 0)
-		return false;
-	u = Math.sqrt(u2);
-	t0 = neg_halfB - u;
-	t1 = neg_halfB + u;
-	return true;
+	return courseT;
 }
 
-let a = 0;
-let b = 0;
-let c = 0;
-
-function intersectUnitSphere(rayO, rayD, normal)
-{
-	// Unit Sphere implicit equation
-	// X^2 + Y^2 + Z^2 - 1 = 0
-	a = rayD.dot(rayD);
-	b = 2 * rayD.dot(rayO);
-	c = rayO.dot(rayO) - 1; // this '1' = (1 * 1) or unit sphere radius squared
-
-	if (solveQuadratic(a, b, c) == false)
-	{
-		return Infinity;
-	}
-
-	if (t0 > 0)
-	{
-		normal.getPointAlongRay(rayO, rayD, t0);
-		return t0;
-	}
-	if (t1 > 0)
-	{
-		normal.getPointAlongRay(rayO, rayD, t1);
-		return t1;
-	}
-	
-	return Infinity;
-}
-
-
-let inverseDir = new THREE.Vector3();
-let near = new THREE.Vector3();
-let far = new THREE.Vector3();
-let tmin = new THREE.Vector3();
-let tmax = new THREE.Vector3();
-
-function raycastUnitBox(rayO, rayD)
-{
-	inverseDir.set(1 / rayD.x, 1 / rayD.y, 1 / rayD.z);
-	near.set(-1,-1,-1).sub(rayO);
-	near.multiply(inverseDir);
-	far.set(1, 1, 1).sub(rayO);
-	far.multiply(inverseDir);
-	tmin.copy(near).min(far);
-	tmax.copy(near).max(far);
-	t0 = Math.max(Math.max(tmin.x, tmin.y), tmin.z);
-	t1 = Math.min(Math.min(tmax.x, tmax.y), tmax.z);
-	if (t0 > t1)
-		return Infinity;
-
-	if (t0 > 0.0) // if we are outside the box
-		return t0;
-
-	if (t1 > 0.0) // if we are inside the box
-		return t1;
-
-	return Infinity;
-}
-/* 
-function intersectUnitBox(rayO, rayD, normal)
-{
-	inverseDir.set(1 / rayD.x, 1 / rayD.y, 1 / rayD.z);
-	near.set(-1,-1,-1).sub(rayO);
-	near.multiply(inverseDir);
-	far.set(1, 1, 1).sub(rayO);
-	far.multiply(inverseDir);
-	tmin.copy(near).min(far);
-	tmax.copy(near).max(far);
-	t0 = Math.max(Math.max(tmin.x, tmin.y), tmin.z);
-	t1 = Math.min(Math.min(tmax.x, tmax.y), tmax.z);
-	if (t0 > t1)
-		return Infinity;
-
-	if (t0 > 0.0) // if we are outside the box
-	{
-		intersectionPoint.getPointAlongRay(rayO, rayD, t0); // intersection in box's object space, vec3(-1,-1,-1) to vec3(+1,+1,+1)
-		// start out with default Z normal of (0,0,-1) or (0,0,+1)
-		normal.set(0, 0, intersectionPoint.z);
-		if (Math.abs(intersectionPoint.x) > Math.abs(intersectionPoint.y) && Math.abs(intersectionPoint.x) >= Math.abs(intersectionPoint.z))
-			normal.set(intersectionPoint.x, 0, 0);	
-		else if (Math.abs(intersectionPoint.y) > Math.abs(intersectionPoint.x) && Math.abs(intersectionPoint.y) >= Math.abs(intersectionPoint.z))
-			normal.set(0, intersectionPoint.y, 0);
-		return t0;
-	}
-		
-	if (t1 > 0.0) // if we are inside the box
-	{
-		intersectionPoint.getPointAlongRay(rayO, rayD, t1); // intersection in box's object space, vec3(-1,-1,-1) to vec3(+1,+1,+1)
-		// start out with default Z normal of (0,0,-1) or (0,0,+1)
-		normal.set(0, 0, intersectionPoint.z);
-		if (Math.abs(intersectionPoint.x) > Math.abs(intersectionPoint.y) && Math.abs(intersectionPoint.x) >= Math.abs(intersectionPoint.z))
-			normal.set(intersectionPoint.x, 0, 0);	
-		else if (Math.abs(intersectionPoint.y) > Math.abs(intersectionPoint.x) && Math.abs(intersectionPoint.y) >= Math.abs(intersectionPoint.z))
-			normal.set(0, intersectionPoint.y, 0);
-		return t1;
-	}
-		
-	return Infinity;
-} */
-
-
-function beginLevel()
-{
-	levelBeginFlag = true;
-}
 
 
 // called automatically from within initTHREEjs() function (located in InitCommon.js file)
@@ -462,12 +236,13 @@ function initSceneData()
 	course_ClipMaxZObject = { clipMaxZ: 1.0 };
 	level_RestartObject = { 'restart level' : beginLevel };
 
+	function beginLevel() { levelBeginFlag = true; }
 	function handleCourseTypeChange() { needChangeCourseType = true; }
 	function handleCourseScaleUniformChange() { needChangeCourseScaleUniform = true; }
 	function handleCourseScaleChange() { needChangeCourseScale = true; }
 	function handleCourseClipXYZChange() { needChangeCourseClipXYZBounds = true; }
 
-	course_TypeController = gui.add(course_TypeObject, 'Course_Type', ['Sphere', 'Ellipsoid']).onChange(handleCourseTypeChange);
+	course_TypeController = gui.add(course_TypeObject, 'Course_Type', ['Sphere', 'Ellipsoid', 'Cylinder']).onChange(handleCourseTypeChange);
 	
 	scale_Folder = gui.addFolder('Scale');
 	course_ScaleUniformController = scale_Folder.add(course_ScaleUniformObject, 'uniformScale', 200, 1500, 1).onChange(handleCourseScaleUniformChange);
@@ -501,7 +276,7 @@ function initSceneData()
 	pathTracingUniforms.uGlider2CollisionVolumeInvMatrix = { value: new THREE.Matrix4() };
 	pathTracingUniforms.uCourseMinBounds = { value: courseMinBounds };
 	pathTracingUniforms.uCourseMaxBounds = { value: courseMaxBounds };
-	pathTracingUniforms.UCourseShapeType = { value: 0 };
+	pathTracingUniforms.uCourseShapeType = { value: 0 };
 
 } // end function initSceneData()
 
@@ -521,14 +296,21 @@ function updateVariablesAndUniforms()
 			course_ScaleXController.setValue(500);
 			course_ScaleYController.setValue(500);
 			course_ScaleZController.setValue(500);
-			pathTracingUniforms.UCourseShapeType.value = 0;
+			pathTracingUniforms.uCourseShapeType.value = 0;
 		}
 		else if (courseShapeType == 'Ellipsoid')
 		{
 			course_ScaleXController.setValue(600);
 			course_ScaleYController.setValue(300);
 			course_ScaleZController.setValue(600);
-			pathTracingUniforms.UCourseShapeType.value = 1;
+			pathTracingUniforms.uCourseShapeType.value = 1;
+		}
+		else if (courseShapeType == 'Cylinder')
+		{
+			course_ScaleXController.setValue(500);
+			course_ScaleYController.setValue(500);
+			course_ScaleZController.setValue(500);
+			pathTracingUniforms.uCourseShapeType.value = 2;
 		}
 
 		cameraIsMoving = true;
@@ -587,7 +369,7 @@ function updateVariablesAndUniforms()
 	if (levelBeginFlag)
 	{
 		// GLIDER 1 (player)
-		glider1StartingPosition.set(1, -50, 75);
+		glider1StartingPosition.set(0, -50, 75);
 		glider1Base.position.copy(glider1StartingPosition);
 		glider1CollisionVolume.position.copy(glider1Base.position);
 		glider1BaseRight.set(1, 0, 0);
@@ -596,7 +378,7 @@ function updateVariablesAndUniforms()
 		glider1LocalVelocity.set(0, 0, 0);
 
 		// GLIDER 2 (AI controlled)
-		glider2StartingPosition.set(-1, -50, -75);
+		glider2StartingPosition.set(0, -50, -75);
 		glider2Base.position.copy(glider2StartingPosition);
 		glider2CollisionVolume.position.copy(glider2Base.position);
 		glider2BaseRight.set(1, 0, 0);
@@ -605,7 +387,7 @@ function updateVariablesAndUniforms()
 		glider2LocalVelocity.set(0, 0, 0);
 
 		// BALL
-		ballStartingPosition.set(1, -50, 1);
+		ballStartingPosition.set(0, -50, 0);
 		ball.position.copy(ballStartingPosition);
 		ballCollisionVolume.position.copy(ball.position);
 		ballRight.set(1, 0, 0);
@@ -619,7 +401,7 @@ function updateVariablesAndUniforms()
 		playerGoalRight.set(1, 0, 0);
 		playerGoalUp.set(0, 1, 0);
 		playerGoalForward.set(0, 0, 1);
-		playerGoalLocalVelocity.set(0, 0, 0);
+		playerGoalLocalVelocity.set(10, 0, 0);
 
 		// COMPUTER's GOAL
 		computerGoalStartingPosition.set(-75, -10, 0);
@@ -627,7 +409,7 @@ function updateVariablesAndUniforms()
 		computerGoalRight.set(1, 0, 0);
 		computerGoalUp.set(0, 1, 0);
 		computerGoalForward.set(0, 0, 1);
-		computerGoalLocalVelocity.set(0, 0, 0);
+		computerGoalLocalVelocity.set(10, 0, 0);
 
 		levelBeginFlag = false;
 	} // end if (levelBeginFlag)
@@ -819,6 +601,13 @@ function updateVariablesAndUniforms()
 		glider1LocalVelocity.x -= (glider1LocalVelocity.x * 1 * frameTime);
 	}
 
+	// the following gives a very slight invisible movement to glider1, so that a ray can be created from its old position to its new position 
+	if (Math.abs(glider1LocalVelocity.x) < 0.0001 && Math.abs(glider1LocalVelocity.z) < 0.0001)
+	{
+		glider1LocalVelocity.x = (Math.random() * 2 - 1) * 0.001;
+		glider1LocalVelocity.z = (Math.random() * 2 - 1) * 0.001;
+	}
+	
 
 	// update glider1's World velocity and position 
 
@@ -971,76 +760,73 @@ function updateVariablesAndUniforms()
 	}
 
 	// CHECK FOR GLIDER1 vs MIN/MAX BOUNDARY WALLS
-
-	//if (glider1RaySegmentLength > 0)	
+	
+	if (glider1Base.position.x > (courseShape.scale.x * courseMaxBounds.x))
 	{
-		if (glider1Base.position.x > (courseShape.scale.x * courseMaxBounds.x))
-		{
-			glider1Base.position.x = (courseShape.scale.x * courseMaxBounds.x);
-			unitCollisionNormal.set(-1, 0, 0);
-			impulseGlider1.copy(glider1WorldVelocity);
-			impulseGlider1.reflect(unitCollisionNormal);
-			tempVec.copy(impulseGlider1).normalize();
-			impulseGlider1.multiplyScalar( Math.max(0.3, 1-tempVec.dot(unitCollisionNormal)) );
-			glider1LocalVelocity.x = impulseGlider1.dot(glider1BaseRight);
-			glider1LocalVelocity.z = impulseGlider1.dot(glider1BaseForward);
-		}
-		else if (glider1Base.position.x < (courseShape.scale.x * courseMinBounds.x))
-		{
-			glider1Base.position.x = (courseShape.scale.x * courseMinBounds.x);
-			unitCollisionNormal.set(1, 0, 0);
-			impulseGlider1.copy(glider1WorldVelocity);
-			impulseGlider1.reflect(unitCollisionNormal);
-			tempVec.copy(impulseGlider1).normalize();
-			impulseGlider1.multiplyScalar( Math.max(0.3, 1-tempVec.dot(unitCollisionNormal)) );
-			glider1LocalVelocity.x = impulseGlider1.dot(glider1BaseRight);
-			glider1LocalVelocity.z = impulseGlider1.dot(glider1BaseForward);
-		}
-		else if (glider1Base.position.y > (courseShape.scale.y * courseMaxBounds.y))
-		{
-			glider1Base.position.y = (courseShape.scale.y * courseMaxBounds.y);
-			unitCollisionNormal.set(0, -1, 0);
-			impulseGlider1.copy(glider1WorldVelocity);
-			impulseGlider1.reflect(unitCollisionNormal);
-			tempVec.copy(impulseGlider1).normalize();
-			impulseGlider1.multiplyScalar( Math.max(0.3, 1-tempVec.dot(unitCollisionNormal)) );
-			glider1LocalVelocity.x = impulseGlider1.dot(glider1BaseRight);
-			glider1LocalVelocity.z = impulseGlider1.dot(glider1BaseForward);
-		}
-		else if (glider1Base.position.y < (courseShape.scale.y * courseMinBounds.y))
-		{
-			glider1Base.position.y = (courseShape.scale.y * courseMinBounds.y);
-			unitCollisionNormal.set(0, 1, 0);
-			impulseGlider1.copy(glider1WorldVelocity);
-			impulseGlider1.reflect(unitCollisionNormal);
-			tempVec.copy(impulseGlider1).normalize();
-			impulseGlider1.multiplyScalar( Math.max(0.3, 1-tempVec.dot(unitCollisionNormal)) );
-			glider1LocalVelocity.x = impulseGlider1.dot(glider1BaseRight);
-			glider1LocalVelocity.z = impulseGlider1.dot(glider1BaseForward);
-		}
-		else if (glider1Base.position.z > (courseShape.scale.z * courseMaxBounds.z))
-		{
-			glider1Base.position.z = (courseShape.scale.z * courseMaxBounds.z);
-			unitCollisionNormal.set(0, 0, -1);
-			impulseGlider1.copy(glider1WorldVelocity);
-			impulseGlider1.reflect(unitCollisionNormal);
-			tempVec.copy(impulseGlider1).normalize();
-			impulseGlider1.multiplyScalar( Math.max(0.3, 1-tempVec.dot(unitCollisionNormal)) );
-			glider1LocalVelocity.x = impulseGlider1.dot(glider1BaseRight);
-			glider1LocalVelocity.z = impulseGlider1.dot(glider1BaseForward);
-		}
-		else if (glider1Base.position.z < (courseShape.scale.z * courseMinBounds.z))
-		{
-			glider1Base.position.z = (courseShape.scale.z * courseMinBounds.z);
-			unitCollisionNormal.set(0, 0, 1);
-			impulseGlider1.copy(glider1WorldVelocity);
-			impulseGlider1.reflect(unitCollisionNormal);
-			tempVec.copy(impulseGlider1).normalize();
-			impulseGlider1.multiplyScalar( Math.max(0.3, 1-tempVec.dot(unitCollisionNormal)) );
-			glider1LocalVelocity.x = impulseGlider1.dot(glider1BaseRight);
-			glider1LocalVelocity.z = impulseGlider1.dot(glider1BaseForward);
-		}
-	} // end if (glider1RaySegmentLength > 0)
+		glider1Base.position.x = (courseShape.scale.x * courseMaxBounds.x);
+		unitCollisionNormal.set(-1, 0, 0);
+		impulseGlider1.copy(glider1WorldVelocity);
+		impulseGlider1.reflect(unitCollisionNormal);
+		tempVec.copy(impulseGlider1).normalize();
+		impulseGlider1.multiplyScalar( Math.max(0.3, 1-tempVec.dot(unitCollisionNormal)) );
+		glider1LocalVelocity.x = impulseGlider1.dot(glider1BaseRight);
+		glider1LocalVelocity.z = impulseGlider1.dot(glider1BaseForward);
+	}
+	else if (glider1Base.position.x < (courseShape.scale.x * courseMinBounds.x))
+	{
+		glider1Base.position.x = (courseShape.scale.x * courseMinBounds.x);
+		unitCollisionNormal.set(1, 0, 0);
+		impulseGlider1.copy(glider1WorldVelocity);
+		impulseGlider1.reflect(unitCollisionNormal);
+		tempVec.copy(impulseGlider1).normalize();
+		impulseGlider1.multiplyScalar( Math.max(0.3, 1-tempVec.dot(unitCollisionNormal)) );
+		glider1LocalVelocity.x = impulseGlider1.dot(glider1BaseRight);
+		glider1LocalVelocity.z = impulseGlider1.dot(glider1BaseForward);
+	}
+	else if (glider1Base.position.y > (courseShape.scale.y * courseMaxBounds.y))
+	{
+		glider1Base.position.y = (courseShape.scale.y * courseMaxBounds.y);
+		unitCollisionNormal.set(0, -1, 0);
+		impulseGlider1.copy(glider1WorldVelocity);
+		impulseGlider1.reflect(unitCollisionNormal);
+		tempVec.copy(impulseGlider1).normalize();
+		impulseGlider1.multiplyScalar( Math.max(0.3, 1-tempVec.dot(unitCollisionNormal)) );
+		glider1LocalVelocity.x = impulseGlider1.dot(glider1BaseRight);
+		glider1LocalVelocity.z = impulseGlider1.dot(glider1BaseForward);
+	}
+	else if (glider1Base.position.y < (courseShape.scale.y * courseMinBounds.y))
+	{
+		glider1Base.position.y = (courseShape.scale.y * courseMinBounds.y);
+		unitCollisionNormal.set(0, 1, 0);
+		impulseGlider1.copy(glider1WorldVelocity);
+		impulseGlider1.reflect(unitCollisionNormal);
+		tempVec.copy(impulseGlider1).normalize();
+		impulseGlider1.multiplyScalar( Math.max(0.3, 1-tempVec.dot(unitCollisionNormal)) );
+		glider1LocalVelocity.x = impulseGlider1.dot(glider1BaseRight);
+		glider1LocalVelocity.z = impulseGlider1.dot(glider1BaseForward);
+	}
+	else if (glider1Base.position.z > (courseShape.scale.z * courseMaxBounds.z))
+	{
+		glider1Base.position.z = (courseShape.scale.z * courseMaxBounds.z);
+		unitCollisionNormal.set(0, 0, -1);
+		impulseGlider1.copy(glider1WorldVelocity);
+		impulseGlider1.reflect(unitCollisionNormal);
+		tempVec.copy(impulseGlider1).normalize();
+		impulseGlider1.multiplyScalar( Math.max(0.3, 1-tempVec.dot(unitCollisionNormal)) );
+		glider1LocalVelocity.x = impulseGlider1.dot(glider1BaseRight);
+		glider1LocalVelocity.z = impulseGlider1.dot(glider1BaseForward);
+	}
+	else if (glider1Base.position.z < (courseShape.scale.z * courseMinBounds.z))
+	{
+		glider1Base.position.z = (courseShape.scale.z * courseMinBounds.z);
+		unitCollisionNormal.set(0, 0, 1);
+		impulseGlider1.copy(glider1WorldVelocity);
+		impulseGlider1.reflect(unitCollisionNormal);
+		tempVec.copy(impulseGlider1).normalize();
+		impulseGlider1.multiplyScalar( Math.max(0.3, 1-tempVec.dot(unitCollisionNormal)) );
+		glider1LocalVelocity.x = impulseGlider1.dot(glider1BaseRight);
+		glider1LocalVelocity.z = impulseGlider1.dot(glider1BaseForward);
+	}
 		
 
 
@@ -1056,50 +842,48 @@ function updateVariablesAndUniforms()
 	// CHECK FOR GLIDER1 OUT-OF-BOUNDS (see if glider1's current position has left the course)
 
 	// first check glider1 forward motion probe for intersection with course (a ray is cast from glider1's position in the direction of its forward motion)
-	if (glider1RaySegmentLength > 0) // if glider1 hasn't moved at all (segment length == 0), don't bother with this check
-	{
-		rayObjectOrigin.copy(glider1RayOrigin);
-		rayObjectDirection.copy(glider1RayDirection);
-		// put the rayObjectOrigin and rayObjectDirection in the object space of the large course
-		// the line below is not needed, because the large course never moves (it is fixed in place)
-		//courseShape_invMatrix.copy(courseShape.matrixWorld).invert(); // only needed if this object moves
-		rayObjectOrigin.transformAsPoint(courseShape_invMatrix);
-		rayObjectDirection.transformAsDirection(courseShape_invMatrix);
-		// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-shape intersection routine
-		testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
-		
-		// If the test t value from the raycast comes back smaller than the distance that the glider is trying to cover during
-		//   this animation frame, that means that the glider's future position would step out of bounds of the course.
-		//   Therefore, we must snap the glider back into position at the raycast intersectionPoint on the course surface.
-		if (testT < glider1RaySegmentLength)
-		{
-			glider1IsInAir = false;
-			glider1LocalVelocity.y = 0;
-			intersectionNormal.transformSurfaceNormal(courseShape_invMatrix); // bring intersected object-space normal back into world space
-			intersectionNormal.negate(); // normals usually point outward on shapes, but since we are inside the shape, must flip it
-			intersectionNormal.normalize(); // after the various transformations, make sure normal is a unit-length vector (length of 1)
-			intersectionPoint.getPointAlongRay(glider1RayOrigin, glider1RayDirection, testT);
-			intersectionPoint.addScaledVector(intersectionNormal, 1);
-			glider1Base.position.copy(intersectionPoint);
-			//glider1Base.updateMatrixWorld();
-			glider1BaseUp.copy(intersectionNormal);
-			glider1BaseRight.crossVectors(glider1BaseUp, glider1BaseForward).normalize();
-			glider1BaseForward.crossVectors(glider1BaseRight, glider1BaseUp).normalize();
-		}
-		if (testT == Infinity)
-		{// bail out and snap the glider1 back to its starting position
-			//console.log("Glider1 bailed out");
-			glider1IsInAir = true;
-			glider1LocalVelocity.set(0, 0, 0);
-			glider1Base.position.copy(glider1StartingPosition);
-			//glider1Base.updateMatrixWorld();
-			glider1BaseRight.set(1, 0, 0);
-			glider1BaseUp.set(0, 1, 0);
-			glider1BaseForward.set(0, 0, 1);
-		}
-	} // end if (glider1RaySegmentLength > 0)
-
+	rayObjectOrigin.copy(glider1RayOrigin);
+	rayObjectDirection.copy(glider1RayDirection);
+	// put the rayObjectOrigin and rayObjectDirection in the object space of the large course
+	// the line below is not needed, because the large course never moves (it is fixed in place)
+	//courseShape_invMatrix.copy(courseShape.matrixWorld).invert(); // only needed if this object moves
+	rayObjectOrigin.transformAsPoint(courseShape_invMatrix);
+	rayObjectDirection.transformAsDirection(courseShape_invMatrix);
+	// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-shape intersection routine
+	//testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
+	testT = intersectCourse();
 	
+	// If the test t value from the raycast comes back smaller than the distance that the glider is trying to cover during
+	//   this animation frame, that means that the glider's future position would step out of bounds of the course.
+	//   Therefore, we must snap the glider back into position at the raycast intersectionPoint on the course surface.
+	if (testT < glider1RaySegmentLength)
+	{
+		glider1IsInAir = false;
+		glider1LocalVelocity.y = 0;
+		intersectionNormal.transformSurfaceNormal(courseShape_invMatrix); // bring intersected object-space normal back into world space
+		intersectionNormal.negate(); // normals usually point outward on shapes, but since we are inside the shape, must flip it
+		intersectionNormal.normalize(); // after the various transformations, make sure normal is a unit-length vector (length of 1)
+		intersectionPoint.getPointAlongRay(glider1RayOrigin, glider1RayDirection, testT);
+		intersectionPoint.addScaledVector(intersectionNormal, 1);
+		glider1Base.position.copy(intersectionPoint);
+		//glider1Base.updateMatrixWorld();
+		glider1BaseUp.copy(intersectionNormal);
+		glider1BaseRight.crossVectors(glider1BaseUp, glider1BaseForward).normalize();
+		glider1BaseForward.crossVectors(glider1BaseRight, glider1BaseUp).normalize();
+	}
+	else if (testT == Infinity)
+	{// bail out and snap the glider1 back to its starting position
+		//console.log("Glider1 bailed out");
+		glider1IsInAir = true;
+		glider1LocalVelocity.set(0, 0, 0);
+		glider1Base.position.copy(glider1StartingPosition);
+		//glider1Base.updateMatrixWorld();
+		glider1BaseRight.set(1, 0, 0);
+		glider1BaseUp.set(0, 1, 0);
+		glider1BaseForward.set(0, 0, 1);
+	}
+	
+
 	// CHECK FOR GLIDER1 BASE vs. LARGE COURSE INTERACTIONS
 	// handling these interactions is what makes the glider1 glide smoothly on the surface of the large course
 
@@ -1116,8 +900,8 @@ function updateVariablesAndUniforms()
 	rayObjectOrigin.transformAsPoint(courseShape_invMatrix);
 	rayObjectDirection.transformAsDirection(courseShape_invMatrix);
 	// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-shape intersection routine
-	testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
-	
+	//testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
+	testT = intersectCourse();
 	if (testT < Infinity)
 	{
 		intersectionNormal.transformSurfaceNormal(courseShape_invMatrix); // bring intersected object-space normal back into world space
@@ -1129,13 +913,13 @@ function updateVariablesAndUniforms()
 		glider1BaseRight.crossVectors(glider1BaseUp, glider1BaseForward).normalize();
 		glider1BaseForward.crossVectors(glider1BaseRight, glider1BaseUp).normalize();
 	}
-	if (testT <= 1)
+	if (testT < 1)
 	{
 		glider1IsInAir = false;
 		glider1LocalVelocity.y = 0;
 		glider1Base.position.copy(intersectionPoint);
 	}
-	if (testT > 1)
+	if (testT > 1.01) // " > 1.01" instead of " > 1" to account for floating point precision
 	{
 		glider1IsInAir = true;
 	}
@@ -1224,6 +1008,13 @@ function updateVariablesAndUniforms()
 		glider2LocalVelocity.x -= (glider2LocalVelocity.x * 1 * frameTime);
 	}
 
+	// the following gives a very slight invisible movement to glider2, so that a ray can be created from its old position to its new position 
+	if (Math.abs(glider2LocalVelocity.x) < 0.0001 && Math.abs(glider2LocalVelocity.z) < 0.0001)
+	{
+		glider2LocalVelocity.x = (Math.random() * 2 - 1) * 0.001;
+		glider2LocalVelocity.z = (Math.random() * 2 - 1) * 0.001;
+	}
+		
 
 	// update glider2 position
 
@@ -1356,75 +1147,73 @@ function updateVariablesAndUniforms()
 
 	// CHECK FOR GLIDER2 vs MIN/MAX BOUNDARY WALLS
 	
-	//if (glider2RaySegmentLength > 0)	
+	if (glider2Base.position.x > (courseShape.scale.x * courseMaxBounds.x))
 	{
-		if (glider2Base.position.x > (courseShape.scale.x * courseMaxBounds.x))
-		{
-			glider2Base.position.x = (courseShape.scale.x * courseMaxBounds.x);
-			unitCollisionNormal.set(-1, 0, 0);
-			impulseGlider2.copy(glider2WorldVelocity);
-			impulseGlider2.reflect(unitCollisionNormal);
-			tempVec.copy(impulseGlider2).normalize();
-			impulseGlider2.multiplyScalar( Math.max(0.3, 1-tempVec.dot(unitCollisionNormal)) );
-			glider2LocalVelocity.x = impulseGlider2.dot(glider2BaseRight);
-			glider2LocalVelocity.z = impulseGlider2.dot(glider2BaseForward);
-		}
-		else if (glider2Base.position.x < (courseShape.scale.x * courseMinBounds.x))
-		{
-			glider2Base.position.x = (courseShape.scale.x * courseMinBounds.x);
-			unitCollisionNormal.set(1, 0, 0);
-			impulseGlider2.copy(glider2WorldVelocity);
-			impulseGlider2.reflect(unitCollisionNormal);
-			tempVec.copy(impulseGlider2).normalize();
-			impulseGlider2.multiplyScalar( Math.max(0.3, 1-tempVec.dot(unitCollisionNormal)) );
-			glider2LocalVelocity.x = impulseGlider2.dot(glider2BaseRight);
-			glider2LocalVelocity.z = impulseGlider2.dot(glider2BaseForward);
-		}
-		else if (glider2Base.position.y > (courseShape.scale.y * courseMaxBounds.y))
-		{
-			glider2Base.position.y = (courseShape.scale.y * courseMaxBounds.y);
-			unitCollisionNormal.set(0, -1, 0);
-			impulseGlider2.copy(glider2WorldVelocity);
-			impulseGlider2.reflect(unitCollisionNormal);
-			tempVec.copy(impulseGlider2).normalize();
-			impulseGlider2.multiplyScalar( Math.max(0.3, 1-tempVec.dot(unitCollisionNormal)) );
-			glider2LocalVelocity.x = impulseGlider2.dot(glider2BaseRight);
-			glider2LocalVelocity.z = impulseGlider2.dot(glider2BaseForward);
-		}
-		else if (glider2Base.position.y < (courseShape.scale.y * courseMinBounds.y))
-		{
-			glider2Base.position.y = (courseShape.scale.y * courseMinBounds.y);
-			unitCollisionNormal.set(0, 1, 0);
-			impulseGlider2.copy(glider2WorldVelocity);
-			impulseGlider2.reflect(unitCollisionNormal);
-			tempVec.copy(impulseGlider2).normalize();
-			impulseGlider2.multiplyScalar( Math.max(0.3, 1-tempVec.dot(unitCollisionNormal)) );
-			glider2LocalVelocity.x = impulseGlider2.dot(glider2BaseRight);
-			glider2LocalVelocity.z = impulseGlider2.dot(glider2BaseForward);
-		}
-		else if (glider2Base.position.z > (courseShape.scale.z * courseMaxBounds.z))
-		{
-			glider2Base.position.z = (courseShape.scale.z * courseMaxBounds.z);
-			unitCollisionNormal.set(0, 0, -1);
-			impulseGlider2.copy(glider2WorldVelocity);
-			impulseGlider2.reflect(unitCollisionNormal);
-			tempVec.copy(impulseGlider2).normalize();
-			impulseGlider2.multiplyScalar( Math.max(0.3, 1-tempVec.dot(unitCollisionNormal)) );
-			glider2LocalVelocity.x = impulseGlider2.dot(glider2BaseRight);
-			glider2LocalVelocity.z = impulseGlider2.dot(glider2BaseForward);
-		}
-		else if (glider2Base.position.z < (courseShape.scale.z * courseMinBounds.z))
-		{
-			glider2Base.position.z = (courseShape.scale.z * courseMinBounds.z);
-			unitCollisionNormal.set(0, 0, 1);
-			impulseGlider2.copy(glider2WorldVelocity);
-			impulseGlider2.reflect(unitCollisionNormal);
-			tempVec.copy(impulseGlider2).normalize();
-			impulseGlider2.multiplyScalar( Math.max(0.3, 1-tempVec.dot(unitCollisionNormal)) );
-			glider2LocalVelocity.x = impulseGlider2.dot(glider2BaseRight);
-			glider2LocalVelocity.z = impulseGlider2.dot(glider2BaseForward);
-		}
-	} // end if (glider2RaySegmentLength > 0)
+		glider2Base.position.x = (courseShape.scale.x * courseMaxBounds.x);
+		unitCollisionNormal.set(-1, 0, 0);
+		impulseGlider2.copy(glider2WorldVelocity);
+		impulseGlider2.reflect(unitCollisionNormal);
+		tempVec.copy(impulseGlider2).normalize();
+		impulseGlider2.multiplyScalar( Math.max(0.3, 1-tempVec.dot(unitCollisionNormal)) );
+		glider2LocalVelocity.x = impulseGlider2.dot(glider2BaseRight);
+		glider2LocalVelocity.z = impulseGlider2.dot(glider2BaseForward);
+	}
+	else if (glider2Base.position.x < (courseShape.scale.x * courseMinBounds.x))
+	{
+		glider2Base.position.x = (courseShape.scale.x * courseMinBounds.x);
+		unitCollisionNormal.set(1, 0, 0);
+		impulseGlider2.copy(glider2WorldVelocity);
+		impulseGlider2.reflect(unitCollisionNormal);
+		tempVec.copy(impulseGlider2).normalize();
+		impulseGlider2.multiplyScalar( Math.max(0.3, 1-tempVec.dot(unitCollisionNormal)) );
+		glider2LocalVelocity.x = impulseGlider2.dot(glider2BaseRight);
+		glider2LocalVelocity.z = impulseGlider2.dot(glider2BaseForward);
+	}
+	else if (glider2Base.position.y > (courseShape.scale.y * courseMaxBounds.y))
+	{
+		glider2Base.position.y = (courseShape.scale.y * courseMaxBounds.y);
+		unitCollisionNormal.set(0, -1, 0);
+		impulseGlider2.copy(glider2WorldVelocity);
+		impulseGlider2.reflect(unitCollisionNormal);
+		tempVec.copy(impulseGlider2).normalize();
+		impulseGlider2.multiplyScalar( Math.max(0.3, 1-tempVec.dot(unitCollisionNormal)) );
+		glider2LocalVelocity.x = impulseGlider2.dot(glider2BaseRight);
+		glider2LocalVelocity.z = impulseGlider2.dot(glider2BaseForward);
+	}
+	else if (glider2Base.position.y < (courseShape.scale.y * courseMinBounds.y))
+	{
+		glider2Base.position.y = (courseShape.scale.y * courseMinBounds.y);
+		unitCollisionNormal.set(0, 1, 0);
+		impulseGlider2.copy(glider2WorldVelocity);
+		impulseGlider2.reflect(unitCollisionNormal);
+		tempVec.copy(impulseGlider2).normalize();
+		impulseGlider2.multiplyScalar( Math.max(0.3, 1-tempVec.dot(unitCollisionNormal)) );
+		glider2LocalVelocity.x = impulseGlider2.dot(glider2BaseRight);
+		glider2LocalVelocity.z = impulseGlider2.dot(glider2BaseForward);
+	}
+	else if (glider2Base.position.z > (courseShape.scale.z * courseMaxBounds.z))
+	{
+		glider2Base.position.z = (courseShape.scale.z * courseMaxBounds.z);
+		unitCollisionNormal.set(0, 0, -1);
+		impulseGlider2.copy(glider2WorldVelocity);
+		impulseGlider2.reflect(unitCollisionNormal);
+		tempVec.copy(impulseGlider2).normalize();
+		impulseGlider2.multiplyScalar( Math.max(0.3, 1-tempVec.dot(unitCollisionNormal)) );
+		glider2LocalVelocity.x = impulseGlider2.dot(glider2BaseRight);
+		glider2LocalVelocity.z = impulseGlider2.dot(glider2BaseForward);
+	}
+	else if (glider2Base.position.z < (courseShape.scale.z * courseMinBounds.z))
+	{
+		glider2Base.position.z = (courseShape.scale.z * courseMinBounds.z);
+		unitCollisionNormal.set(0, 0, 1);
+		impulseGlider2.copy(glider2WorldVelocity);
+		impulseGlider2.reflect(unitCollisionNormal);
+		tempVec.copy(impulseGlider2).normalize();
+		impulseGlider2.multiplyScalar( Math.max(0.3, 1-tempVec.dot(unitCollisionNormal)) );
+		glider2LocalVelocity.x = impulseGlider2.dot(glider2BaseRight);
+		glider2LocalVelocity.z = impulseGlider2.dot(glider2BaseForward);
+	}
+
 
 
 	// now that the glider2 has possibly moved again (due to physics interactions), record its new position minus its old position as a line segment
@@ -1438,47 +1227,44 @@ function updateVariablesAndUniforms()
 
 	// CHECK FOR GLIDER2 OUT-OF-BOUNDS (see if glider2's current position has left the course)
 
-	if (glider2RaySegmentLength > 0) // if glider2 hasn't moved at all (segment length == 0), don't bother with this check
+	// first check glider2 forward motion probe for intersection with course (a ray is cast from glider2's position in the direction of its forward motion)
+	rayObjectOrigin.copy(glider2RayOrigin);
+	rayObjectDirection.copy(glider2RayDirection);
+	// put the rayObjectOrigin and rayObjectDirection in the object space of the large course
+	// the line below is not needed, because the large course never moves (it is fixed in place)
+	//courseShape_invMatrix.copy(courseShape.matrixWorld).invert(); // only needed if this object moves
+	rayObjectOrigin.transformAsPoint(courseShape_invMatrix);
+	rayObjectDirection.transformAsDirection(courseShape_invMatrix);
+	// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-shape intersection routine
+	//testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
+	testT = intersectCourse();
+	// If the test t value from the raycast comes back smaller than the distance that the glider2 is trying to cover during
+	//   this animation frame, that means that the glider2's future position would step out of bounds of the course.
+	//   Therefore, we must snap the glider back into position at the raycast intersectionPoint on the course surface.
+	if (testT < glider2RaySegmentLength)
 	{
-		// first check glider2 forward motion probe for intersection with course (a ray is cast from glider2's position in the direction of its forward motion)
-		rayObjectOrigin.copy(glider2RayOrigin);
-		rayObjectDirection.copy(glider2RayDirection);
-		// put the rayObjectOrigin and rayObjectDirection in the object space of the large course
-		// the line below is not needed, because the large course never moves (it is fixed in place)
-		//courseShape_invMatrix.copy(courseShape.matrixWorld).invert(); // only needed if this object moves
-		rayObjectOrigin.transformAsPoint(courseShape_invMatrix);
-		rayObjectDirection.transformAsDirection(courseShape_invMatrix);
-		// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-shape intersection routine
-		testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
-		
-		// If the test t value from the raycast comes back smaller than the distance that the glider2 is trying to cover during
-		//   this animation frame, that means that the glider2's future position would step out of bounds of the course.
-		//   Therefore, we must snap the glider back into position at the raycast intersectionPoint on the course surface.
-		if (testT < glider2RaySegmentLength)
-		{
-			glider2IsInAir = false;
-			glider2LocalVelocity.y = 0;
-			intersectionNormal.transformSurfaceNormal(courseShape_invMatrix); // bring intersected object-space normal back into world space
-			intersectionNormal.negate(); // normals usually point outward on shapes, but since we are inside the shape, must flip it
-			intersectionNormal.normalize(); // after the various transformations, make sure normal is a unit-length vector (length of 1)
-			intersectionPoint.getPointAlongRay(glider2RayOrigin, glider2RayDirection, testT);
-			intersectionPoint.addScaledVector(intersectionNormal, 1);
-			glider2Base.position.copy(intersectionPoint);
-			glider2BaseUp.copy(intersectionNormal);
-			glider2BaseRight.crossVectors(glider2BaseUp, glider2BaseForward).normalize();
-			glider2BaseForward.crossVectors(glider2BaseRight, glider2BaseUp).normalize();
-		}
-		if (testT == Infinity)
-		{// bail out and snap the glider2 back to its starting position
-			//console.log("Glider2 bailed out");
-			glider2IsInAir = true;
-			glider2LocalVelocity.set(0, 0, 0);
-			glider2Base.position.copy(glider2StartingPosition);
-			glider2BaseRight.set(1, 0, 0);
-			glider2BaseUp.set(0, 1, 0);
-			glider2BaseForward.set(0, 0, 1);
-		}
-	} // end if (glider2RaySegmentLength > 0)
+		glider2IsInAir = false;
+		glider2LocalVelocity.y = 0;
+		intersectionNormal.transformSurfaceNormal(courseShape_invMatrix); // bring intersected object-space normal back into world space
+		intersectionNormal.negate(); // normals usually point outward on shapes, but since we are inside the shape, must flip it
+		intersectionNormal.normalize(); // after the various transformations, make sure normal is a unit-length vector (length of 1)
+		intersectionPoint.getPointAlongRay(glider2RayOrigin, glider2RayDirection, testT);
+		intersectionPoint.addScaledVector(intersectionNormal, 1);
+		glider2Base.position.copy(intersectionPoint);
+		glider2BaseUp.copy(intersectionNormal);
+		glider2BaseRight.crossVectors(glider2BaseUp, glider2BaseForward).normalize();
+		glider2BaseForward.crossVectors(glider2BaseRight, glider2BaseUp).normalize();
+	}
+	else if (testT == Infinity)
+	{// bail out and snap the glider2 back to its starting position
+		//console.log("Glider2 bailed out");
+		glider2IsInAir = true;
+		glider2LocalVelocity.set(0, 0, 0);
+		glider2Base.position.copy(glider2StartingPosition);
+		glider2BaseRight.set(1, 0, 0);
+		glider2BaseUp.set(0, 1, 0);
+		glider2BaseForward.set(0, 0, 1);
+	}
 
 
 	// CHECK FOR GLIDER2 BASE vs. LARGE COURSE INTERACTIONS
@@ -1497,8 +1283,8 @@ function updateVariablesAndUniforms()
 	rayObjectOrigin.transformAsPoint(courseShape_invMatrix);
 	rayObjectDirection.transformAsDirection(courseShape_invMatrix);
 	// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-shape intersection routine
-	testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
-	
+	//testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
+	testT = intersectCourse();
 	if (testT < Infinity)
 	{
 		intersectionNormal.transformSurfaceNormal(courseShape_invMatrix); // bring intersected object-space normal back into world space
@@ -1516,7 +1302,7 @@ function updateVariablesAndUniforms()
 		glider2LocalVelocity.y = 0;
 		glider2Base.position.copy(intersectionPoint);
 	}
-	if (testT > 1)
+	if (testT > 1.01) // " > 1.01" instead of " > 1" to account for floating point precision
 	{
 		glider2IsInAir = true;
 	}
@@ -1579,7 +1365,14 @@ function updateVariablesAndUniforms()
 		ballLocalVelocity.y -= (200 * frameTime);
 	}
 
-	
+	// the following gives a very slight invisible movement to the ball, so that a ray can be created from its old position to its new position 
+	if (Math.abs(ballLocalVelocity.x) < 0.0001 && Math.abs(ballLocalVelocity.z) < 0.0001)
+	{
+		ballLocalVelocity.x = (Math.random() * 2 - 1) * 0.001;
+		ballLocalVelocity.z = (Math.random() * 2 - 1) * 0.001;
+	}
+		
+
 	ballWorldVelocity.set(0, 0, 0);
 	ballWorldVelocity.addScaledVector(ballRight, ballLocalVelocity.x);
 	ballWorldVelocity.addScaledVector(ballUp, ballLocalVelocity.y);
@@ -1750,75 +1543,73 @@ function updateVariablesAndUniforms()
 
 	// CHECK FOR BALL vs MIN/MAX BOUNDARY WALLS
 	
-	//if (ballRaySegmentLength > 0)	
+	if (ball.position.x > (courseShape.scale.x * courseMaxBounds.x))
 	{
-		if (ball.position.x > (courseShape.scale.x * courseMaxBounds.x))
-		{
-			ball.position.x = (courseShape.scale.x * courseMaxBounds.x);
-			unitCollisionNormal.set(-1, 0, 0);
-			impulseBall.copy(ballWorldVelocity);
-			impulseBall.reflect(unitCollisionNormal);
-			tempVec.copy(impulseBall).normalize();
-			impulseBall.multiplyScalar( Math.max(0.5, 1-tempVec.dot(unitCollisionNormal)) );
-			ballLocalVelocity.x = impulseBall.dot(ballRight);
-			ballLocalVelocity.z = impulseBall.dot(ballForward);
-		}
-		else if (ball.position.x < (courseShape.scale.x * courseMinBounds.x))
-		{
-			ball.position.x = (courseShape.scale.x * courseMinBounds.x);
-			unitCollisionNormal.set(1, 0, 0);
-			impulseBall.copy(ballWorldVelocity);
-			impulseBall.reflect(unitCollisionNormal);
-			tempVec.copy(impulseBall).normalize();
-			impulseBall.multiplyScalar( Math.max(0.5, 1-tempVec.dot(unitCollisionNormal)) );
-			ballLocalVelocity.x = impulseBall.dot(ballRight);
-			ballLocalVelocity.z = impulseBall.dot(ballForward);
-		}
-		else if (ball.position.y > (courseShape.scale.y * courseMaxBounds.y))
-		{
-			ball.position.y = (courseShape.scale.y * courseMaxBounds.y);
-			unitCollisionNormal.set(0, -1, 0);
-			impulseBall.copy(ballWorldVelocity);
-			impulseBall.reflect(unitCollisionNormal);
-			tempVec.copy(impulseBall).normalize();
-			impulseBall.multiplyScalar( Math.max(0.5, 1-tempVec.dot(unitCollisionNormal)) );
-			ballLocalVelocity.x = impulseBall.dot(ballRight);
-			ballLocalVelocity.z = impulseBall.dot(ballForward);
-		}
-		else if (ball.position.y < (courseShape.scale.y * courseMinBounds.y))
-		{
-			ball.position.y = (courseShape.scale.y * courseMinBounds.y);
-			unitCollisionNormal.set(0, 1, 0);
-			impulseBall.copy(ballWorldVelocity);
-			impulseBall.reflect(unitCollisionNormal);
-			tempVec.copy(impulseBall).normalize();
-			impulseBall.multiplyScalar( Math.max(0.5, 1-tempVec.dot(unitCollisionNormal)) );
-			ballLocalVelocity.x = impulseBall.dot(ballRight);
-			ballLocalVelocity.z = impulseBall.dot(ballForward);
-		}
-		else if (ball.position.z > (courseShape.scale.z * courseMaxBounds.z))
-		{
-			ball.position.z = (courseShape.scale.z * courseMaxBounds.z);
-			unitCollisionNormal.set(0, 0, -1);
-			impulseBall.copy(ballWorldVelocity);
-			impulseBall.reflect(unitCollisionNormal);
-			tempVec.copy(impulseBall).normalize();
-			impulseBall.multiplyScalar( Math.max(0.5, 1-tempVec.dot(unitCollisionNormal)) );
-			ballLocalVelocity.x = impulseBall.dot(ballRight);
-			ballLocalVelocity.z = impulseBall.dot(ballForward);
-		}
-		else if (ball.position.z < (courseShape.scale.z * courseMinBounds.z))
-		{
-			ball.position.z = (courseShape.scale.z * courseMinBounds.z);
-			unitCollisionNormal.set(0, 0, 1);
-			impulseBall.copy(ballWorldVelocity);
-			impulseBall.reflect(unitCollisionNormal);
-			tempVec.copy(impulseBall).normalize();
-			impulseBall.multiplyScalar( Math.max(0.5, 1-tempVec.dot(unitCollisionNormal)) );
-			ballLocalVelocity.x = impulseBall.dot(ballRight);
-			ballLocalVelocity.z = impulseBall.dot(ballForward);
-		}
-	} // end if (ballRaySegmentLength > 0)
+		ball.position.x = (courseShape.scale.x * courseMaxBounds.x);
+		unitCollisionNormal.set(-1, 0, 0);
+		impulseBall.copy(ballWorldVelocity);
+		impulseBall.reflect(unitCollisionNormal);
+		tempVec.copy(impulseBall).normalize();
+		impulseBall.multiplyScalar( Math.max(0.5, 1-tempVec.dot(unitCollisionNormal)) );
+		ballLocalVelocity.x = impulseBall.dot(ballRight);
+		ballLocalVelocity.z = impulseBall.dot(ballForward);
+	}
+	else if (ball.position.x < (courseShape.scale.x * courseMinBounds.x))
+	{
+		ball.position.x = (courseShape.scale.x * courseMinBounds.x);
+		unitCollisionNormal.set(1, 0, 0);
+		impulseBall.copy(ballWorldVelocity);
+		impulseBall.reflect(unitCollisionNormal);
+		tempVec.copy(impulseBall).normalize();
+		impulseBall.multiplyScalar( Math.max(0.5, 1-tempVec.dot(unitCollisionNormal)) );
+		ballLocalVelocity.x = impulseBall.dot(ballRight);
+		ballLocalVelocity.z = impulseBall.dot(ballForward);
+	}
+	else if (ball.position.y > (courseShape.scale.y * courseMaxBounds.y))
+	{
+		ball.position.y = (courseShape.scale.y * courseMaxBounds.y);
+		unitCollisionNormal.set(0, -1, 0);
+		impulseBall.copy(ballWorldVelocity);
+		impulseBall.reflect(unitCollisionNormal);
+		tempVec.copy(impulseBall).normalize();
+		impulseBall.multiplyScalar( Math.max(0.5, 1-tempVec.dot(unitCollisionNormal)) );
+		ballLocalVelocity.x = impulseBall.dot(ballRight);
+		ballLocalVelocity.z = impulseBall.dot(ballForward);
+	}
+	else if (ball.position.y < (courseShape.scale.y * courseMinBounds.y))
+	{
+		ball.position.y = (courseShape.scale.y * courseMinBounds.y);
+		unitCollisionNormal.set(0, 1, 0);
+		impulseBall.copy(ballWorldVelocity);
+		impulseBall.reflect(unitCollisionNormal);
+		tempVec.copy(impulseBall).normalize();
+		impulseBall.multiplyScalar( Math.max(0.5, 1-tempVec.dot(unitCollisionNormal)) );
+		ballLocalVelocity.x = impulseBall.dot(ballRight);
+		ballLocalVelocity.z = impulseBall.dot(ballForward);
+	}
+	else if (ball.position.z > (courseShape.scale.z * courseMaxBounds.z))
+	{
+		ball.position.z = (courseShape.scale.z * courseMaxBounds.z);
+		unitCollisionNormal.set(0, 0, -1);
+		impulseBall.copy(ballWorldVelocity);
+		impulseBall.reflect(unitCollisionNormal);
+		tempVec.copy(impulseBall).normalize();
+		impulseBall.multiplyScalar( Math.max(0.5, 1-tempVec.dot(unitCollisionNormal)) );
+		ballLocalVelocity.x = impulseBall.dot(ballRight);
+		ballLocalVelocity.z = impulseBall.dot(ballForward);
+	}
+	else if (ball.position.z < (courseShape.scale.z * courseMinBounds.z))
+	{
+		ball.position.z = (courseShape.scale.z * courseMinBounds.z);
+		unitCollisionNormal.set(0, 0, 1);
+		impulseBall.copy(ballWorldVelocity);
+		impulseBall.reflect(unitCollisionNormal);
+		tempVec.copy(impulseBall).normalize();
+		impulseBall.multiplyScalar( Math.max(0.5, 1-tempVec.dot(unitCollisionNormal)) );
+		ballLocalVelocity.x = impulseBall.dot(ballRight);
+		ballLocalVelocity.z = impulseBall.dot(ballForward);
+	}
+
 
 
 	// now that the ball has possibly moved again (due to physics interactions), record its new position minus its old position as a line segment
@@ -1832,48 +1623,45 @@ function updateVariablesAndUniforms()
 
 	// CHECK FOR BALL OUT-OF-BOUNDS (see if ball's current position has left the course)
 
-	if (ballRaySegmentLength > 0) // if ball hasn't moved at all (segment length == 0), don't bother with this check
+	// first check ball forward motion probe for intersection with course (a ray is cast from ball's position in the direction of its forward motion)
+	rayObjectOrigin.copy(ballRayOrigin);
+	rayObjectDirection.copy(ballRayDirection);
+	// put the rayObjectOrigin and rayObjectDirection in the object space of the large course
+	// the line below is not needed, because the large course never moves (it is fixed in place)
+	//courseShape_invMatrix.copy(courseShape.matrixWorld).invert(); // only needed if this object moves
+	rayObjectOrigin.transformAsPoint(courseShape_invMatrix);
+	rayObjectDirection.transformAsDirection(courseShape_invMatrix);
+	// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-shape intersection routine
+	//testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
+	testT = intersectCourse();
+	// If the test t value from the raycast comes back smaller than the distance that the ball is trying to cover during
+	//   this animation frame, that means that the ball's future position would step out of bounds of the course.
+	//   Therefore, we must snap the ball back into position at the raycast intersectionPoint on the course surface.
+	if (testT < ballRaySegmentLength)
 	{
-		// first check ball forward motion probe for intersection with course (a ray is cast from ball's position in the direction of its forward motion)
-		rayObjectOrigin.copy(ballRayOrigin);
-		rayObjectDirection.copy(ballRayDirection);
-		// put the rayObjectOrigin and rayObjectDirection in the object space of the large course
-		// the line below is not needed, because the large course never moves (it is fixed in place)
-		//courseShape_invMatrix.copy(courseShape.matrixWorld).invert(); // only needed if this object moves
-		rayObjectOrigin.transformAsPoint(courseShape_invMatrix);
-		rayObjectDirection.transformAsDirection(courseShape_invMatrix);
-		// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-shape intersection routine
-		testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
-		
-		// If the test t value from the raycast comes back smaller than the distance that the ball is trying to cover during
-		//   this animation frame, that means that the ball's future position would step out of bounds of the course.
-		//   Therefore, we must snap the ball back into position at the raycast intersectionPoint on the course surface.
-		if (testT < ballRaySegmentLength)
-		{
-			ballIsInAir = false;
-			ballLocalVelocity.y = 0;
-			intersectionNormal.transformSurfaceNormal(courseShape_invMatrix); // bring intersected object-space normal back into world space
-			intersectionNormal.negate(); // normals usually point outward on shapes, but since we are inside the shape, must flip it
-			intersectionNormal.normalize(); // after the various transformations, make sure normal is a unit-length vector (length of 1)
-			intersectionPoint.getPointAlongRay(ballRayOrigin, ballRayDirection, testT);
-			intersectionPoint.addScaledVector(intersectionNormal, 1);
-			ball.position.copy(intersectionPoint);
-			ballUp.copy(intersectionNormal);
-			ballRight.crossVectors(ballUp, ballForward).normalize();
-			ballForward.crossVectors(ballRight, ballUp).normalize();
-		}
-		if (testT == Infinity)
-		{// bail out and snap the ball back to its starting position
-			//console.log("Ball bailed out");
-			ballIsInAir = true;
-			ballLocalVelocity.set(0, 0, 0);
-			ball.position.copy(ballStartingPosition);
-			ballRight.set(1, 0, 0);
-			ballUp.set(0, 1, 0);
-			ballForward.set(0, 0, 1);
-		}
-	} // end if (ballRaySegmentLength > 0)
-
+		ballIsInAir = false;
+		ballLocalVelocity.y = 0;
+		intersectionNormal.transformSurfaceNormal(courseShape_invMatrix); // bring intersected object-space normal back into world space
+		intersectionNormal.negate(); // normals usually point outward on shapes, but since we are inside the shape, must flip it
+		intersectionNormal.normalize(); // after the various transformations, make sure normal is a unit-length vector (length of 1)
+		intersectionPoint.getPointAlongRay(ballRayOrigin, ballRayDirection, testT);
+		intersectionPoint.addScaledVector(intersectionNormal, 1);
+		ball.position.copy(intersectionPoint);
+		ballUp.copy(intersectionNormal);
+		ballRight.crossVectors(ballUp, ballForward).normalize();
+		ballForward.crossVectors(ballRight, ballUp).normalize();
+	}
+	else if (testT == Infinity)
+	{// bail out and snap the ball back to its starting position
+		//console.log("Ball bailed out");
+		ballIsInAir = true;
+		ballLocalVelocity.set(0, 0, 0);
+		ball.position.copy(ballStartingPosition);
+		ballRight.set(1, 0, 0);
+		ballUp.set(0, 1, 0);
+		ballForward.set(0, 0, 1);
+	}
+	
 
 	// CHECK FOR BALL vs. LARGE COURSE INTERACTIONS
 	// handling these interactions is what makes the ball glide smoothly on the surface of the large course
@@ -1891,8 +1679,8 @@ function updateVariablesAndUniforms()
 	rayObjectOrigin.transformAsPoint(courseShape_invMatrix);
 	rayObjectDirection.transformAsDirection(courseShape_invMatrix);
 	// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-shape intersection routine
-	testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
-	
+	//testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
+	testT = intersectCourse();
 	if (testT < Infinity)
 	{
 		intersectionNormal.transformSurfaceNormal(courseShape_invMatrix); // bring intersected object-space normal back into world space
@@ -1910,7 +1698,7 @@ function updateVariablesAndUniforms()
 		ballLocalVelocity.y = 0;
 		ball.position.copy(intersectionPoint);
 	}
-	if (testT > 1)
+	if (testT > 1.01) // " > 1.01" instead of " > 1" to account for floating point precision
 	{
 		ballIsInAir = true;
 	}
@@ -1972,14 +1760,73 @@ function updateVariablesAndUniforms()
 		playerGoalLocalVelocity.y -= (200 * frameTime);
 	}
 
-	playerGoalLocalVelocity.x = 20;
-	
+	// the following gives a very slight invisible movement to the playerGoal, so that a ray can be created from its old position to its new position 
+	if (Math.abs(playerGoalLocalVelocity.x) < 0.0001 && Math.abs(playerGoalLocalVelocity.z) < 0.0001)
+	{
+		playerGoalLocalVelocity.x = (Math.random() * 2 - 1) * 0.001;
+		playerGoalLocalVelocity.z = (Math.random() * 2 - 1) * 0.001;
+	}
+		
+
 	playerGoalWorldVelocity.set(0, 0, 0);
 	playerGoalWorldVelocity.addScaledVector(playerGoalRight, playerGoalLocalVelocity.x);
 	playerGoalWorldVelocity.addScaledVector(playerGoalUp, playerGoalLocalVelocity.y);
 	playerGoalWorldVelocity.addScaledVector(playerGoalForward, playerGoalLocalVelocity.z);
 	
 	playerGoal.position.addScaledVector(playerGoalWorldVelocity, frameTime);
+
+
+
+	// CHECK FOR PLAYER GOAL vs MIN/MAX BOUNDARY WALLS
+	
+	if (playerGoal.position.x > (courseShape.scale.x * courseMaxBounds.x))
+	{
+		playerGoal.position.x = (courseShape.scale.x * courseMaxBounds.x);
+		unitCollisionNormal.set(-1, 0, 0);
+		impulsePlayerGoal.copy(unitCollisionNormal).multiplyScalar(10);
+		playerGoalLocalVelocity.x = impulsePlayerGoal.dot(playerGoalRight);
+		playerGoalLocalVelocity.z = impulsePlayerGoal.dot(playerGoalForward);
+	}
+	else if (playerGoal.position.x < (courseShape.scale.x * courseMinBounds.x))
+	{
+		playerGoal.position.x = (courseShape.scale.x * courseMinBounds.x);
+		unitCollisionNormal.set(1, 0, 0);
+		impulsePlayerGoal.copy(unitCollisionNormal).multiplyScalar(10);
+		playerGoalLocalVelocity.x = impulsePlayerGoal.dot(playerGoalRight);
+		playerGoalLocalVelocity.z = impulsePlayerGoal.dot(playerGoalForward);
+	}
+	else if (playerGoal.position.y > (courseShape.scale.y * courseMaxBounds.y))
+	{
+		playerGoal.position.y = (courseShape.scale.y * courseMaxBounds.y);
+		unitCollisionNormal.set(0, -1, 0);
+		impulsePlayerGoal.copy(unitCollisionNormal).multiplyScalar(10);
+		playerGoalLocalVelocity.x = impulsePlayerGoal.dot(playerGoalRight);
+		playerGoalLocalVelocity.z = impulsePlayerGoal.dot(playerGoalForward);
+	}
+	else if (playerGoal.position.y < (courseShape.scale.y * courseMinBounds.y))
+	{
+		playerGoal.position.y = (courseShape.scale.y * courseMinBounds.y);
+		unitCollisionNormal.set(0, 1, 0);
+		impulsePlayerGoal.copy(unitCollisionNormal).multiplyScalar(10);
+		playerGoalLocalVelocity.x = impulsePlayerGoal.dot(playerGoalRight);
+		playerGoalLocalVelocity.z = impulsePlayerGoal.dot(playerGoalForward);
+	}
+	else if (playerGoal.position.z > (courseShape.scale.z * courseMaxBounds.z))
+	{
+		playerGoal.position.z = (courseShape.scale.z * courseMaxBounds.z);
+		unitCollisionNormal.set(0, 0, -1);
+		impulsePlayerGoal.copy(unitCollisionNormal).multiplyScalar(10);
+		playerGoalLocalVelocity.x = impulsePlayerGoal.dot(playerGoalRight);
+		playerGoalLocalVelocity.z = impulsePlayerGoal.dot(playerGoalForward);
+	}
+	else if (playerGoal.position.z < (courseShape.scale.z * courseMinBounds.z))
+	{
+		playerGoal.position.z = (courseShape.scale.z * courseMinBounds.z);
+		unitCollisionNormal.set(0, 0, 1);
+		impulsePlayerGoal.copy(unitCollisionNormal).multiplyScalar(10);
+		playerGoalLocalVelocity.x = impulsePlayerGoal.dot(playerGoalRight);
+		playerGoalLocalVelocity.z = impulsePlayerGoal.dot(playerGoalForward);
+	}
 
 
 	// now that the playerGoal has moved, record its new position minus its old position as a line segment
@@ -1993,47 +1840,44 @@ function updateVariablesAndUniforms()
 
 	// CHECK FOR PLAYER GOAL OUT-OF-BOUNDS (see if playerGoal's current position has left the course)
 
-	if (playerGoalRaySegmentLength > 0) // if playerGoal hasn't moved at all (segment length == 0), don't bother with this check
+	// first check playerGoal forward motion probe for intersection with course (a ray is cast from playerGoal's position in the direction of its forward motion)
+	rayObjectOrigin.copy(playerGoalRayOrigin);
+	rayObjectDirection.copy(playerGoalRayDirection);
+	// put the rayObjectOrigin and rayObjectDirection in the object space of the large course
+	// the line below is not needed, because the large course never moves (it is fixed in place)
+	//courseShape_invMatrix.copy(courseShape.matrixWorld).invert(); // only needed if this object moves
+	rayObjectOrigin.transformAsPoint(courseShape_invMatrix);
+	rayObjectDirection.transformAsDirection(courseShape_invMatrix);
+	// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-shape intersection routine
+	//testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
+	testT = intersectCourse();
+	// If the test t value from the raycast comes back smaller than the distance that the playerGoal is trying to cover during
+	//   this animation frame, that means that the playerGoal's future position would step out of bounds of the course.
+	//   Therefore, we must snap the playerGoal back into position at the raycast intersectionPoint on the course surface.
+	if (testT < playerGoalRaySegmentLength)
 	{
-		// first check playerGoal forward motion probe for intersection with course (a ray is cast from playerGoal's position in the direction of its forward motion)
-		rayObjectOrigin.copy(playerGoalRayOrigin);
-		rayObjectDirection.copy(playerGoalRayDirection);
-		// put the rayObjectOrigin and rayObjectDirection in the object space of the large course
-		// the line below is not needed, because the large course never moves (it is fixed in place)
-		//courseShape_invMatrix.copy(courseShape.matrixWorld).invert(); // only needed if this object moves
-		rayObjectOrigin.transformAsPoint(courseShape_invMatrix);
-		rayObjectDirection.transformAsDirection(courseShape_invMatrix);
-		// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-shape intersection routine
-		testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
-		
-		// If the test t value from the raycast comes back smaller than the distance that the playerGoal is trying to cover during
-		//   this animation frame, that means that the playerGoal's future position would step out of bounds of the course.
-		//   Therefore, we must snap the playerGoal back into position at the raycast intersectionPoint on the course surface.
-		if (testT < playerGoalRaySegmentLength)
-		{
-			playerGoalIsInAir = false;
-			playerGoalLocalVelocity.y = 0;
-			intersectionNormal.transformSurfaceNormal(courseShape_invMatrix); // bring intersected object-space normal back into world space
-			intersectionNormal.negate(); // normals usually point outward on shapes, but since we are inside the shape, must flip it
-			intersectionNormal.normalize(); // after the various transformations, make sure normal is a unit-length vector (length of 1)
-			intersectionPoint.getPointAlongRay(playerGoalRayOrigin, playerGoalRayDirection, testT);
-			intersectionPoint.addScaledVector(intersectionNormal, 1);
-			playerGoal.position.copy(intersectionPoint);
-			playerGoalUp.copy(intersectionNormal);
-			playerGoalRight.crossVectors(playerGoalUp, playerGoalForward).normalize();
-			playerGoalForward.crossVectors(playerGoalRight, playerGoalUp).normalize();
-		}
-		if (testT == Infinity)
-		{// bail out and snap the playerGoal back to its starting position
-			//console.log("PlayerGoal bailed out");
-			playerGoalIsInAir = true;
-			playerGoalLocalVelocity.set(0, 0, 0);
-			playerGoal.position.copy(playerGoalStartingPosition);
-			playerGoalRight.set(1, 0, 0);
-			playerGoalUp.set(0, 1, 0);
-			playerGoalForward.set(0, 0, 1);
-		}
-	} // end if (playerGoalRaySegmentLength > 0)
+		playerGoalIsInAir = false;
+		playerGoalLocalVelocity.y = 0;
+		intersectionNormal.transformSurfaceNormal(courseShape_invMatrix); // bring intersected object-space normal back into world space
+		intersectionNormal.negate(); // normals usually point outward on shapes, but since we are inside the shape, must flip it
+		intersectionNormal.normalize(); // after the various transformations, make sure normal is a unit-length vector (length of 1)
+		intersectionPoint.getPointAlongRay(playerGoalRayOrigin, playerGoalRayDirection, testT);
+		intersectionPoint.addScaledVector(intersectionNormal, 1);
+		playerGoal.position.copy(intersectionPoint);
+		playerGoalUp.copy(intersectionNormal);
+		playerGoalRight.crossVectors(playerGoalUp, playerGoalForward).normalize();
+		playerGoalForward.crossVectors(playerGoalRight, playerGoalUp).normalize();
+	}
+	else if (testT == Infinity)
+	{// bail out and snap the playerGoal back to its starting position
+		//console.log("PlayerGoal bailed out");
+		playerGoalIsInAir = true;
+		playerGoalLocalVelocity.set(10, 0, 0);
+		playerGoal.position.copy(playerGoalStartingPosition);
+		playerGoalRight.set(1, 0, 0);
+		playerGoalUp.set(0, 1, 0);
+		playerGoalForward.set(0, 0, 1);
+	}
 	
 
 	// CHECK FOR PLAYER GOAL vs. LARGE COURSE INTERACTIONS
@@ -2052,8 +1896,8 @@ function updateVariablesAndUniforms()
 	rayObjectOrigin.transformAsPoint(courseShape_invMatrix);
 	rayObjectDirection.transformAsDirection(courseShape_invMatrix);
 	// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-shape intersection routine
-	testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
-	
+	//testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
+	testT = intersectCourse();
 	if (testT < Infinity)
 	{
 		intersectionNormal.transformSurfaceNormal(courseShape_invMatrix); // bring intersected object-space normal back into world space
@@ -2071,7 +1915,7 @@ function updateVariablesAndUniforms()
 		playerGoalLocalVelocity.y = 0;
 		playerGoal.position.copy(intersectionPoint);
 	}
-	if (testT > 1)
+	if (testT > 1.01) // " > 1.01" instead of " > 1" to account for floating point precision
 	{
 		playerGoalIsInAir = true;
 	}
@@ -2123,7 +1967,13 @@ function updateVariablesAndUniforms()
 		computerGoalLocalVelocity.y -= (200 * frameTime);
 	}
 
-	computerGoalLocalVelocity.x = 20;
+	// the following gives a very slight invisible movement to the playerGoal, so that a ray can be created from its old position to its new position 
+	if (Math.abs(computerGoalLocalVelocity.x) < 0.0001 && Math.abs(computerGoalLocalVelocity.z) < 0.0001)
+	{
+		computerGoalLocalVelocity.x = (Math.random() * 2 - 1) * 0.001;
+		computerGoalLocalVelocity.z = (Math.random() * 2 - 1) * 0.001;
+	}
+		
 
 	computerGoalWorldVelocity.set(0, 0, 0);
 	computerGoalWorldVelocity.addScaledVector(computerGoalRight, computerGoalLocalVelocity.x);
@@ -2131,6 +1981,59 @@ function updateVariablesAndUniforms()
 	computerGoalWorldVelocity.addScaledVector(computerGoalForward, computerGoalLocalVelocity.z);
 	
 	computerGoal.position.addScaledVector(computerGoalWorldVelocity, frameTime);
+
+
+
+	// CHECK FOR COMPUTER GOAL vs MIN/MAX BOUNDARY WALLS
+	
+	if (computerGoal.position.x > (courseShape.scale.x * courseMaxBounds.x))
+	{
+		computerGoal.position.x = (courseShape.scale.x * courseMaxBounds.x);
+		unitCollisionNormal.set(-1, 0, 0);
+		impulseComputerGoal.copy(unitCollisionNormal).multiplyScalar(10);
+		computerGoalLocalVelocity.x = impulseComputerGoal.dot(computerGoalRight);
+		computerGoalLocalVelocity.z = impulseComputerGoal.dot(computerGoalForward);
+	}
+	else if (computerGoal.position.x < (courseShape.scale.x * courseMinBounds.x))
+	{
+		computerGoal.position.x = (courseShape.scale.x * courseMinBounds.x);
+		unitCollisionNormal.set(1, 0, 0);
+		impulseComputerGoal.copy(unitCollisionNormal).multiplyScalar(10);
+		computerGoalLocalVelocity.x = impulseComputerGoal.dot(computerGoalRight);
+		computerGoalLocalVelocity.z = impulseComputerGoal.dot(computerGoalForward);
+	}
+	else if (computerGoal.position.y > (courseShape.scale.y * courseMaxBounds.y))
+	{
+		computerGoal.position.y = (courseShape.scale.y * courseMaxBounds.y);
+		unitCollisionNormal.set(0, -1, 0);
+		impulseComputerGoal.copy(unitCollisionNormal).multiplyScalar(10);
+		computerGoalLocalVelocity.x = impulseComputerGoal.dot(computerGoalRight);
+		computerGoalLocalVelocity.z = impulseComputerGoal.dot(computerGoalForward);
+	}
+	else if (computerGoal.position.y < (courseShape.scale.y * courseMinBounds.y))
+	{
+		computerGoal.position.y = (courseShape.scale.y * courseMinBounds.y);
+		unitCollisionNormal.set(0, 1, 0);
+		impulseComputerGoal.copy(unitCollisionNormal).multiplyScalar(10);
+		computerGoalLocalVelocity.x = impulseComputerGoal.dot(computerGoalRight);
+		computerGoalLocalVelocity.z = impulseComputerGoal.dot(computerGoalForward);
+	}
+	else if (computerGoal.position.z > (courseShape.scale.z * courseMaxBounds.z))
+	{
+		computerGoal.position.z = (courseShape.scale.z * courseMaxBounds.z);
+		unitCollisionNormal.set(0, 0, -1);
+		impulseComputerGoal.copy(unitCollisionNormal).multiplyScalar(10);
+		computerGoalLocalVelocity.x = impulseComputerGoal.dot(computerGoalRight);
+		computerGoalLocalVelocity.z = impulseComputerGoal.dot(computerGoalForward);
+	}
+	else if (computerGoal.position.z < (courseShape.scale.z * courseMinBounds.z))
+	{
+		computerGoal.position.z = (courseShape.scale.z * courseMinBounds.z);
+		unitCollisionNormal.set(0, 0, 1);
+		impulseComputerGoal.copy(unitCollisionNormal).multiplyScalar(10);
+		computerGoalLocalVelocity.x = impulseComputerGoal.dot(computerGoalRight);
+		computerGoalLocalVelocity.z = impulseComputerGoal.dot(computerGoalForward);
+	}
 
 
 	// now that the computerGoal has moved, record its new position minus its old position as a line segment
@@ -2144,47 +2047,45 @@ function updateVariablesAndUniforms()
 
 	// CHECK FOR COMPUTER GOAL OUT-OF-BOUNDS (see if computerGoal's current position has left the course)
 
-	if (computerGoalRaySegmentLength > 0) // if computerGoal hasn't moved at all (segment length == 0), don't bother with this check
+	// first check computerGoal forward motion probe for intersection with course (a ray is cast from computerGoal's position in the direction of its forward motion)
+	rayObjectOrigin.copy(computerGoalRayOrigin);
+	rayObjectDirection.copy(computerGoalRayDirection);
+	// put the rayObjectOrigin and rayObjectDirection in the object space of the large course
+	// the line below is not needed, because the large course never moves (it is fixed in place)
+	//courseShape_invMatrix.copy(courseShape.matrixWorld).invert(); // only needed if this object moves
+	rayObjectOrigin.transformAsPoint(courseShape_invMatrix);
+	rayObjectDirection.transformAsDirection(courseShape_invMatrix);
+	// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-shape intersection routine
+	//testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
+	testT = intersectCourse();
+	// If the test t value from the raycast comes back smaller than the distance that the computerGoal is trying to cover during
+	//   this animation frame, that means that the computerGoal's future position would step out of bounds of the course.
+	//   Therefore, we must snap the computerGoal back into position at the raycast intersectionPoint on the course surface.
+	if (testT < computerGoalRaySegmentLength)
 	{
-		// first check computerGoal forward motion probe for intersection with course (a ray is cast from computerGoal's position in the direction of its forward motion)
-		rayObjectOrigin.copy(computerGoalRayOrigin);
-		rayObjectDirection.copy(computerGoalRayDirection);
-		// put the rayObjectOrigin and rayObjectDirection in the object space of the large course
-		// the line below is not needed, because the large course never moves (it is fixed in place)
-		//courseShape_invMatrix.copy(courseShape.matrixWorld).invert(); // only needed if this object moves
-		rayObjectOrigin.transformAsPoint(courseShape_invMatrix);
-		rayObjectDirection.transformAsDirection(courseShape_invMatrix);
-		// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-shape intersection routine
-		testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
-		
-		// If the test t value from the raycast comes back smaller than the distance that the computerGoal is trying to cover during
-		//   this animation frame, that means that the computerGoal's future position would step out of bounds of the course.
-		//   Therefore, we must snap the computerGoal back into position at the raycast intersectionPoint on the course surface.
-		if (testT < computerGoalRaySegmentLength)
-		{
-			computerGoalIsInAir = false;
-			computerGoalLocalVelocity.y = 0;
-			intersectionNormal.transformSurfaceNormal(courseShape_invMatrix); // bring intersected object-space normal back into world space
-			intersectionNormal.negate(); // normals usually point outward on shapes, but since we are inside the shape, must flip it
-			intersectionNormal.normalize(); // after the various transformations, make sure normal is a unit-length vector (length of 1)
-			intersectionPoint.getPointAlongRay(computerGoalRayOrigin, computerGoalRayDirection, testT);
-			intersectionPoint.addScaledVector(intersectionNormal, 1);
-			computerGoal.position.copy(intersectionPoint);
-			computerGoalUp.copy(intersectionNormal);
-			computerGoalRight.crossVectors(computerGoalUp, computerGoalForward).normalize();
-			computerGoalForward.crossVectors(computerGoalRight, computerGoalUp).normalize();
-		}
-		if (testT == Infinity)
-		{// bail out and snap the computerGoal back to its starting position
-			//console.log("ComputerGoal bailed out");
-			computerGoalIsInAir = true;
-			computerGoalLocalVelocity.set(0, 0, 0);
-			computerGoal.position.copy(computerGoalStartingPosition);
-			computerGoalRight.set(1, 0, 0);
-			computerGoalUp.set(0, 1, 0);
-			computerGoalForward.set(0, 0, 1);
-		}
-	} // end if (computerGoalRaySegmentLength > 0)
+		computerGoalIsInAir = false;
+		computerGoalLocalVelocity.y = 0;
+		intersectionNormal.transformSurfaceNormal(courseShape_invMatrix); // bring intersected object-space normal back into world space
+		intersectionNormal.negate(); // normals usually point outward on shapes, but since we are inside the shape, must flip it
+		intersectionNormal.normalize(); // after the various transformations, make sure normal is a unit-length vector (length of 1)
+		intersectionPoint.getPointAlongRay(computerGoalRayOrigin, computerGoalRayDirection, testT);
+		intersectionPoint.addScaledVector(intersectionNormal, 1);
+		computerGoal.position.copy(intersectionPoint);
+		computerGoalUp.copy(intersectionNormal);
+		computerGoalRight.crossVectors(computerGoalUp, computerGoalForward).normalize();
+		computerGoalForward.crossVectors(computerGoalRight, computerGoalUp).normalize();
+	}
+	else if (testT == Infinity)
+	{// bail out and snap the computerGoal back to its starting position
+		//console.log("ComputerGoal bailed out");
+		computerGoalIsInAir = true;
+		computerGoalLocalVelocity.set(10, 0, 0);
+		computerGoal.position.copy(computerGoalStartingPosition);
+		computerGoalRight.set(1, 0, 0);
+		computerGoalUp.set(0, 1, 0);
+		computerGoalForward.set(0, 0, 1);
+	}
+
 
 	
 	// CHECK FOR COMPUTER GOAL vs. LARGE COURSE INTERACTIONS
@@ -2203,8 +2104,8 @@ function updateVariablesAndUniforms()
 	rayObjectOrigin.transformAsPoint(courseShape_invMatrix);
 	rayObjectDirection.transformAsDirection(courseShape_invMatrix);
 	// now that the ray's origin and direction are in object space, we can raycast against the course using a very simple unit-shape intersection routine
-	testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
-	
+	//testT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
+	testT = intersectCourse();
 	if (testT < Infinity)
 	{
 		intersectionNormal.transformSurfaceNormal(courseShape_invMatrix); // bring intersected object-space normal back into world space
@@ -2222,7 +2123,7 @@ function updateVariablesAndUniforms()
 		computerGoalLocalVelocity.y = 0;
 		computerGoal.position.copy(intersectionPoint);
 	}
-	if (testT > 1)
+	if (testT > 1.01) // " > 1.01" instead of " > 1" to account for floating point precision
 	{
 		computerGoalIsInAir = true;
 	}
@@ -2279,15 +2180,6 @@ function updateVariablesAndUniforms()
 	"glider1WorldVelocity: " + "(" + glider1WorldVelocity.x.toFixed(1) + " " + glider1WorldVelocity.y.toFixed(1) + " " + glider1WorldVelocity.z.toFixed(1) + ")";
  	
 
-	/* demoInfoElement.innerHTML = "glider2IsInAir: " + glider2IsInAir + " " + "cameraIsMoving: " + cameraIsMoving + "<br>" + 
-	"glider2BaseRight: " + "(" + glider2BaseRight.x.toFixed(1) + " " + glider2BaseRight.y.toFixed(1) + " " + glider2BaseRight.z.toFixed(1) + ")" + " " + 
-	"glider2BaseUp: " + "(" + glider2BaseUp.x.toFixed(1) + " " + glider2BaseUp.y.toFixed(1) + " " + glider2BaseUp.z.toFixed(1) + ")" + " " + 
-	"glider2BaseForward: " + "(" + glider2BaseForward.x.toFixed(1) + " " + glider2BaseForward.y.toFixed(1) + " " + glider2BaseForward.z.toFixed(1) + ")" + "<br>" + 
-	
-	"glider2LocalVelocity: " + "(" + glider2LocalVelocity.x.toFixed(1) + " " + glider2LocalVelocity.y.toFixed(1) + " " + glider2LocalVelocity.z.toFixed(1) + ")" + "<br>" + 
-	"glider2WorldVelocity: " + "(" + glider2WorldVelocity.x.toFixed(1) + " " + glider2WorldVelocity.y.toFixed(1) + " " + glider2WorldVelocity.z.toFixed(1) + ")";
- 	 */
-
 	/* demoInfoElement.innerHTML = "glider1IsInAir: " + glider1IsInAir + " " + "cameraIsMoving: " + cameraIsMoving + "<br>" + 
 	"glider1ThrustersRight: " + "(" + glider1ThrustersRight.x.toFixed(1) + " " + glider1ThrustersRight.y.toFixed(1) + " " + glider1ThrustersRight.z.toFixed(1) + ")" + " " + 
 	"glider1ThrustersUp: " + "(" + glider1ThrustersUp.x.toFixed(1) + " " + glider1ThrustersUp.y.toFixed(1) + " " + glider1ThrustersUp.z.toFixed(1) + ")" + " " + 
@@ -2295,6 +2187,15 @@ function updateVariablesAndUniforms()
 	
 	"glider1LocalVelocity: " + "(" + glider1LocalVelocity.x.toFixed(1) + " " + glider1LocalVelocity.y.toFixed(1) + " " + glider1LocalVelocity.z.toFixed(1) + ")" + "<br>" + 
 	"glider1WorldVelocity: " + "(" + glider1WorldVelocity.x.toFixed(1) + " " + glider1WorldVelocity.y.toFixed(1) + " " + glider1WorldVelocity.z.toFixed(1) + ")";
+ 	*/
+
+	/* demoInfoElement.innerHTML = "glider2IsInAir: " + glider2IsInAir + " " + "cameraIsMoving: " + cameraIsMoving + "<br>" + 
+	"glider2BaseRight: " + "(" + glider2BaseRight.x.toFixed(1) + " " + glider2BaseRight.y.toFixed(1) + " " + glider2BaseRight.z.toFixed(1) + ")" + " " + 
+	"glider2BaseUp: " + "(" + glider2BaseUp.x.toFixed(1) + " " + glider2BaseUp.y.toFixed(1) + " " + glider2BaseUp.z.toFixed(1) + ")" + " " + 
+	"glider2BaseForward: " + "(" + glider2BaseForward.x.toFixed(1) + " " + glider2BaseForward.y.toFixed(1) + " " + glider2BaseForward.z.toFixed(1) + ")" + "<br>" + 
+	
+	"glider2LocalVelocity: " + "(" + glider2LocalVelocity.x.toFixed(1) + " " + glider2LocalVelocity.y.toFixed(1) + " " + glider2LocalVelocity.z.toFixed(1) + ")" + "<br>" + 
+	"glider2WorldVelocity: " + "(" + glider2WorldVelocity.x.toFixed(1) + " " + glider2WorldVelocity.y.toFixed(1) + " " + glider2WorldVelocity.z.toFixed(1) + ")";
  	*/
 
 	/* demoInfoElement.innerHTML = "glider2IsInAir: " + glider2IsInAir + " " + "cameraIsMoving: " + cameraIsMoving + "<br>" + 
@@ -2306,6 +2207,33 @@ function updateVariablesAndUniforms()
 	"glider2WorldVelocity: " + "(" + glider2WorldVelocity.x.toFixed(1) + " " + glider2WorldVelocity.y.toFixed(1) + " " + glider2WorldVelocity.z.toFixed(1) + ")";
 	*/
 
+	/* demoInfoElement.innerHTML += " ballIsInAir: " + ballIsInAir + " " + "cameraIsMoving: " + cameraIsMoving + "<br>" + 
+	"ballRight: " + "(" + ballRight.x.toFixed(1) + " " + ballRight.y.toFixed(1) + " " + ballRight.z.toFixed(1) + ")" + " " + 
+	"ballUp: " + "(" + ballUp.x.toFixed(1) + " " + ballUp.y.toFixed(1) + " " + ballUp.z.toFixed(1) + ")" + " " + 
+	"ballForward: " + "(" + ballForward.x.toFixed(1) + " " + ballForward.y.toFixed(1) + " " + ballForward.z.toFixed(1) + ")" + "<br>" + 
+	
+	"ballLocalVelocity: " + "(" + ballLocalVelocity.x.toFixed(1) + " " + ballLocalVelocity.y.toFixed(1) + " " + ballLocalVelocity.z.toFixed(1) + ")" + "<br>" + 
+	"ballWorldVelocity: " + "(" + ballWorldVelocity.x.toFixed(1) + " " + ballWorldVelocity.y.toFixed(1) + " " + ballWorldVelocity.z.toFixed(1) + ")";
+ 	*/
+	
+	/* demoInfoElement.innerHTML += " playerGoalIsInAir: " + playerGoalIsInAir + " " + "cameraIsMoving: " + cameraIsMoving + "<br>" + 
+	"playerGoalRight: " + "(" + playerGoalRight.x.toFixed(1) + " " + playerGoalRight.y.toFixed(1) + " " + playerGoalRight.z.toFixed(1) + ")" + " " + 
+	"playerGoalUp: " + "(" + playerGoalUp.x.toFixed(1) + " " + playerGoalUp.y.toFixed(1) + " " + playerGoalUp.z.toFixed(1) + ")" + " " + 
+	"playerGoalForward: " + "(" + playerGoalForward.x.toFixed(1) + " " + playerGoalForward.y.toFixed(1) + " " + playerGoalForward.z.toFixed(1) + ")" + "<br>" + 
+	
+	"playerGoalLocalVelocity: " + "(" + playerGoalLocalVelocity.x.toFixed(1) + " " + playerGoalLocalVelocity.y.toFixed(1) + " " + playerGoalLocalVelocity.z.toFixed(1) + ")" + "<br>" + 
+	"playerGoalWorldVelocity: " + "(" + playerGoalWorldVelocity.x.toFixed(1) + " " + playerGoalWorldVelocity.y.toFixed(1) + " " + playerGoalWorldVelocity.z.toFixed(1) + ")"; 
+	*/
+
+	/* demoInfoElement.innerHTML += " computerGoalIsInAir: " + computerGoalIsInAir + " " + "cameraIsMoving: " + cameraIsMoving + "<br>" + 
+	"computerGoalRight: " + "(" + computerGoalRight.x.toFixed(1) + " " + computerGoalRight.y.toFixed(1) + " " + computerGoalRight.z.toFixed(1) + ")" + " " + 
+	"computerGoalUp: " + "(" + computerGoalUp.x.toFixed(1) + " " + computerGoalUp.y.toFixed(1) + " " + computerGoalUp.z.toFixed(1) + ")" + " " + 
+	"computerGoalForward: " + "(" + computerGoalForward.x.toFixed(1) + " " + computerGoalForward.y.toFixed(1) + " " + computerGoalForward.z.toFixed(1) + ")" + "<br>" + 
+	
+	"computerGoalLocalVelocity: " + "(" + computerGoalLocalVelocity.x.toFixed(1) + " " + computerGoalLocalVelocity.y.toFixed(1) + " " + computerGoalLocalVelocity.z.toFixed(1) + ")" + "<br>" + 
+	"computerGoalWorldVelocity: " + "(" + computerGoalWorldVelocity.x.toFixed(1) + " " + computerGoalWorldVelocity.y.toFixed(1) + " " + computerGoalWorldVelocity.z.toFixed(1) + ")"; 
+	*/
+	
 	// CAMERA INFO
 	///cameraInfoElement.innerHTML = "FOV: " + worldCamera.fov + " / Aperture: " + apertureSize.toFixed(2) + " / FocusDistance: " + focusDistance + "<br>" + "Samples: " + sampleCounter;
 
