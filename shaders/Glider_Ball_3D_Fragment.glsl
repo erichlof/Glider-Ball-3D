@@ -53,6 +53,8 @@ UnitParaboloid unitParaboloids[N_UNIT_PARABOLOIDS];
 
 #include <pathtracing_unit_sphere_intersect>
 
+#include <pathtracing_unit_cylinder_intersect>
+
 #include <pathtracing_unit_box_intersect>
 
 #include <pathtracing_unit_paraboloid_intersect>
@@ -80,6 +82,32 @@ float UnitSphereInterior_ParamIntersect( vec3 ro, vec3 rd, out vec3 n )
 	if ( t1 > 0.0 && all(greaterThanEqual(hit, uCourseMinBounds)) && all(lessThanEqual(hit, uCourseMaxBounds)) )
 	{
 		n = hit;
+		return t1;
+	}
+
+	return INFINITY;
+}
+
+float UnitCylinderInterior_ParamIntersect( vec3 ro, vec3 rd, out vec3 n )
+{
+	vec3 hit;
+	float t0, t1;
+	float a = (rd.x * rd.x) + (rd.y * rd.y);
+	float b = 2.0 * ((rd.x * ro.x) + (rd.y * ro.y));
+	float c = ((ro.x * ro.x) + (ro.y * ro.y)) - 1.0;// radius * radius = 1.0 * 1.0 = 1.0 
+	solveQuadratic(a, b, c, t0, t1);
+
+	hit = ro + (rd * t0);
+	if ( dot(rd, hit) > 0.0 && t0 > 0.0 && all(greaterThanEqual(hit, uCourseMinBounds)) && all(lessThanEqual(hit, uCourseMaxBounds)) )
+	{
+		n = vec3(hit.x, hit.y, 0.0);
+		return t0;
+	}
+	
+	hit = ro + (rd * t1);
+	if ( t1 > 0.0 && all(greaterThanEqual(hit, uCourseMinBounds)) && all(lessThanEqual(hit, uCourseMaxBounds)) )
+	{
+		n = vec3(hit.x, hit.y, 0.0);
 		return t1;
 	}
 
@@ -140,7 +168,10 @@ float SceneIntersect(out int finalIsRayExiting)
 	// transform ray into courseShape's object space
 	rObjOrigin = vec3( uCourseShape_invMatrix * vec4(rayOrigin, 1.0) );
 	rObjDirection = vec3( uCourseShape_invMatrix * vec4(rayDirection, 0.0) );
-	d = UnitSphereInterior_ParamIntersect(rObjOrigin, rObjDirection, normal);
+	if (uCourseShapeType < 2)
+		d = UnitSphereInterior_ParamIntersect(rObjOrigin, rObjDirection, normal);
+	else if (uCourseShapeType == 2)
+		d = UnitCylinderInterior_ParamIntersect(rObjOrigin, rObjDirection, normal);
 	if (d < t)
 	{
 		t = d;
@@ -573,9 +604,9 @@ void SetupScene(void)
 	vec3 L2 = vec3(1.0, 0.8, 0.2) * lightPower;// Yellow light
 	vec3 L3 = vec3(0.1, 0.7, 1.0) * lightPower;// Blue light
 		
-	spheres[0] = Sphere(30.0, vec3(-200,-150, 50), L1, vec3(0), LIGHT);//spherical white Light1 
-	spheres[1] = Sphere(20.0, vec3( 100,-200,-250), L2, vec3(0), LIGHT);//spherical yellow Light2
-	spheres[2] = Sphere(10.0, vec3( 150,-320, 50), L3, vec3(0), LIGHT);//spherical blue Light3
+	spheres[0] = Sphere(30.0, vec3(-100,-150, 50), L1, vec3(0), LIGHT);//spherical white Light1 
+	spheres[1] = Sphere(20.0, vec3( 100,-100,-150), L2, vec3(0), LIGHT);//spherical yellow Light2
+	spheres[2] = Sphere(10.0, vec3( 150,-120, 50), L3, vec3(0), LIGHT);//spherical blue Light3
 	
 	unitSpheres[0] = UnitSphere(vec3(0), vec3(1.0, 1.0, 1.0), DIFF);//checkered Course
 
