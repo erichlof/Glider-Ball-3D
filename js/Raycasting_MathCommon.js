@@ -189,6 +189,78 @@ function intersectUnitCylinder(rayO, rayD, normal)
 	return Infinity;
 }
 
+function intersectUnitParaboloid(rayO, rayD, K, normal)
+{
+	// Unit Paraboloid (along Z axis) implicit equation
+	// X^2 + Y^2 + Z = 0
+	// code below centers the paraboloid so that its rounded apex is at positive Z(+1.0) and 
+	//   its circular opening is of unit radius (1) and is located at negative Z(-1.0)
+	// K value of 0.5 opens up the paraboloid less so when it reaches negativeZ axis, the circular opening will have unit radius
+	//K = 0.5; //default value
+	a = (rayD.x * rayD.x) + (rayD.y * rayD.y);
+	b = 2 * ((rayD.x * rayO.x) + (rayD.y * rayO.y)) + (K * rayD.z);
+	c = (rayO.x * rayO.x) + (rayO.y * rayO.y) + (K * (rayO.z - 1));
+
+	if (solveQuadratic(a, b, c) == false)
+	{
+		return Infinity;
+	}
+
+	if (t0 > 0)
+	{
+		normal.getPointAlongRay(rayO, rayD, t0);
+		normal.x *= 2; normal.y *= 2; normal.z = K;
+		return t0;
+	}
+	if (t1 > 0)
+	{
+		normal.getPointAlongRay(rayO, rayD, t1);
+		normal.x *= 2; normal.y *= 2; normal.z = K;
+		return t1;
+	}
+	
+	return Infinity;
+}
+
+let J = 0;
+let H = 0;
+function intersectUnitCone(rayO, rayD, K, normal)
+{
+	// Unit Cone (along Z axis) implicit equation
+	// X^2 + Y^2 - Z^2 = 0
+	K = 1 - K; // K is the inverse of the cone's opening width (apex radius)
+	// valid range for K: 0.01 to 1 (a value of 1 makes a cone with a sharp, pointed apex)
+	K = Math.max(K, 0.01); 
+	K = Math.min(K, 1);
+	
+	J = 1 / K;
+	// the '(rayO.z - H)' parts below truncate the top half of the double-cone, leaving a single cone with apex at top
+	H = J * 2 - 1;		   // (K * 0.25) makes the normal cone's bottom circular opening have a unit radius of 1
+	a = (J * rayD.x * rayD.x) + (J * rayD.y * rayD.y) - ((K * 0.25) * rayD.z * rayD.z);
+    	b = 2 * ((J * rayD.x * rayO.x) + (J * rayD.y * rayO.y) - ((K * 0.25) * rayD.z * (rayO.z - H)));
+    	c = (J * rayO.x * rayO.x) + (J * rayO.y * rayO.y) - ((K * 0.25) * (rayO.z - H) * (rayO.z - H));
+
+	if (solveQuadratic(a, b, c) == false)
+	{
+		return Infinity;
+	}
+
+	if (t0 > 0)
+	{
+		normal.getPointAlongRay(rayO, rayD, t0);
+		normal.x *= J; normal.y *= J; normal.z = (K * 0.25) * (H - normal.z);
+		return t0;
+	}
+	if (t1 > 0)
+	{
+		normal.getPointAlongRay(rayO, rayD, t1);
+		normal.x *= J; normal.y *= J; normal.z = (K * 0.25) * (H - normal.z);
+		return t1;
+	}
+	
+	return Infinity;
+}
+
 
 let inverseDir = new THREE.Vector3();
 let near = new THREE.Vector3();
