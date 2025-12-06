@@ -15,6 +15,7 @@ uniform mat4 uGlider1CollisionVolumeInvMatrix;
 uniform mat4 uGlider2CollisionVolumeInvMatrix;
 uniform vec3 uCourseMinBounds;
 uniform vec3 uCourseMaxBounds;
+uniform float uCourseShapeKparameter;
 uniform int uCourseShapeType;
 
 #define N_LIGHTS 3.0
@@ -52,8 +53,6 @@ UnitParaboloid unitParaboloids[N_UNIT_PARABOLOIDS];
 #include <pathtracing_sphere_intersect>
 
 #include <pathtracing_unit_sphere_intersect>
-
-#include <pathtracing_unit_cylinder_intersect>
 
 #include <pathtracing_unit_box_intersect>
 
@@ -108,6 +107,65 @@ float UnitCylinderInterior_ParamIntersect( vec3 ro, vec3 rd, out vec3 n )
 	if ( t1 > 0.0 && all(greaterThanEqual(hit, uCourseMinBounds)) && all(lessThanEqual(hit, uCourseMaxBounds)) )
 	{
 		n = vec3(hit.x, hit.y, 0.0);
+		return t1;
+	}
+
+	return INFINITY;
+}
+
+float UnitParaboloidInterior_ParamIntersect( vec3 ro, vec3 rd, float k, out vec3 n )
+{
+	vec3 hit;
+	float t0, t1;
+	float a = (rd.x * rd.x) + (rd.y * rd.y);
+	float b = 2.0 * ((rd.x * ro.x) + (rd.y * ro.y)) + (k * rd.z);
+	float c = (ro.x * ro.x) + (ro.y * ro.y) + (k * (ro.z - 1.0));
+	solveQuadratic(a, b, c, t0, t1);
+
+	hit = ro + (rd * t0);
+	if ( dot(rd, hit) > 0.0 && t0 > 0.0 && all(greaterThanEqual(hit, uCourseMinBounds)) && all(lessThanEqual(hit, uCourseMaxBounds)) )
+	{
+		n = vec3(2.0 * hit.x, 2.0 * hit.y, k);
+		return t0;
+	}
+	
+	hit = ro + (rd * t1);
+	if ( t1 > 0.0 && all(greaterThanEqual(hit, uCourseMinBounds)) && all(lessThanEqual(hit, uCourseMaxBounds)) )
+	{
+		n = vec3(2.0 * hit.x, 2.0 * hit.y, k);
+		return t1;
+	}
+
+	return INFINITY;
+}
+
+float UnitConeInterior_ParamIntersect( vec3 ro, vec3 rd, float k, out vec3 n )
+{
+	vec3 hit;
+	float t0, t1;
+	k = 1.0 - k; // k is the inverse of the cone's opening width (apex radius)
+	// valid range for k: 0.01 to 1.0 (a value of 1.0 makes a cone with a sharp, pointed apex)
+	k = clamp(k, 0.01, 1.0);
+	
+	float j = 1.0 / k;
+	// the '(ro.y - h)' parts below truncate the top half of the double-cone, leaving a single cone with apex at top
+	float h = j * 2.0 - 1.0;		   // (k * 0.25) makes the normal cone's bottom circular base have a unit radius of 1.0
+	float a = (j * rd.x * rd.x) + (j * rd.y * rd.y) - ((k * 0.25) * rd.z * rd.z);
+    	float b = 2.0 * ((j * rd.x * ro.x) + (j * rd.y * ro.y) - ((k * 0.25) * rd.z * (ro.z - h)));
+    	float c = (j * ro.x * ro.x) + (j * ro.y * ro.y) - ((k * 0.25) * (ro.z - h) * (ro.z - h));
+	solveQuadratic(a, b, c, t0, t1);
+
+	hit = ro + (rd * t0);
+	if ( dot(rd, hit) > 0.0 && t0 > 0.0 && all(greaterThanEqual(hit, uCourseMinBounds)) && all(lessThanEqual(hit, uCourseMaxBounds)) )
+	{
+		n = vec3(j * hit.x, j * hit.y, (k * 0.25) * (h - hit.z));
+		return t0;
+	}
+	
+	hit = ro + (rd * t1);
+	if ( t1 > 0.0 && all(greaterThanEqual(hit, uCourseMinBounds)) && all(lessThanEqual(hit, uCourseMaxBounds)) )
+	{
+		n = vec3(j * hit.x, j * hit.y, (k * 0.25) * (h - hit.z));
 		return t1;
 	}
 
@@ -172,6 +230,10 @@ float SceneIntersect(out int finalIsRayExiting)
 		d = UnitSphereInterior_ParamIntersect(rObjOrigin, rObjDirection, normal);
 	else if (uCourseShapeType == 2)
 		d = UnitCylinderInterior_ParamIntersect(rObjOrigin, rObjDirection, normal);
+	else if (uCourseShapeType == 3)
+		d = UnitParaboloidInterior_ParamIntersect(rObjOrigin, rObjDirection, uCourseShapeKparameter, normal);
+	else if (uCourseShapeType == 4)
+		d = UnitConeInterior_ParamIntersect(rObjOrigin, rObjDirection, uCourseShapeKparameter, normal);
 	if (d < t)
 	{
 		t = d;
