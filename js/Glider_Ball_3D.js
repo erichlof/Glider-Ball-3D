@@ -134,6 +134,9 @@ let course_TypeObject, course_TypeController;
 let needChangeCourseType = false;
 let courseShapeType = 0;
 let courseUniformScale = 500;
+let courseShapeKparameter = 1;
+let course_ShapeKparameterController, course_ShapeKparameterObject;
+let needChangeCourseShapeKparameter = false;
 let scale_Folder;
 let course_ScaleUniformController, course_ScaleUniformObject;
 let course_ScaleXController, course_ScaleXObject;
@@ -141,6 +144,7 @@ let course_ScaleYController, course_ScaleYObject;
 let course_ScaleZController, course_ScaleZObject;
 let needChangeCourseScaleUniform = false;
 let needChangeCourseScale = false;
+let clipBoundaries_Folder;
 let course_ClipMinXObject, course_ClipMinXController;
 let course_ClipMaxXObject, course_ClipMaxXController;
 let course_ClipMinYObject, course_ClipMinYController;
@@ -161,6 +165,10 @@ function intersectCourse()
 		courseT = intersectUnitSphere(rayObjectOrigin, rayObjectDirection, intersectionNormal);
 	else if (courseShapeType == 'Cylinder')
 		courseT = intersectUnitCylinder(rayObjectOrigin, rayObjectDirection, intersectionNormal);
+	else if (courseShapeType == 'Paraboloid')
+		courseT = intersectUnitParaboloid(rayObjectOrigin, rayObjectDirection, courseShapeKparameter, intersectionNormal);
+	else if (courseShapeType == 'Cone')
+		courseT = intersectUnitCone(rayObjectOrigin, rayObjectDirection, courseShapeKparameter, intersectionNormal);
 
 	return courseT;
 }
@@ -234,6 +242,7 @@ function initSceneData()
 	course_ClipMaxYObject = { clipMaxY: 1.0 };
 	course_ClipMinZObject = { clipMinZ: -1.0 };
 	course_ClipMaxZObject = { clipMaxZ: 1.0 };
+	course_ShapeKparameterObject = { shape_Kparam: 1.0 };
 	level_RestartObject = { 'restart level' : beginLevel };
 
 	function beginLevel() { levelBeginFlag = true; }
@@ -241,8 +250,9 @@ function initSceneData()
 	function handleCourseScaleUniformChange() { needChangeCourseScaleUniform = true; }
 	function handleCourseScaleChange() { needChangeCourseScale = true; }
 	function handleCourseClipXYZChange() { needChangeCourseClipXYZBounds = true; }
+	function handleCourseShapeKparamChange() { needChangeCourseShapeKparameter = true; }
 
-	course_TypeController = gui.add(course_TypeObject, 'Course_Type', ['Sphere', 'Ellipsoid', 'Cylinder']).onChange(handleCourseTypeChange);
+	course_TypeController = gui.add(course_TypeObject, 'Course_Type', ['Sphere', 'Ellipsoid', 'Cylinder', 'Paraboloid', 'Cone']).onChange(handleCourseTypeChange);
 	
 	scale_Folder = gui.addFolder('Scale');
 	course_ScaleUniformController = scale_Folder.add(course_ScaleUniformObject, 'uniformScale', 200, 1500, 1).onChange(handleCourseScaleUniformChange);
@@ -250,12 +260,16 @@ function initSceneData()
 	course_ScaleYController = scale_Folder.add(course_ScaleYObject, 'scaleY', 200, 1500, 1).onChange(handleCourseScaleChange);
 	course_ScaleZController = scale_Folder.add(course_ScaleZObject, 'scaleZ', 200, 1500, 1).onChange(handleCourseScaleChange);
 
-	course_ClipMinXController = gui.add(course_ClipMinXObject, 'clipMinX',-1.0,-0.1, 0.01).onChange(handleCourseClipXYZChange);
-	course_ClipMaxXController = gui.add(course_ClipMaxXObject, 'clipMaxX', 0.1, 1.0, 0.01).onChange(handleCourseClipXYZChange);
-	course_ClipMinYController = gui.add(course_ClipMinYObject, 'clipMinY',-1.0,-0.1, 0.01).onChange(handleCourseClipXYZChange);
-	course_ClipMaxYController = gui.add(course_ClipMaxYObject, 'clipMaxY', 0.1, 1.0, 0.01).onChange(handleCourseClipXYZChange);
-	course_ClipMinZController = gui.add(course_ClipMinZObject, 'clipMinZ',-1.0,-0.1, 0.01).onChange(handleCourseClipXYZChange);
-	course_ClipMaxZController = gui.add(course_ClipMaxZObject, 'clipMaxZ', 0.1, 1.0, 0.01).onChange(handleCourseClipXYZChange);
+	clipBoundaries_Folder = gui.addFolder('Clip Boundaries');
+	course_ClipMinXController = clipBoundaries_Folder.add(course_ClipMinXObject, 'clipMinX',-1.0,-0.1, 0.01).onChange(handleCourseClipXYZChange);
+	course_ClipMaxXController = clipBoundaries_Folder.add(course_ClipMaxXObject, 'clipMaxX', 0.1, 1.0, 0.01).onChange(handleCourseClipXYZChange);
+	course_ClipMinYController = clipBoundaries_Folder.add(course_ClipMinYObject, 'clipMinY',-1.0,-0.1, 0.01).onChange(handleCourseClipXYZChange);
+	course_ClipMaxYController = clipBoundaries_Folder.add(course_ClipMaxYObject, 'clipMaxY', 0.1, 1.0, 0.01).onChange(handleCourseClipXYZChange);
+	course_ClipMinZController = clipBoundaries_Folder.add(course_ClipMinZObject, 'clipMinZ',-1.0,-0.1, 0.01).onChange(handleCourseClipXYZChange);
+	course_ClipMaxZController = clipBoundaries_Folder.add(course_ClipMaxZObject, 'clipMaxZ', 0.1, 1.0, 0.01).onChange(handleCourseClipXYZChange);
+	clipBoundaries_Folder.close();
+
+	course_ShapeKparameterController = gui.add(course_ShapeKparameterObject, 'shape_Kparam', 0.1, 1.0, 0.01).onChange(handleCourseShapeKparamChange);
 
 	gui.add(level_RestartObject, 'restart level');
 
@@ -263,6 +277,7 @@ function initSceneData()
 	handleCourseScaleUniformChange();
 	handleCourseScaleChange();
 	handleCourseClipXYZChange();
+	handleCourseShapeKparamChange();
 
 	// scene/demo-specific uniforms go here
 	pathTracingUniforms.uCourseShape_invMatrix = { value: courseShape_invMatrix };
@@ -277,6 +292,7 @@ function initSceneData()
 	pathTracingUniforms.uCourseMinBounds = { value: courseMinBounds };
 	pathTracingUniforms.uCourseMaxBounds = { value: courseMaxBounds };
 	pathTracingUniforms.uCourseShapeType = { value: 0 };
+	pathTracingUniforms.uCourseShapeKparameter = { value: 1.0 };
 
 } // end function initSceneData()
 
@@ -296,6 +312,7 @@ function updateVariablesAndUniforms()
 			course_ScaleXController.setValue(500);
 			course_ScaleYController.setValue(500);
 			course_ScaleZController.setValue(500);
+			course_ShapeKparameterController.disable();
 			pathTracingUniforms.uCourseShapeType.value = 0;
 		}
 		else if (courseShapeType == 'Ellipsoid')
@@ -303,6 +320,7 @@ function updateVariablesAndUniforms()
 			course_ScaleXController.setValue(600);
 			course_ScaleYController.setValue(300);
 			course_ScaleZController.setValue(600);
+			course_ShapeKparameterController.disable();
 			pathTracingUniforms.uCourseShapeType.value = 1;
 		}
 		else if (courseShapeType == 'Cylinder')
@@ -310,7 +328,30 @@ function updateVariablesAndUniforms()
 			course_ScaleXController.setValue(500);
 			course_ScaleYController.setValue(500);
 			course_ScaleZController.setValue(500);
+			course_ShapeKparameterController.disable();
 			pathTracingUniforms.uCourseShapeType.value = 2;
+		}
+		else if (courseShapeType == 'Paraboloid')
+		{
+			course_ScaleXController.setValue(500);
+			course_ScaleYController.setValue(500);
+			course_ScaleZController.setValue(500);
+			courseShapeKparameter = 0.5;
+			course_ShapeKparameterController.enable();
+			course_ShapeKparameterController.setValue(courseShapeKparameter);
+			pathTracingUniforms.uCourseShapeKparameter.value = courseShapeKparameter;
+			pathTracingUniforms.uCourseShapeType.value = 3;
+		}
+		else if (courseShapeType == 'Cone')
+		{
+			course_ScaleXController.setValue(500);
+			course_ScaleYController.setValue(500);
+			course_ScaleZController.setValue(500);
+			courseShapeKparameter = 0.0;
+			course_ShapeKparameterController.enable();
+			course_ShapeKparameterController.setValue(courseShapeKparameter);
+			pathTracingUniforms.uCourseShapeKparameter.value = courseShapeKparameter;
+			pathTracingUniforms.uCourseShapeType.value = 4;
 		}
 
 		cameraIsMoving = true;
@@ -363,6 +404,15 @@ function updateVariablesAndUniforms()
 
 		cameraIsMoving = true;
 		needChangeCourseClipXYZBounds = false;
+	}
+
+	if (needChangeCourseShapeKparameter)
+	{
+		courseShapeKparameter = course_ShapeKparameterController.getValue();
+		pathTracingUniforms.uCourseShapeKparameter.value = courseShapeKparameter;
+
+		cameraIsMoving = true;
+		needChangeCourseShapeKparameter = false;
 	}
 
 
@@ -783,7 +833,7 @@ function updateVariablesAndUniforms()
 		glider1LocalVelocity.x = impulseGlider1.dot(glider1BaseRight);
 		glider1LocalVelocity.z = impulseGlider1.dot(glider1BaseForward);
 	}
-	else if (glider1Base.position.y > (courseShape.scale.y * courseMaxBounds.y))
+	if (glider1Base.position.y > (courseShape.scale.y * courseMaxBounds.y))
 	{
 		glider1Base.position.y = (courseShape.scale.y * courseMaxBounds.y);
 		unitCollisionNormal.set(0, -1, 0);
@@ -805,7 +855,7 @@ function updateVariablesAndUniforms()
 		glider1LocalVelocity.x = impulseGlider1.dot(glider1BaseRight);
 		glider1LocalVelocity.z = impulseGlider1.dot(glider1BaseForward);
 	}
-	else if (glider1Base.position.z > (courseShape.scale.z * courseMaxBounds.z))
+	if (glider1Base.position.z > (courseShape.scale.z * courseMaxBounds.z))
 	{
 		glider1Base.position.z = (courseShape.scale.z * courseMaxBounds.z);
 		unitCollisionNormal.set(0, 0, -1);
@@ -1169,7 +1219,7 @@ function updateVariablesAndUniforms()
 		glider2LocalVelocity.x = impulseGlider2.dot(glider2BaseRight);
 		glider2LocalVelocity.z = impulseGlider2.dot(glider2BaseForward);
 	}
-	else if (glider2Base.position.y > (courseShape.scale.y * courseMaxBounds.y))
+	if (glider2Base.position.y > (courseShape.scale.y * courseMaxBounds.y))
 	{
 		glider2Base.position.y = (courseShape.scale.y * courseMaxBounds.y);
 		unitCollisionNormal.set(0, -1, 0);
@@ -1191,7 +1241,7 @@ function updateVariablesAndUniforms()
 		glider2LocalVelocity.x = impulseGlider2.dot(glider2BaseRight);
 		glider2LocalVelocity.z = impulseGlider2.dot(glider2BaseForward);
 	}
-	else if (glider2Base.position.z > (courseShape.scale.z * courseMaxBounds.z))
+	if (glider2Base.position.z > (courseShape.scale.z * courseMaxBounds.z))
 	{
 		glider2Base.position.z = (courseShape.scale.z * courseMaxBounds.z);
 		unitCollisionNormal.set(0, 0, -1);
@@ -1565,7 +1615,7 @@ function updateVariablesAndUniforms()
 		ballLocalVelocity.x = impulseBall.dot(ballRight);
 		ballLocalVelocity.z = impulseBall.dot(ballForward);
 	}
-	else if (ball.position.y > (courseShape.scale.y * courseMaxBounds.y))
+	if (ball.position.y > (courseShape.scale.y * courseMaxBounds.y))
 	{
 		ball.position.y = (courseShape.scale.y * courseMaxBounds.y);
 		unitCollisionNormal.set(0, -1, 0);
@@ -1587,7 +1637,7 @@ function updateVariablesAndUniforms()
 		ballLocalVelocity.x = impulseBall.dot(ballRight);
 		ballLocalVelocity.z = impulseBall.dot(ballForward);
 	}
-	else if (ball.position.z > (courseShape.scale.z * courseMaxBounds.z))
+	if (ball.position.z > (courseShape.scale.z * courseMaxBounds.z))
 	{
 		ball.position.z = (courseShape.scale.z * courseMaxBounds.z);
 		unitCollisionNormal.set(0, 0, -1);
@@ -1795,7 +1845,7 @@ function updateVariablesAndUniforms()
 		playerGoalLocalVelocity.x = impulsePlayerGoal.dot(playerGoalRight);
 		playerGoalLocalVelocity.z = impulsePlayerGoal.dot(playerGoalForward);
 	}
-	else if (playerGoal.position.y > (courseShape.scale.y * courseMaxBounds.y))
+	if (playerGoal.position.y > (courseShape.scale.y * courseMaxBounds.y))
 	{
 		playerGoal.position.y = (courseShape.scale.y * courseMaxBounds.y);
 		unitCollisionNormal.set(0, -1, 0);
@@ -1811,7 +1861,7 @@ function updateVariablesAndUniforms()
 		playerGoalLocalVelocity.x = impulsePlayerGoal.dot(playerGoalRight);
 		playerGoalLocalVelocity.z = impulsePlayerGoal.dot(playerGoalForward);
 	}
-	else if (playerGoal.position.z > (courseShape.scale.z * courseMaxBounds.z))
+	if (playerGoal.position.z > (courseShape.scale.z * courseMaxBounds.z))
 	{
 		playerGoal.position.z = (courseShape.scale.z * courseMaxBounds.z);
 		unitCollisionNormal.set(0, 0, -1);
@@ -2002,7 +2052,7 @@ function updateVariablesAndUniforms()
 		computerGoalLocalVelocity.x = impulseComputerGoal.dot(computerGoalRight);
 		computerGoalLocalVelocity.z = impulseComputerGoal.dot(computerGoalForward);
 	}
-	else if (computerGoal.position.y > (courseShape.scale.y * courseMaxBounds.y))
+	if (computerGoal.position.y > (courseShape.scale.y * courseMaxBounds.y))
 	{
 		computerGoal.position.y = (courseShape.scale.y * courseMaxBounds.y);
 		unitCollisionNormal.set(0, -1, 0);
@@ -2018,7 +2068,7 @@ function updateVariablesAndUniforms()
 		computerGoalLocalVelocity.x = impulseComputerGoal.dot(computerGoalRight);
 		computerGoalLocalVelocity.z = impulseComputerGoal.dot(computerGoalForward);
 	}
-	else if (computerGoal.position.z > (courseShape.scale.z * courseMaxBounds.z))
+	if (computerGoal.position.z > (courseShape.scale.z * courseMaxBounds.z))
 	{
 		computerGoal.position.z = (courseShape.scale.z * courseMaxBounds.z);
 		unitCollisionNormal.set(0, 0, -1);
