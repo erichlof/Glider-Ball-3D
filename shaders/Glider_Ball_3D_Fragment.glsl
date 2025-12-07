@@ -70,13 +70,6 @@ float UnitSphereInterior_ParamIntersect( vec3 ro, vec3 rd, out vec3 n )
 	float c = dot(ro, ro) - 1.0;// radius * radius = 1.0 * 1.0 = 1.0 
 	solveQuadratic(a, b, c, t0, t1);
 
-	hit = ro + (rd * t0);
-	if ( dot(rd, hit) > 0.0 && t0 > 0.0 && all(greaterThanEqual(hit, uCourseMinBounds)) && all(lessThanEqual(hit, uCourseMaxBounds)) )
-	{
-		n = hit;
-		return t0;
-	}
-	
 	hit = ro + (rd * t1);
 	if ( t1 > 0.0 && all(greaterThanEqual(hit, uCourseMinBounds)) && all(lessThanEqual(hit, uCourseMaxBounds)) )
 	{
@@ -84,6 +77,13 @@ float UnitSphereInterior_ParamIntersect( vec3 ro, vec3 rd, out vec3 n )
 		return t1;
 	}
 
+	hit = ro + (rd * t0);
+	if ( t0 > 0.0 && all(greaterThanEqual(hit, uCourseMinBounds)) && all(lessThanEqual(hit, uCourseMaxBounds)) )
+	{
+		n = hit;
+		return t0;
+	}
+	
 	return INFINITY;
 }
 
@@ -96,13 +96,6 @@ float UnitCylinderInterior_ParamIntersect( vec3 ro, vec3 rd, out vec3 n )
 	float c = ((ro.x * ro.x) + (ro.y * ro.y)) - 1.0;// radius * radius = 1.0 * 1.0 = 1.0 
 	solveQuadratic(a, b, c, t0, t1);
 
-	hit = ro + (rd * t0);
-	if ( dot(rd, hit) > 0.0 && t0 > 0.0 && all(greaterThanEqual(hit, uCourseMinBounds)) && all(lessThanEqual(hit, uCourseMaxBounds)) )
-	{
-		n = vec3(hit.x, hit.y, 0.0);
-		return t0;
-	}
-	
 	hit = ro + (rd * t1);
 	if ( t1 > 0.0 && all(greaterThanEqual(hit, uCourseMinBounds)) && all(lessThanEqual(hit, uCourseMaxBounds)) )
 	{
@@ -110,6 +103,13 @@ float UnitCylinderInterior_ParamIntersect( vec3 ro, vec3 rd, out vec3 n )
 		return t1;
 	}
 
+	hit = ro + (rd * t0);
+	if ( t0 > 0.0 && all(greaterThanEqual(hit, uCourseMinBounds)) && all(lessThanEqual(hit, uCourseMaxBounds)) )
+	{
+		n = vec3(hit.x, hit.y, 0.0);
+		return t0;
+	}
+	
 	return INFINITY;
 }
 
@@ -122,13 +122,6 @@ float UnitParaboloidInterior_ParamIntersect( vec3 ro, vec3 rd, float k, out vec3
 	float c = (ro.x * ro.x) + (ro.y * ro.y) + (k * (ro.z - 1.0));
 	solveQuadratic(a, b, c, t0, t1);
 
-	hit = ro + (rd * t0);
-	if ( dot(rd, hit) > 0.0 && t0 > 0.0 && all(greaterThanEqual(hit, uCourseMinBounds)) && all(lessThanEqual(hit, uCourseMaxBounds)) )
-	{
-		n = vec3(2.0 * hit.x, 2.0 * hit.y, k);
-		return t0;
-	}
-	
 	hit = ro + (rd * t1);
 	if ( t1 > 0.0 && all(greaterThanEqual(hit, uCourseMinBounds)) && all(lessThanEqual(hit, uCourseMaxBounds)) )
 	{
@@ -136,6 +129,13 @@ float UnitParaboloidInterior_ParamIntersect( vec3 ro, vec3 rd, float k, out vec3
 		return t1;
 	}
 
+	hit = ro + (rd * t0);
+	if ( t0 > 0.0 && all(greaterThanEqual(hit, uCourseMinBounds)) && all(lessThanEqual(hit, uCourseMaxBounds)) )
+	{
+		n = vec3(2.0 * hit.x, 2.0 * hit.y, k);
+		return t0;
+	}
+	
 	return INFINITY;
 }
 
@@ -143,7 +143,7 @@ float UnitConeInterior_ParamIntersect( vec3 ro, vec3 rd, float k, out vec3 n )
 {
 	vec3 hit;
 	float t0, t1;
-	k = 1.0 - k; // k is the inverse of the cone's opening width (apex radius)
+	k = 1.0 - k; // k is the inverse of the cone's opening width
 	// valid range for k: 0.01 to 1.0 (a value of 1.0 makes a cone with a sharp, pointed apex)
 	k = clamp(k, 0.01, 1.0);
 	
@@ -155,18 +155,18 @@ float UnitConeInterior_ParamIntersect( vec3 ro, vec3 rd, float k, out vec3 n )
     	float c = (j * ro.x * ro.x) + (j * ro.y * ro.y) - ((k * 0.25) * (ro.z - h) * (ro.z - h));
 	solveQuadratic(a, b, c, t0, t1);
 
-	hit = ro + (rd * t0);
-	if ( dot(rd, hit) > 0.0 && t0 > 0.0 && all(greaterThanEqual(hit, uCourseMinBounds)) && all(lessThanEqual(hit, uCourseMaxBounds)) )
-	{
-		n = vec3(j * hit.x, j * hit.y, (k * 0.25) * (h - hit.z));
-		return t0;
-	}
-	
 	hit = ro + (rd * t1);
 	if ( t1 > 0.0 && all(greaterThanEqual(hit, uCourseMinBounds)) && all(lessThanEqual(hit, uCourseMaxBounds)) )
 	{
 		n = vec3(j * hit.x, j * hit.y, (k * 0.25) * (h - hit.z));
 		return t1;
+	}
+
+	hit = ro + (rd * t0);
+	if ( t0 > 0.0 && all(greaterThanEqual(hit, uCourseMinBounds)) && all(lessThanEqual(hit, uCourseMaxBounds)) )
+	{
+		n = vec3(j * hit.x, j * hit.y, (k * 0.25) * (h - hit.z));
+		return t0;
 	}
 
 	return INFINITY;
