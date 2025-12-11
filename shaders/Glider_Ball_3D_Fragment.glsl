@@ -172,6 +172,63 @@ float UnitConeInterior_ParamIntersect( vec3 ro, vec3 rd, float k, out vec3 n )
 	return INFINITY;
 }
 
+float UnitHyperboloidInterior_ParamIntersect( vec3 ro, vec3 rd, float k, out vec3 n )
+{
+	vec3 hit;
+	float t0, t1;
+	float t = INFINITY;
+	k = 1.0 - k;
+	k *= 100.0;
+	float j = k - 1.0;
+	float a = (k * rd.x * rd.x) + (k * rd.y * rd.y) - (j * rd.z * rd.z);
+	float b = 2.0 * ((k * rd.x * ro.x) + (k * rd.y * ro.y) - (j * rd.z * ro.z));
+	float c = (k * ro.x * ro.x) + (k * ro.y * ro.y) - (j * ro.z * ro.z) - 1.0;
+	solveQuadratic(a, b, c, t0, t1);
+
+	hit = ro + (rd * t1);
+	if ( t1 > 0.0 && all(greaterThanEqual(hit, uCourseMinBounds)) && all(lessThanEqual(hit, uCourseMaxBounds)) )
+	{
+		n = vec3(k * hit.x, k * hit.y, j * -hit.z);
+		t = t1;
+	}
+
+	hit = ro + (rd * t0);
+	if ( t0 > 0.0 && all(greaterThanEqual(hit, uCourseMinBounds)) && all(lessThanEqual(hit, uCourseMaxBounds)) )
+	{
+		n = vec3(k * hit.x, k * hit.y, j * -hit.z);
+		t = t0;
+	}
+
+	return t;
+}
+
+float UnitHyperbolicParaboloidInterior_ParamIntersect( vec3 ro, vec3 rd, out vec3 n )
+{
+	vec3 hit;
+	float t0, t1;
+	float t = INFINITY;
+	float a = (rd.x * rd.x) - (rd.z * rd.z);
+	float b = 2.0 * ((rd.x * ro.x) - (rd.z * ro.z)) + rd.y;
+	float c = (ro.x * ro.x) - (ro.z * ro.z) + ro.y;
+	solveQuadratic(a, b, c, t0, t1);
+
+	hit = ro + (rd * t1);
+	if ( t1 > 0.0 && all(greaterThanEqual(hit, uCourseMinBounds)) && all(lessThanEqual(hit, uCourseMaxBounds)) )
+	{
+		n = vec3(2.0 * hit.x, 1.0, 2.0 * -hit.z);
+		t = t1;
+	}
+
+	hit = ro + (rd * t0);
+	if ( t0 > 0.0 && all(greaterThanEqual(hit, uCourseMinBounds)) && all(lessThanEqual(hit, uCourseMaxBounds)) )
+	{
+		n = vec3(2.0 * hit.x, 1.0, 2.0 * -hit.z);
+		t = t0;
+	}
+
+	return t;
+}
+
 
 //-------------------------------------------------------------------------------------------------------------------
 float SceneIntersect(out int finalIsRayExiting)
@@ -234,6 +291,10 @@ float SceneIntersect(out int finalIsRayExiting)
 		d = UnitParaboloidInterior_ParamIntersect(rObjOrigin, rObjDirection, uCourseShapeKparameter, normal);
 	else if (uCourseShapeType == 4)
 		d = UnitConeInterior_ParamIntersect(rObjOrigin, rObjDirection, uCourseShapeKparameter, normal);
+	else if (uCourseShapeType == 5)
+		d = UnitHyperboloidInterior_ParamIntersect(rObjOrigin, rObjDirection, uCourseShapeKparameter, normal);
+	else if (uCourseShapeType == 6)
+		d = UnitHyperbolicParaboloidInterior_ParamIntersect(rObjOrigin, rObjDirection, normal);
 	if (d < t)
 	{
 		t = d;
