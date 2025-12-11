@@ -168,25 +168,25 @@ function intersectUnitCylinder(rayO, rayD, normal)
 	b = 2 * ((rayD.x * rayO.x) + (rayD.y * rayO.y));
 	c = ((rayO.x * rayO.x) + (rayO.y * rayO.y)) - 1; // this '1' = (1 * 1) or unit cylinder radius squared
 
-	if (solveQuadratic(a, b, c) == false)
+	if (solveQuadratic(a, b, c) == true)
 	{
-		return Infinity;
-	}
-
-	if (t0 > 0)
-	{
-		normal.getPointAlongRay(rayO, rayD, t0);
-		normal.z = 0;
-		return t0;
-	}
-	if (t1 > 0)
-	{
-		normal.getPointAlongRay(rayO, rayD, t1);
-		normal.z = 0;
-		return t1;
+		if (t0 > 0)
+		{
+			normal.getPointAlongRay(rayO, rayD, t0);
+			normal.z = 0;
+			return t0;
+		}
+		if (t1 > 0)
+		{
+			normal.getPointAlongRay(rayO, rayD, t1);
+			normal.z = 0;
+			return t1;
+		}
 	}
 	
-	return Infinity;
+	t = raycastDoubleUnitBox(rayO, rayD);
+	return t;
+	//return Infinity;
 }
 
 function intersectUnitParaboloid(rayO, rayD, K, normal)
@@ -201,25 +201,25 @@ function intersectUnitParaboloid(rayO, rayD, K, normal)
 	b = 2 * ((rayD.x * rayO.x) + (rayD.y * rayO.y)) + (K * rayD.z);
 	c = (rayO.x * rayO.x) + (rayO.y * rayO.y) + (K * (rayO.z - 1));
 
-	if (solveQuadratic(a, b, c) == false)
+	if (solveQuadratic(a, b, c) == true)
 	{
-		return Infinity;
-	}
-
-	if (t0 > 0)
-	{
-		normal.getPointAlongRay(rayO, rayD, t0);
-		normal.x *= 2; normal.y *= 2; normal.z = K;
-		return t0;
-	}
-	if (t1 > 0)
-	{
-		normal.getPointAlongRay(rayO, rayD, t1);
-		normal.x *= 2; normal.y *= 2; normal.z = K;
-		return t1;
+		if (t0 > 0)
+		{
+			normal.getPointAlongRay(rayO, rayD, t0);
+			normal.x *= 2; normal.y *= 2; normal.z = K;
+			return t0;
+		}
+		if (t1 > 0)
+		{
+			normal.getPointAlongRay(rayO, rayD, t1);
+			normal.x *= 2; normal.y *= 2; normal.z = K;
+			return t1;
+		}
 	}
 	
-	return Infinity;
+	t = raycastDoubleUnitBox(rayO, rayD);
+	return t;
+	//return Infinity;
 }
 
 let J = 0;
@@ -240,25 +240,90 @@ function intersectUnitCone(rayO, rayD, K, normal)
     	b = 2 * ((J * rayD.x * rayO.x) + (J * rayD.y * rayO.y) - ((K * 0.25) * rayD.z * (rayO.z - H)));
     	c = (J * rayO.x * rayO.x) + (J * rayO.y * rayO.y) - ((K * 0.25) * (rayO.z - H) * (rayO.z - H));
 
-	if (solveQuadratic(a, b, c) == false)
+	if (solveQuadratic(a, b, c) == true)
 	{
-		return Infinity;
+		if (t0 > 0)
+		{
+			normal.getPointAlongRay(rayO, rayD, t0);
+			normal.x *= J; normal.y *= J; normal.z = (K * 0.25) * (H - normal.z);
+			return t0;
+		}
+		if (t1 > 0)
+		{
+			normal.getPointAlongRay(rayO, rayD, t1);
+			normal.x *= J; normal.y *= J; normal.z = (K * 0.25) * (H - normal.z);
+			return t1;
+		}
 	}
 
-	if (t0 > 0)
+	t = raycastDoubleUnitBox(rayO, rayD);
+	return t;
+	//return Infinity;
+}
+
+function intersectUnitHyperboloid(rayO, rayD, K, normal)
+{
+	// Unit Hyperboloid of 1 sheet (along Z axis) implicit equation
+	// X^2 + Y^2 - Z^2 - 1 = 0
+	K = 1 - K;
+	K *= 100;
+	J = K - 1;
+	a = (K * rayD.x * rayD.x) + (K * rayD.y * rayD.y) - (J * rayD.z * rayD.z);
+	b = 2 * ((K * rayD.x * rayO.x) + (K * rayD.y * rayO.y) - (J * rayD.z * rayO.z));
+	c = (K * rayO.x * rayO.x) + (K * rayO.y * rayO.y) - (J * rayO.z * rayO.z) - 1;
+
+	if (solveQuadratic(a, b, c) == true)
 	{
-		normal.getPointAlongRay(rayO, rayD, t0);
-		normal.x *= J; normal.y *= J; normal.z = (K * 0.25) * (H - normal.z);
-		return t0;
+		if (t0 > 0)
+		{	
+			normal.getPointAlongRay(rayO, rayD, t0);
+			normal.x *= K; normal.y *= K; normal.z *= J * -1;
+			return t0;
+		}
+		
+		if (t1 > 0)
+		{	
+			normal.getPointAlongRay(rayO, rayD, t1);
+			normal.x *= K; normal.y *= K; normal.z *= J * -1;
+			return t1;
+		}
 	}
-	if (t1 > 0)
+
+	t = raycastDoubleUnitBox(rayO, rayD);
+	return t;
+	//return Infinity;
+}
+
+function intersectUnitHyperbolicParaboloid(rayO, rayD, normal)
+{
+	// Unit Hyperbolic Paraboloid (saddle shape) implicit equation
+	// X^2 - Z^2 + Y = 0
+	a = (rayD.x * rayD.x) - (rayD.z * rayD.z);
+	b = 2 * ((rayD.x * rayO.x) - (rayD.z * rayO.z)) + rayD.y;
+	c = (rayO.x * rayO.x) - (rayO.z * rayO.z) + rayO.y;
+
+	if (solveQuadratic(a, b, c) == true)
 	{
-		normal.getPointAlongRay(rayO, rayD, t1);
-		normal.x *= J; normal.y *= J; normal.z = (K * 0.25) * (H - normal.z);
-		return t1;
+		if (t0 > 0)
+		{	
+			normal.getPointAlongRay(rayO, rayD, t0);
+			normal.x *= 2; normal.y = 1; normal.z *= -2;
+			normal.negate();
+			return t0;
+		}
+		
+		if (t1 > 0)
+		{	
+			normal.getPointAlongRay(rayO, rayD, t1);
+			normal.x *= 2; normal.y = 1; normal.z *= -2;
+			normal.negate();
+			return t1;
+		}
 	}
-	
-	return Infinity;
+
+	t = raycastDoubleUnitBox(rayO, rayD);
+	return t;
+	//return Infinity;
 }
 
 
@@ -284,6 +349,29 @@ function raycastUnitBox(rayO, rayD)
 
 	if (t0 > 0) // if we are outside the box
 		return t0;
+
+	if (t1 > 0) // if we are inside the box
+		return t1;
+
+	return Infinity;
+}
+
+function raycastDoubleUnitBox(rayO, rayD)
+{
+	inverseDir.set(1 / rayD.x, 1 / rayD.y, 1 / rayD.z);
+	near.set(-2,-2,-2).sub(rayO);
+	near.multiply(inverseDir);
+	far.set(2, 2, 2).sub(rayO);
+	far.multiply(inverseDir);
+	tmin.copy(near).min(far);
+	tmax.copy(near).max(far);
+	t0 = Math.max(Math.max(tmin.x, tmin.y), tmin.z);
+	t1 = Math.min(Math.min(tmax.x, tmax.y), tmax.z);
+	if (t0 > t1)
+		return Infinity;
+
+	// if (t0 > 0) // if we are outside the box
+	// 	return t0;
 
 	if (t1 > 0) // if we are inside the box
 		return t1;
