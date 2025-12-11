@@ -169,10 +169,18 @@ function intersectCourse()
 		courseT = intersectUnitParaboloid(rayObjectOrigin, rayObjectDirection, courseShapeKparameter, intersectionNormal);
 	else if (courseShapeType == 'Cone')
 		courseT = intersectUnitCone(rayObjectOrigin, rayObjectDirection, courseShapeKparameter, intersectionNormal);
-
+	else if (courseShapeType == 'Hyperboloid')
+		courseT = intersectUnitHyperboloid(rayObjectOrigin, rayObjectDirection, courseShapeKparameter, intersectionNormal);
+	else if (courseShapeType == 'HyperbolicParaboloid')
+		courseT = intersectUnitHyperbolicParaboloid(rayObjectOrigin, rayObjectDirection, intersectionNormal);
+	
 	return courseT;
 }
 
+function beginLevel() 
+{ 
+	levelBeginFlag = true; 
+}
 
 
 // called automatically from within initTHREEjs() function (located in InitCommon.js file)
@@ -245,14 +253,13 @@ function initSceneData()
 	course_ShapeKparameterObject = { shape_Kparam: 1.0 };
 	level_RestartObject = { 'restart level' : beginLevel };
 
-	function beginLevel() { levelBeginFlag = true; }
 	function handleCourseTypeChange() { needChangeCourseType = true; }
 	function handleCourseScaleUniformChange() { needChangeCourseScaleUniform = true; }
 	function handleCourseScaleChange() { needChangeCourseScale = true; }
 	function handleCourseClipXYZChange() { needChangeCourseClipXYZBounds = true; }
 	function handleCourseShapeKparamChange() { needChangeCourseShapeKparameter = true; }
 
-	course_TypeController = gui.add(course_TypeObject, 'Course_Type', ['Sphere', 'Ellipsoid', 'Cylinder', 'Paraboloid', 'Cone']).onChange(handleCourseTypeChange);
+	course_TypeController = gui.add(course_TypeObject, 'Course_Type', ['Sphere', 'Ellipsoid', 'Cylinder', 'Paraboloid', 'Cone', 'Hyperboloid', 'HyperbolicParaboloid']).onChange(handleCourseTypeChange);
 	
 	scale_Folder = gui.addFolder('Scale');
 	course_ScaleUniformController = scale_Folder.add(course_ScaleUniformObject, 'uniformScale', 200, 1500, 1).onChange(handleCourseScaleUniformChange);
@@ -269,7 +276,7 @@ function initSceneData()
 	course_ClipMaxZController = clipBoundaries_Folder.add(course_ClipMaxZObject, 'clipMaxZ', 0.1, 1.0, 0.01).onChange(handleCourseClipXYZChange);
 	clipBoundaries_Folder.close();
 
-	course_ShapeKparameterController = gui.add(course_ShapeKparameterObject, 'shape_Kparam', 0.1, 1.0, 0.01).onChange(handleCourseShapeKparamChange);
+	course_ShapeKparameterController = gui.add(course_ShapeKparameterObject, 'shape_Kparam', 0.01, 1.0, 0.01).onChange(handleCourseShapeKparamChange);
 
 	gui.add(level_RestartObject, 'restart level');
 
@@ -309,53 +316,111 @@ function updateVariablesAndUniforms()
 
 		if (courseShapeType == 'Sphere')
 		{
+			courseShape.position.set(0, 0, 0);
 			course_ScaleXController.setValue(500);
 			course_ScaleYController.setValue(500);
 			course_ScaleZController.setValue(500);
+			course_ClipMinXController.min(-1); course_ClipMaxXController.max(1);
+			course_ClipMinYController.min(-1); course_ClipMaxYController.max(1);
+			course_ClipMinXController.setValue(-1); course_ClipMaxXController.setValue(1);
+			course_ClipMinYController.setValue(-1); course_ClipMaxYController.setValue(1);
 			course_ShapeKparameterController.disable();
 			pathTracingUniforms.uCourseShapeType.value = 0;
 		}
 		else if (courseShapeType == 'Ellipsoid')
 		{
+			courseShape.position.set(0, 0, 0);
 			course_ScaleXController.setValue(600);
 			course_ScaleYController.setValue(300);
 			course_ScaleZController.setValue(600);
+			course_ClipMinXController.min(-1); course_ClipMaxXController.max(1);
+			course_ClipMinYController.min(-1); course_ClipMaxYController.max(1);
+			course_ClipMinXController.setValue(-1); course_ClipMaxXController.setValue(1);
+			course_ClipMinYController.setValue(-1); course_ClipMaxYController.setValue(1);
 			course_ShapeKparameterController.disable();
 			pathTracingUniforms.uCourseShapeType.value = 1;
 		}
 		else if (courseShapeType == 'Cylinder')
 		{
+			courseShape.position.set(0, 0, 0);
 			course_ScaleXController.setValue(500);
 			course_ScaleYController.setValue(500);
 			course_ScaleZController.setValue(500);
+			course_ClipMinXController.min(-1); course_ClipMaxXController.max(1);
+			course_ClipMinYController.min(-1); course_ClipMaxYController.max(1);
+			course_ClipMinXController.setValue(-1); course_ClipMaxXController.setValue(1);
+			course_ClipMinYController.setValue(-1); course_ClipMaxYController.setValue(1);
 			course_ShapeKparameterController.disable();
 			pathTracingUniforms.uCourseShapeType.value = 2;
 		}
 		else if (courseShapeType == 'Paraboloid')
 		{
+			courseShape.position.set(0, 0, 0);
 			course_ScaleXController.setValue(500);
 			course_ScaleYController.setValue(500);
 			course_ScaleZController.setValue(500);
+			course_ClipMinXController.min(-1); course_ClipMaxXController.max(1);
+			course_ClipMinYController.min(-1); course_ClipMaxYController.max(1);
+			course_ClipMinXController.setValue(-1); course_ClipMaxXController.setValue(1);
+			course_ClipMinYController.setValue(-1); course_ClipMaxYController.setValue(1);
 			courseShapeKparameter = 0.5;
 			course_ShapeKparameterController.enable();
+			course_ShapeKparameterController.min(0.1); course_ShapeKparameterController.max(0.5);
 			course_ShapeKparameterController.setValue(courseShapeKparameter);
 			pathTracingUniforms.uCourseShapeKparameter.value = courseShapeKparameter;
 			pathTracingUniforms.uCourseShapeType.value = 3;
 		}
 		else if (courseShapeType == 'Cone')
 		{
+			courseShape.position.set(0, 0, 0);
 			course_ScaleXController.setValue(500);
 			course_ScaleYController.setValue(500);
 			course_ScaleZController.setValue(500);
+			course_ClipMinXController.min(-1); course_ClipMaxXController.max(1);
+			course_ClipMinYController.min(-1); course_ClipMaxYController.max(1);
+			course_ClipMinXController.setValue(-1); course_ClipMaxXController.setValue(1);
+			course_ClipMinYController.setValue(-1); course_ClipMaxYController.setValue(1);
 			courseShapeKparameter = 0.0;
 			course_ShapeKparameterController.enable();
+			course_ShapeKparameterController.min(0.0); course_ShapeKparameterController.max(0.5);
 			course_ShapeKparameterController.setValue(courseShapeKparameter);
 			pathTracingUniforms.uCourseShapeKparameter.value = courseShapeKparameter;
 			pathTracingUniforms.uCourseShapeType.value = 4;
 		}
+		else if (courseShapeType == 'Hyperboloid')
+		{
+			courseShape.position.set(0, 0, 0);
+			course_ScaleXController.setValue(500);
+			course_ScaleYController.setValue(500);
+			course_ScaleZController.setValue(500);
+			course_ClipMinXController.min(-0.9); course_ClipMaxXController.max(0.9);
+			course_ClipMinYController.min(-0.9); course_ClipMaxYController.max(0.9);
+			course_ClipMinXController.setValue(-0.9); course_ClipMaxXController.setValue(0.9);
+			course_ClipMinYController.setValue(-0.9); course_ClipMaxYController.setValue(0.9);
+			courseShapeKparameter = 0.94;
+			course_ShapeKparameterController.enable();
+			course_ShapeKparameterController.min(0.0); course_ShapeKparameterController.max(0.97);
+			course_ShapeKparameterController.setValue(courseShapeKparameter);
+			pathTracingUniforms.uCourseShapeKparameter.value = courseShapeKparameter;
+			pathTracingUniforms.uCourseShapeType.value = 5;
+		}
+		else if (courseShapeType == 'HyperbolicParaboloid')
+		{
+			courseShape.position.set(0, -300, 0);
+			course_ScaleXController.setValue(500);
+			course_ScaleYController.setValue(500);
+			course_ScaleZController.setValue(500);
+			course_ClipMinXController.min(-1); course_ClipMaxXController.max(1);
+			course_ClipMinYController.min(-1); course_ClipMaxYController.max(1);
+			course_ClipMinXController.setValue(-1); course_ClipMaxXController.setValue(1);
+			course_ClipMinYController.setValue(-1); course_ClipMaxYController.setValue(1);
+			course_ShapeKparameterController.disable();
+			pathTracingUniforms.uCourseShapeType.value = 6;
+		}
 
 		cameraIsMoving = true;
 		needChangeCourseType = false;
+		beginLevel();
 	}
 
 	if (needChangeCourseScaleUniform)
@@ -373,6 +438,7 @@ function updateVariablesAndUniforms()
 
 		cameraIsMoving = true;
 		needChangeCourseScaleUniform = false;
+		beginLevel();
 	}
 
 	if (needChangeCourseScale)
@@ -387,6 +453,7 @@ function updateVariablesAndUniforms()
 
 		cameraIsMoving = true;
 		needChangeCourseScale = false;
+		beginLevel();
 	}
 
 	if (needChangeCourseClipXYZBounds)
@@ -413,14 +480,16 @@ function updateVariablesAndUniforms()
 
 		cameraIsMoving = true;
 		needChangeCourseShapeKparameter = false;
+		beginLevel();
 	}
 
 
 	if (levelBeginFlag)
 	{
 		// GLIDER 1 (player)
-		glider1StartingPosition.set(0, -50, 75);
+		glider1StartingPosition.set(0, -10, 75);
 		glider1Base.position.copy(glider1StartingPosition);
+		glider1OldPosition.copy(glider1Base.position);
 		glider1CollisionVolume.position.copy(glider1Base.position);
 		glider1BaseRight.set(1, 0, 0);
 		glider1BaseUp.set(0, 1, 0);
@@ -428,8 +497,9 @@ function updateVariablesAndUniforms()
 		glider1LocalVelocity.set(0, 0, 0);
 
 		// GLIDER 2 (AI controlled)
-		glider2StartingPosition.set(0, -50, -75);
+		glider2StartingPosition.set(0, -10, -75);
 		glider2Base.position.copy(glider2StartingPosition);
+		glider2OldPosition.copy(glider2Base.position);
 		glider2CollisionVolume.position.copy(glider2Base.position);
 		glider2BaseRight.set(1, 0, 0);
 		glider2BaseUp.set(0, 1, 0);
@@ -437,8 +507,9 @@ function updateVariablesAndUniforms()
 		glider2LocalVelocity.set(0, 0, 0);
 
 		// BALL
-		ballStartingPosition.set(0, -50, 0);
+		ballStartingPosition.set(0, -10, 0);
 		ball.position.copy(ballStartingPosition);
+		ballOldPosition.copy(ball.position);
 		ballCollisionVolume.position.copy(ball.position);
 		ballRight.set(1, 0, 0);
 		ballUp.set(0, 1, 0);
@@ -448,6 +519,7 @@ function updateVariablesAndUniforms()
 		// PLAYER's GOAL
 		playerGoalStartingPosition.set(75, -10, 0);
 		playerGoal.position.copy(playerGoalStartingPosition);
+		playerGoalOldPosition.copy(playerGoal.position);
 		playerGoalRight.set(1, 0, 0);
 		playerGoalUp.set(0, 1, 0);
 		playerGoalForward.set(0, 0, 1);
@@ -456,6 +528,7 @@ function updateVariablesAndUniforms()
 		// COMPUTER's GOAL
 		computerGoalStartingPosition.set(-75, -10, 0);
 		computerGoal.position.copy(computerGoalStartingPosition);
+		computerGoalOldPosition.copy(computerGoal.position);
 		computerGoalRight.set(1, 0, 0);
 		computerGoalUp.set(0, 1, 0);
 		computerGoalForward.set(0, 0, 1);
@@ -491,7 +564,7 @@ function updateVariablesAndUniforms()
 		// in that direction until applying an opposing thrust or an artificial 'friction' force. The Asteroids ship slows from friction, even though there's none in space.
 		
 		//if (!glider1IsInAir)
-		{
+		/* {
 			if ((keyPressed('KeyS') || button4Pressed) && !(keyPressed('KeyW') || button3Pressed))
 			{
 				glider1LocalVelocity.z += (glider1ThrustersForward.dot(glider1BaseForward) * 300 * frameTime); 
@@ -517,14 +590,14 @@ function updateVariablesAndUniforms()
 				glider1LocalVelocity.x += (glider1ThrustersRight.dot(glider1BaseRight) * 300 * frameTime);
 				glider1IsAcceleratingRight = true;
 			}
-		}
+		} */
 
 		// Or use the following controls for a constantly-steerable Glider (even steers when no thrust is being applied and Glider is slowing down)
 		// Behaves more like a car with wheels.  This is less realistic physics-wise for a hovering Glider, but I may ultimately keep it for max player-steering control.
 		// When everything is moving really fast, it may be helpful to 'steer' the floating Glider, in order to maximize ball-targeting ability, and thus fun factor.
 		
 		//if (!glider1IsInAir)
-		/* {
+		{
 			if ((keyPressed('KeyW') || button3Pressed) && !(keyPressed('KeyS') || button4Pressed))
 			{
 				glider1LocalVelocity.z -= (300 * frameTime); 
@@ -546,13 +619,13 @@ function updateVariablesAndUniforms()
 				glider1LocalVelocity.x += (300 * frameTime);
 				glider1IsAcceleratingRight = true;
 			}
-		} */
+		}
 
 
 		// Note: the following is temporary input code for testing red opponent glider movement
 		// will be removed when red opponent glider is fully controlled by AI code
 		//if (!glider2IsInAir)
-		{
+		/* {
 			if ( keyPressed('KeyI') && !keyPressed('KeyK') )
 			{
 				glider2LocalVelocity.z += (glider2ThrustersForward.dot(glider2BaseForward) * -300 * frameTime); 
@@ -578,32 +651,34 @@ function updateVariablesAndUniforms()
 				glider2LocalVelocity.x += (glider2ThrustersRight.dot(glider2BaseRight) * 300 * frameTime);
 				glider2IsAcceleratingRight = true;
 			}
-		}
+		} */
 
+		// Note: the following is temporary input code for testing red opponent glider movement
+		// will be removed when red opponent glider is fully controlled by AI code
 		//if (!glider2IsInAir)
-		/* {
-			if ((keyPressed('KeyW') || button3Pressed) && !(keyPressed('KeyS') || button4Pressed))
+		{
+			if ( keyPressed('KeyI') && !keyPressed('KeyK') )
 			{
-				glider1LocalVelocity.z -= (300 * frameTime); 
-				glider1IsAcceleratingForward = true;
+				glider2LocalVelocity.z -= (300 * frameTime); 
+				glider2IsAcceleratingForward = true;
 				
 			}
-			if ((keyPressed('KeyS') || button4Pressed) && !(keyPressed('KeyW') || button3Pressed))
+			if ( keyPressed('KeyK') && !keyPressed('KeyI') )
 			{
-				glider1LocalVelocity.z += (300 * frameTime); 
-				glider1IsAcceleratingForward = true;
+				glider2LocalVelocity.z += (300 * frameTime); 
+				glider2IsAcceleratingForward = true;
 			}
-			if ((keyPressed('KeyA') || button1Pressed) && !(keyPressed('KeyD') || button2Pressed))
+			if ( keyPressed('KeyJ') && !keyPressed('KeyL') )
 			{
-				glider1LocalVelocity.x -= (300 * frameTime);
-				glider1IsAcceleratingRight = true;
+				glider2LocalVelocity.x -= (300 * frameTime);
+				glider2IsAcceleratingRight = true;
 			}
-			if ((keyPressed('KeyD') || button2Pressed) && !(keyPressed('KeyA') || button1Pressed))
+			if ( keyPressed('KeyL') && !keyPressed('KeyJ') )
 			{ 
-				glider1LocalVelocity.x += (300 * frameTime);
-				glider1IsAcceleratingRight = true;
+				glider2LocalVelocity.x += (300 * frameTime);
+				glider2IsAcceleratingRight = true;
 			}
-		} */
+		}
 		
 	} // end if (!isPaused)
 
@@ -670,12 +745,12 @@ function updateVariablesAndUniforms()
 	
 	// get glider world velocity vector from its local velocity ()
 
-	glider1WorldVelocity.set(0, 0, 0);
+	/* glider1WorldVelocity.set(0, 0, 0);
 	glider1WorldVelocity.addScaledVector(glider1BaseRight, glider1LocalVelocity.x);
 	glider1WorldVelocity.addScaledVector(glider1BaseUp, glider1LocalVelocity.y);
 	glider1WorldVelocity.addScaledVector(glider1BaseForward, glider1LocalVelocity.z);
 	
-	glider1Base.position.addScaledVector(glider1WorldVelocity, frameTime);
+	glider1Base.position.addScaledVector(glider1WorldVelocity, frameTime); */
  	
 
 	// Or use the following code for setting position according to glider1Thrusters rotational basis (which way glider is facing). Will constantly steer the glider in that
@@ -683,12 +758,12 @@ function updateVariablesAndUniforms()
 	// Behaves more like a car with wheels. This is less realistic physics-wise for a hovering glider, but I may ultimately keep it for max player-steering control.
 	// When everything is moving really fast, it may be helpful to 'steer' your floating glider, in order to maximize ball-targeting ability, and thus fun factor.
 	
-	/* glider1WorldVelocity.set(0, 0, 0);
+	glider1WorldVelocity.set(0, 0, 0);
 	glider1WorldVelocity.addScaledVector(glider1ThrustersRight, glider1LocalVelocity.x);
 	glider1WorldVelocity.addScaledVector(glider1ThrustersUp, glider1LocalVelocity.y);
 	glider1WorldVelocity.addScaledVector(glider1ThrustersForward, glider1LocalVelocity.z);
 	
-	glider1Base.position.addScaledVector(glider1WorldVelocity, frameTime); */
+	glider1Base.position.addScaledVector(glider1WorldVelocity, frameTime);
 	
 
 	// now that the glider1 has moved, record its new position minus its old position (from the previous frame) as a line segment
@@ -748,14 +823,23 @@ function updateVariablesAndUniforms()
 			unitCollisionNormal.multiplyScalar(impulseAmount);
 			impulseGlider1.copy(unitCollisionNormal).multiplyScalar(gliderMass);
 			impulseGlider2.copy(unitCollisionNormal).multiplyScalar(-gliderMass);
-			
-			glider1LocalVelocity.x += impulseGlider1.dot(glider1BaseRight);
-			glider1LocalVelocity.y += impulseGlider1.dot(glider1BaseUp);
-			glider1LocalVelocity.z += impulseGlider1.dot(glider1BaseForward);
+			// use for physics-based floating glider with momentum (more realistic but harder to handle)
+			// glider1LocalVelocity.x += impulseGlider1.dot(glider1BaseRight);
+			// glider1LocalVelocity.y += impulseGlider1.dot(glider1BaseUp);
+			// glider1LocalVelocity.z += impulseGlider1.dot(glider1BaseForward);
+			// use for constantly steerable glider (less realistic, but easier to handle)
+			glider1LocalVelocity.x += impulseGlider1.dot(glider1ThrustersRight);
+			glider1LocalVelocity.y += impulseGlider1.dot(glider1ThrustersUp);
+			glider1LocalVelocity.z += impulseGlider1.dot(glider1ThrustersForward);
 
-			glider2LocalVelocity.x += impulseGlider2.dot(glider2BaseRight);
-			glider2LocalVelocity.y += impulseGlider2.dot(glider2BaseUp);
-			glider2LocalVelocity.z += impulseGlider2.dot(glider2BaseForward);
+			// use for physics-based floating glider with momentum (more realistic but harder to handle)
+			// glider2LocalVelocity.x += impulseGlider2.dot(glider2BaseRight);
+			// glider2LocalVelocity.y += impulseGlider2.dot(glider2BaseUp);
+			// glider2LocalVelocity.z += impulseGlider2.dot(glider2BaseForward);
+			// use for constantly steerable glider (less realistic, but easier to handle)
+			glider2LocalVelocity.x += impulseGlider2.dot(glider2ThrustersRight);
+			glider2LocalVelocity.y += impulseGlider2.dot(glider2ThrustersUp);
+			glider2LocalVelocity.z += impulseGlider2.dot(glider2ThrustersForward);
 		}
 	}
 
@@ -799,9 +883,14 @@ function updateVariablesAndUniforms()
 			impulseGlider1.copy(unitCollisionNormal).multiplyScalar(ballMass);
 			impulseBall.copy(unitCollisionNormal).multiplyScalar(-gliderMass);
 			
-			glider1LocalVelocity.x += impulseGlider1.dot(glider1BaseRight);
-			glider1LocalVelocity.y += impulseGlider1.dot(glider1BaseUp);
-			glider1LocalVelocity.z += impulseGlider1.dot(glider1BaseForward);
+			// use for physics-based floating glider with momentum (more realistic but harder to handle)
+			// glider1LocalVelocity.x += impulseGlider1.dot(glider1BaseRight);
+			// glider1LocalVelocity.y += impulseGlider1.dot(glider1BaseUp);
+			// glider1LocalVelocity.z += impulseGlider1.dot(glider1BaseForward);
+			// use for constantly steerable glider (less realistic, but easier to handle)
+			glider1LocalVelocity.x += impulseGlider1.dot(glider1ThrustersRight);
+			glider1LocalVelocity.y += impulseGlider1.dot(glider1ThrustersUp);
+			glider1LocalVelocity.z += impulseGlider1.dot(glider1ThrustersForward);
 
 			ballLocalVelocity.x += impulseBall.dot(ballRight);
 			ballLocalVelocity.y += impulseBall.dot(ballUp);
@@ -811,71 +900,83 @@ function updateVariablesAndUniforms()
 
 	// CHECK FOR GLIDER1 vs MIN/MAX BOUNDARY WALLS
 	
-	if (glider1Base.position.x > (courseShape.scale.x * courseMaxBounds.x))
+	if (glider1Base.position.x > courseShape.position.x + (courseShape.scale.x * courseMaxBounds.x))
 	{
-		glider1Base.position.x = (courseShape.scale.x * courseMaxBounds.x);
+		glider1Base.position.x = courseShape.position.x + (courseShape.scale.x * courseMaxBounds.x);
 		unitCollisionNormal.set(-1, 0, 0);
 		impulseGlider1.copy(glider1WorldVelocity);
 		impulseGlider1.reflect(unitCollisionNormal);
 		tempVec.copy(impulseGlider1).normalize();
 		impulseGlider1.multiplyScalar( Math.max(0.3, 1-tempVec.dot(unitCollisionNormal)) );
-		glider1LocalVelocity.x = impulseGlider1.dot(glider1BaseRight);
-		glider1LocalVelocity.z = impulseGlider1.dot(glider1BaseForward);
+		// glider1LocalVelocity.x = impulseGlider1.dot(glider1BaseRight);
+		// glider1LocalVelocity.z = impulseGlider1.dot(glider1BaseForward);
+		glider1LocalVelocity.x = impulseGlider1.dot(glider1ThrustersRight);
+		glider1LocalVelocity.z = impulseGlider1.dot(glider1ThrustersForward);
 	}
-	else if (glider1Base.position.x < (courseShape.scale.x * courseMinBounds.x))
+	else if (glider1Base.position.x < courseShape.position.x + (courseShape.scale.x * courseMinBounds.x))
 	{
-		glider1Base.position.x = (courseShape.scale.x * courseMinBounds.x);
+		glider1Base.position.x = courseShape.position.x + (courseShape.scale.x * courseMinBounds.x);
 		unitCollisionNormal.set(1, 0, 0);
 		impulseGlider1.copy(glider1WorldVelocity);
 		impulseGlider1.reflect(unitCollisionNormal);
 		tempVec.copy(impulseGlider1).normalize();
 		impulseGlider1.multiplyScalar( Math.max(0.3, 1-tempVec.dot(unitCollisionNormal)) );
-		glider1LocalVelocity.x = impulseGlider1.dot(glider1BaseRight);
-		glider1LocalVelocity.z = impulseGlider1.dot(glider1BaseForward);
+		// glider1LocalVelocity.x = impulseGlider1.dot(glider1BaseRight);
+		// glider1LocalVelocity.z = impulseGlider1.dot(glider1BaseForward);
+		glider1LocalVelocity.x = impulseGlider1.dot(glider1ThrustersRight);
+		glider1LocalVelocity.z = impulseGlider1.dot(glider1ThrustersForward);
 	}
-	if (glider1Base.position.y > (courseShape.scale.y * courseMaxBounds.y))
+	if (glider1Base.position.y > courseShape.position.y + (courseShape.scale.y * courseMaxBounds.y))
 	{
-		glider1Base.position.y = (courseShape.scale.y * courseMaxBounds.y);
+		glider1Base.position.y = courseShape.position.y + (courseShape.scale.y * courseMaxBounds.y);
 		unitCollisionNormal.set(0, -1, 0);
 		impulseGlider1.copy(glider1WorldVelocity);
 		impulseGlider1.reflect(unitCollisionNormal);
 		tempVec.copy(impulseGlider1).normalize();
 		impulseGlider1.multiplyScalar( Math.max(0.3, 1-tempVec.dot(unitCollisionNormal)) );
-		glider1LocalVelocity.x = impulseGlider1.dot(glider1BaseRight);
-		glider1LocalVelocity.z = impulseGlider1.dot(glider1BaseForward);
+		// glider1LocalVelocity.x = impulseGlider1.dot(glider1BaseRight);
+		// glider1LocalVelocity.z = impulseGlider1.dot(glider1BaseForward);
+		glider1LocalVelocity.x = impulseGlider1.dot(glider1ThrustersRight);
+		glider1LocalVelocity.z = impulseGlider1.dot(glider1ThrustersForward);
 	}
-	else if (glider1Base.position.y < (courseShape.scale.y * courseMinBounds.y))
+	else if (glider1Base.position.y < courseShape.position.y + (courseShape.scale.y * courseMinBounds.y))
 	{
-		glider1Base.position.y = (courseShape.scale.y * courseMinBounds.y);
+		glider1Base.position.y = courseShape.position.y + (courseShape.scale.y * courseMinBounds.y);
 		unitCollisionNormal.set(0, 1, 0);
 		impulseGlider1.copy(glider1WorldVelocity);
 		impulseGlider1.reflect(unitCollisionNormal);
 		tempVec.copy(impulseGlider1).normalize();
 		impulseGlider1.multiplyScalar( Math.max(0.3, 1-tempVec.dot(unitCollisionNormal)) );
-		glider1LocalVelocity.x = impulseGlider1.dot(glider1BaseRight);
-		glider1LocalVelocity.z = impulseGlider1.dot(glider1BaseForward);
+		// glider1LocalVelocity.x = impulseGlider1.dot(glider1BaseRight);
+		// glider1LocalVelocity.z = impulseGlider1.dot(glider1BaseForward);
+		glider1LocalVelocity.x = impulseGlider1.dot(glider1ThrustersRight);
+		glider1LocalVelocity.z = impulseGlider1.dot(glider1ThrustersForward);
 	}
-	if (glider1Base.position.z > (courseShape.scale.z * courseMaxBounds.z))
+	if (glider1Base.position.z > courseShape.position.z + (courseShape.scale.z * courseMaxBounds.z))
 	{
-		glider1Base.position.z = (courseShape.scale.z * courseMaxBounds.z);
+		glider1Base.position.z = courseShape.position.z + (courseShape.scale.z * courseMaxBounds.z);
 		unitCollisionNormal.set(0, 0, -1);
 		impulseGlider1.copy(glider1WorldVelocity);
 		impulseGlider1.reflect(unitCollisionNormal);
 		tempVec.copy(impulseGlider1).normalize();
 		impulseGlider1.multiplyScalar( Math.max(0.3, 1-tempVec.dot(unitCollisionNormal)) );
-		glider1LocalVelocity.x = impulseGlider1.dot(glider1BaseRight);
-		glider1LocalVelocity.z = impulseGlider1.dot(glider1BaseForward);
+		// glider1LocalVelocity.x = impulseGlider1.dot(glider1BaseRight);
+		// glider1LocalVelocity.z = impulseGlider1.dot(glider1BaseForward);
+		glider1LocalVelocity.x = impulseGlider1.dot(glider1ThrustersRight);
+		glider1LocalVelocity.z = impulseGlider1.dot(glider1ThrustersForward);
 	}
-	else if (glider1Base.position.z < (courseShape.scale.z * courseMinBounds.z))
+	else if (glider1Base.position.z < courseShape.position.z + (courseShape.scale.z * courseMinBounds.z))
 	{
-		glider1Base.position.z = (courseShape.scale.z * courseMinBounds.z);
+		glider1Base.position.z = courseShape.position.z + (courseShape.scale.z * courseMinBounds.z);
 		unitCollisionNormal.set(0, 0, 1);
 		impulseGlider1.copy(glider1WorldVelocity);
 		impulseGlider1.reflect(unitCollisionNormal);
 		tempVec.copy(impulseGlider1).normalize();
 		impulseGlider1.multiplyScalar( Math.max(0.3, 1-tempVec.dot(unitCollisionNormal)) );
-		glider1LocalVelocity.x = impulseGlider1.dot(glider1BaseRight);
-		glider1LocalVelocity.z = impulseGlider1.dot(glider1BaseForward);
+		// glider1LocalVelocity.x = impulseGlider1.dot(glider1BaseRight);
+		// glider1LocalVelocity.z = impulseGlider1.dot(glider1BaseForward);
+		glider1LocalVelocity.x = impulseGlider1.dot(glider1ThrustersRight);
+		glider1LocalVelocity.z = impulseGlider1.dot(glider1ThrustersForward);
 	}
 		
 
@@ -1068,10 +1169,19 @@ function updateVariablesAndUniforms()
 
 	// update glider2 position
 
-	glider2WorldVelocity.set(0, 0, 0);
+	// use for more accurate floating glider physics simulation
+	/* glider2WorldVelocity.set(0, 0, 0);
 	glider2WorldVelocity.addScaledVector(glider2BaseRight, glider2LocalVelocity.x);
 	glider2WorldVelocity.addScaledVector(glider2BaseUp, glider2LocalVelocity.y);
 	glider2WorldVelocity.addScaledVector(glider2BaseForward, glider2LocalVelocity.z);
+	
+	glider2Base.position.addScaledVector(glider2WorldVelocity, frameTime); */
+
+	// or use for constantly-steerable glider
+	glider2WorldVelocity.set(0, 0, 0);
+	glider2WorldVelocity.addScaledVector(glider2ThrustersRight, glider2LocalVelocity.x);
+	glider2WorldVelocity.addScaledVector(glider2ThrustersUp, glider2LocalVelocity.y);
+	glider2WorldVelocity.addScaledVector(glider2ThrustersForward, glider2LocalVelocity.z);
 	
 	glider2Base.position.addScaledVector(glider2WorldVelocity, frameTime);
 	
@@ -1134,13 +1244,23 @@ function updateVariablesAndUniforms()
 			impulseGlider2.copy(unitCollisionNormal).multiplyScalar(gliderMass);
 			impulseGlider1.copy(unitCollisionNormal).multiplyScalar(-gliderMass);
 			
-			glider2LocalVelocity.x += impulseGlider2.dot(glider2BaseRight);
-			glider2LocalVelocity.y += impulseGlider2.dot(glider2BaseUp);
-			glider2LocalVelocity.z += impulseGlider2.dot(glider2BaseForward);
+			// use for physics-based floating glider with momentum (more realistic but harder to handle)
+			// glider2LocalVelocity.x += impulseGlider2.dot(glider2BaseRight);
+			// glider2LocalVelocity.y += impulseGlider2.dot(glider2BaseUp);
+			// glider2LocalVelocity.z += impulseGlider2.dot(glider2BaseForward);
+			// use for constantly steerable glider (less realistic, but easier to handle)
+			glider2LocalVelocity.x += impulseGlider2.dot(glider2ThrustersRight);
+			glider2LocalVelocity.y += impulseGlider2.dot(glider2ThrustersUp);
+			glider2LocalVelocity.z += impulseGlider2.dot(glider2ThrustersForward);
 
-			glider1LocalVelocity.x += impulseGlider1.dot(glider1BaseRight);
-			glider1LocalVelocity.y += impulseGlider1.dot(glider1BaseUp);
-			glider1LocalVelocity.z += impulseGlider1.dot(glider1BaseForward);
+			// use for physics-based floating glider with momentum (more realistic but harder to handle)
+			// glider1LocalVelocity.x += impulseGlider1.dot(glider1BaseRight);
+			// glider1LocalVelocity.y += impulseGlider1.dot(glider1BaseUp);
+			// glider1LocalVelocity.z += impulseGlider1.dot(glider1BaseForward);
+			// use for constantly steerable glider (less realistic, but easier to handle)
+			glider1LocalVelocity.x += impulseGlider1.dot(glider1ThrustersRight);
+			glider1LocalVelocity.y += impulseGlider1.dot(glider1ThrustersUp);
+			glider1LocalVelocity.z += impulseGlider1.dot(glider1ThrustersForward);
 		}
 	}
 
@@ -1184,9 +1304,14 @@ function updateVariablesAndUniforms()
 			impulseGlider2.copy(unitCollisionNormal).multiplyScalar(ballMass);
 			impulseBall.copy(unitCollisionNormal).multiplyScalar(-gliderMass);
 			
-			glider2LocalVelocity.x += impulseGlider2.dot(glider2BaseRight);
-			glider2LocalVelocity.y += impulseGlider2.dot(glider2BaseUp);
-			glider2LocalVelocity.z += impulseGlider2.dot(glider2BaseForward);
+			// use for physics-based floating glider with momentum (more realistic but harder to handle)
+			// glider2LocalVelocity.x += impulseGlider2.dot(glider2BaseRight);
+			// glider2LocalVelocity.y += impulseGlider2.dot(glider2BaseUp);
+			// glider2LocalVelocity.z += impulseGlider2.dot(glider2BaseForward);
+			// use for constantly steerable glider (less realistic, but easier to handle)
+			glider2LocalVelocity.x += impulseGlider2.dot(glider2ThrustersRight);
+			glider2LocalVelocity.y += impulseGlider2.dot(glider2ThrustersUp);
+			glider2LocalVelocity.z += impulseGlider2.dot(glider2ThrustersForward);
 
 			ballLocalVelocity.x += impulseBall.dot(ballRight);
 			ballLocalVelocity.y += impulseBall.dot(ballUp);
@@ -1197,71 +1322,83 @@ function updateVariablesAndUniforms()
 
 	// CHECK FOR GLIDER2 vs MIN/MAX BOUNDARY WALLS
 	
-	if (glider2Base.position.x > (courseShape.scale.x * courseMaxBounds.x))
+	if (glider2Base.position.x > courseShape.position.x + (courseShape.scale.x * courseMaxBounds.x))
 	{
-		glider2Base.position.x = (courseShape.scale.x * courseMaxBounds.x);
+		glider2Base.position.x = courseShape.position.x + (courseShape.scale.x * courseMaxBounds.x);
 		unitCollisionNormal.set(-1, 0, 0);
 		impulseGlider2.copy(glider2WorldVelocity);
 		impulseGlider2.reflect(unitCollisionNormal);
 		tempVec.copy(impulseGlider2).normalize();
 		impulseGlider2.multiplyScalar( Math.max(0.3, 1-tempVec.dot(unitCollisionNormal)) );
-		glider2LocalVelocity.x = impulseGlider2.dot(glider2BaseRight);
-		glider2LocalVelocity.z = impulseGlider2.dot(glider2BaseForward);
+		// glider2LocalVelocity.x = impulseGlider2.dot(glider2BaseRight);
+		// glider2LocalVelocity.z = impulseGlider2.dot(glider2BaseForward);
+		glider2LocalVelocity.x = impulseGlider2.dot(glider2ThrustersRight);
+		glider2LocalVelocity.z = impulseGlider2.dot(glider2ThrustersForward);
 	}
-	else if (glider2Base.position.x < (courseShape.scale.x * courseMinBounds.x))
+	else if (glider2Base.position.x < courseShape.position.x + (courseShape.scale.x * courseMinBounds.x))
 	{
-		glider2Base.position.x = (courseShape.scale.x * courseMinBounds.x);
+		glider2Base.position.x = courseShape.position.x + (courseShape.scale.x * courseMinBounds.x);
 		unitCollisionNormal.set(1, 0, 0);
 		impulseGlider2.copy(glider2WorldVelocity);
 		impulseGlider2.reflect(unitCollisionNormal);
 		tempVec.copy(impulseGlider2).normalize();
 		impulseGlider2.multiplyScalar( Math.max(0.3, 1-tempVec.dot(unitCollisionNormal)) );
-		glider2LocalVelocity.x = impulseGlider2.dot(glider2BaseRight);
-		glider2LocalVelocity.z = impulseGlider2.dot(glider2BaseForward);
+		// glider2LocalVelocity.x = impulseGlider2.dot(glider2BaseRight);
+		// glider2LocalVelocity.z = impulseGlider2.dot(glider2BaseForward);
+		glider2LocalVelocity.x = impulseGlider2.dot(glider2ThrustersRight);
+		glider2LocalVelocity.z = impulseGlider2.dot(glider2ThrustersForward);
 	}
-	if (glider2Base.position.y > (courseShape.scale.y * courseMaxBounds.y))
+	if (glider2Base.position.y > courseShape.position.y + (courseShape.scale.y * courseMaxBounds.y))
 	{
-		glider2Base.position.y = (courseShape.scale.y * courseMaxBounds.y);
+		glider2Base.position.y = courseShape.position.y + (courseShape.scale.y * courseMaxBounds.y);
 		unitCollisionNormal.set(0, -1, 0);
 		impulseGlider2.copy(glider2WorldVelocity);
 		impulseGlider2.reflect(unitCollisionNormal);
 		tempVec.copy(impulseGlider2).normalize();
 		impulseGlider2.multiplyScalar( Math.max(0.3, 1-tempVec.dot(unitCollisionNormal)) );
-		glider2LocalVelocity.x = impulseGlider2.dot(glider2BaseRight);
-		glider2LocalVelocity.z = impulseGlider2.dot(glider2BaseForward);
+		// glider2LocalVelocity.x = impulseGlider2.dot(glider2BaseRight);
+		// glider2LocalVelocity.z = impulseGlider2.dot(glider2BaseForward);
+		glider2LocalVelocity.x = impulseGlider2.dot(glider2ThrustersRight);
+		glider2LocalVelocity.z = impulseGlider2.dot(glider2ThrustersForward);
 	}
-	else if (glider2Base.position.y < (courseShape.scale.y * courseMinBounds.y))
+	else if (glider2Base.position.y < courseShape.position.y + (courseShape.scale.y * courseMinBounds.y))
 	{
-		glider2Base.position.y = (courseShape.scale.y * courseMinBounds.y);
+		glider2Base.position.y = courseShape.position.y + (courseShape.scale.y * courseMinBounds.y);
 		unitCollisionNormal.set(0, 1, 0);
 		impulseGlider2.copy(glider2WorldVelocity);
 		impulseGlider2.reflect(unitCollisionNormal);
 		tempVec.copy(impulseGlider2).normalize();
 		impulseGlider2.multiplyScalar( Math.max(0.3, 1-tempVec.dot(unitCollisionNormal)) );
-		glider2LocalVelocity.x = impulseGlider2.dot(glider2BaseRight);
-		glider2LocalVelocity.z = impulseGlider2.dot(glider2BaseForward);
+		// glider2LocalVelocity.x = impulseGlider2.dot(glider2BaseRight);
+		// glider2LocalVelocity.z = impulseGlider2.dot(glider2BaseForward);
+		glider2LocalVelocity.x = impulseGlider2.dot(glider2ThrustersRight);
+		glider2LocalVelocity.z = impulseGlider2.dot(glider2ThrustersForward);
 	}
-	if (glider2Base.position.z > (courseShape.scale.z * courseMaxBounds.z))
+	if (glider2Base.position.z > courseShape.position.z + (courseShape.scale.z * courseMaxBounds.z))
 	{
-		glider2Base.position.z = (courseShape.scale.z * courseMaxBounds.z);
+		glider2Base.position.z = courseShape.position.z + (courseShape.scale.z * courseMaxBounds.z);
 		unitCollisionNormal.set(0, 0, -1);
 		impulseGlider2.copy(glider2WorldVelocity);
 		impulseGlider2.reflect(unitCollisionNormal);
 		tempVec.copy(impulseGlider2).normalize();
 		impulseGlider2.multiplyScalar( Math.max(0.3, 1-tempVec.dot(unitCollisionNormal)) );
-		glider2LocalVelocity.x = impulseGlider2.dot(glider2BaseRight);
-		glider2LocalVelocity.z = impulseGlider2.dot(glider2BaseForward);
+		// glider2LocalVelocity.x = impulseGlider2.dot(glider2BaseRight);
+		// glider2LocalVelocity.z = impulseGlider2.dot(glider2BaseForward);
+		glider2LocalVelocity.x = impulseGlider2.dot(glider2ThrustersRight);
+		glider2LocalVelocity.z = impulseGlider2.dot(glider2ThrustersForward);
 	}
-	else if (glider2Base.position.z < (courseShape.scale.z * courseMinBounds.z))
+	else if (glider2Base.position.z < courseShape.position.z + (courseShape.scale.z * courseMinBounds.z))
 	{
-		glider2Base.position.z = (courseShape.scale.z * courseMinBounds.z);
+		glider2Base.position.z = courseShape.position.z + (courseShape.scale.z * courseMinBounds.z);
 		unitCollisionNormal.set(0, 0, 1);
 		impulseGlider2.copy(glider2WorldVelocity);
 		impulseGlider2.reflect(unitCollisionNormal);
 		tempVec.copy(impulseGlider2).normalize();
 		impulseGlider2.multiplyScalar( Math.max(0.3, 1-tempVec.dot(unitCollisionNormal)) );
-		glider2LocalVelocity.x = impulseGlider2.dot(glider2BaseRight);
-		glider2LocalVelocity.z = impulseGlider2.dot(glider2BaseForward);
+		// glider2LocalVelocity.x = impulseGlider2.dot(glider2BaseRight);
+		// glider2LocalVelocity.z = impulseGlider2.dot(glider2BaseForward);
+		glider2LocalVelocity.x = impulseGlider2.dot(glider2ThrustersRight);
+		glider2LocalVelocity.z = impulseGlider2.dot(glider2ThrustersForward);
 	}
 
 
@@ -1532,9 +1669,14 @@ function updateVariablesAndUniforms()
 			ballLocalVelocity.y += impulseBall.dot(ballUp);
 			ballLocalVelocity.z += impulseBall.dot(ballForward);
 
-			glider1LocalVelocity.x += impulseGlider1.dot(glider1BaseRight);
-			glider1LocalVelocity.y += impulseGlider1.dot(glider1BaseUp);
-			glider1LocalVelocity.z += impulseGlider1.dot(glider1BaseForward);
+			// use for physics-based floating glider with momentum (more realistic but harder to handle)
+			// glider1LocalVelocity.x += impulseGlider1.dot(glider1BaseRight);
+			// glider1LocalVelocity.y += impulseGlider1.dot(glider1BaseUp);
+			// glider1LocalVelocity.z += impulseGlider1.dot(glider1BaseForward);
+			// use for constantly steerable glider (less realistic, but easier to handle)
+			glider1LocalVelocity.x += impulseGlider1.dot(glider1ThrustersRight);
+			glider1LocalVelocity.y += impulseGlider1.dot(glider1ThrustersUp);
+			glider1LocalVelocity.z += impulseGlider1.dot(glider1ThrustersForward);
 		}
 	}
 
@@ -1584,18 +1726,23 @@ function updateVariablesAndUniforms()
 			ballLocalVelocity.y += impulseBall.dot(ballUp);
 			ballLocalVelocity.z += impulseBall.dot(ballForward);
 
-			glider2LocalVelocity.x += impulseGlider2.dot(glider2BaseRight);
-			glider2LocalVelocity.y += impulseGlider2.dot(glider2BaseUp);
-			glider2LocalVelocity.z += impulseGlider2.dot(glider2BaseForward);
+			// use for physics-based floating glider with momentum (more realistic but harder to handle)
+			// glider2LocalVelocity.x += impulseGlider2.dot(glider2BaseRight);
+			// glider2LocalVelocity.y += impulseGlider2.dot(glider2BaseUp);
+			// glider2LocalVelocity.z += impulseGlider2.dot(glider2BaseForward);
+			// use for constantly steerable glider (less realistic, but easier to handle)
+			glider2LocalVelocity.x += impulseGlider2.dot(glider2ThrustersRight);
+			glider2LocalVelocity.y += impulseGlider2.dot(glider2ThrustersUp);
+			glider2LocalVelocity.z += impulseGlider2.dot(glider2ThrustersForward);
 		}
 	}
 
 
 	// CHECK FOR BALL vs MIN/MAX BOUNDARY WALLS
 	
-	if (ball.position.x > (courseShape.scale.x * courseMaxBounds.x))
+	if (ball.position.x > courseShape.position.x + (courseShape.scale.x * courseMaxBounds.x))
 	{
-		ball.position.x = (courseShape.scale.x * courseMaxBounds.x);
+		ball.position.x = courseShape.position.x + (courseShape.scale.x * courseMaxBounds.x);
 		unitCollisionNormal.set(-1, 0, 0);
 		impulseBall.copy(ballWorldVelocity);
 		impulseBall.reflect(unitCollisionNormal);
@@ -1604,9 +1751,9 @@ function updateVariablesAndUniforms()
 		ballLocalVelocity.x = impulseBall.dot(ballRight);
 		ballLocalVelocity.z = impulseBall.dot(ballForward);
 	}
-	else if (ball.position.x < (courseShape.scale.x * courseMinBounds.x))
+	else if (ball.position.x < courseShape.position.x + (courseShape.scale.x * courseMinBounds.x))
 	{
-		ball.position.x = (courseShape.scale.x * courseMinBounds.x);
+		ball.position.x = courseShape.position.x + (courseShape.scale.x * courseMinBounds.x);
 		unitCollisionNormal.set(1, 0, 0);
 		impulseBall.copy(ballWorldVelocity);
 		impulseBall.reflect(unitCollisionNormal);
@@ -1615,9 +1762,9 @@ function updateVariablesAndUniforms()
 		ballLocalVelocity.x = impulseBall.dot(ballRight);
 		ballLocalVelocity.z = impulseBall.dot(ballForward);
 	}
-	if (ball.position.y > (courseShape.scale.y * courseMaxBounds.y))
+	if (ball.position.y > courseShape.position.y + (courseShape.scale.y * courseMaxBounds.y))
 	{
-		ball.position.y = (courseShape.scale.y * courseMaxBounds.y);
+		ball.position.y = courseShape.position.y + (courseShape.scale.y * courseMaxBounds.y);
 		unitCollisionNormal.set(0, -1, 0);
 		impulseBall.copy(ballWorldVelocity);
 		impulseBall.reflect(unitCollisionNormal);
@@ -1626,9 +1773,9 @@ function updateVariablesAndUniforms()
 		ballLocalVelocity.x = impulseBall.dot(ballRight);
 		ballLocalVelocity.z = impulseBall.dot(ballForward);
 	}
-	else if (ball.position.y < (courseShape.scale.y * courseMinBounds.y))
+	else if (ball.position.y < courseShape.position.y + (courseShape.scale.y * courseMinBounds.y))
 	{
-		ball.position.y = (courseShape.scale.y * courseMinBounds.y);
+		ball.position.y = courseShape.position.y + (courseShape.scale.y * courseMinBounds.y);
 		unitCollisionNormal.set(0, 1, 0);
 		impulseBall.copy(ballWorldVelocity);
 		impulseBall.reflect(unitCollisionNormal);
@@ -1637,9 +1784,9 @@ function updateVariablesAndUniforms()
 		ballLocalVelocity.x = impulseBall.dot(ballRight);
 		ballLocalVelocity.z = impulseBall.dot(ballForward);
 	}
-	if (ball.position.z > (courseShape.scale.z * courseMaxBounds.z))
+	if (ball.position.z > courseShape.position.z + (courseShape.scale.z * courseMaxBounds.z))
 	{
-		ball.position.z = (courseShape.scale.z * courseMaxBounds.z);
+		ball.position.z = courseShape.position.z + (courseShape.scale.z * courseMaxBounds.z);
 		unitCollisionNormal.set(0, 0, -1);
 		impulseBall.copy(ballWorldVelocity);
 		impulseBall.reflect(unitCollisionNormal);
@@ -1648,9 +1795,9 @@ function updateVariablesAndUniforms()
 		ballLocalVelocity.x = impulseBall.dot(ballRight);
 		ballLocalVelocity.z = impulseBall.dot(ballForward);
 	}
-	else if (ball.position.z < (courseShape.scale.z * courseMinBounds.z))
+	else if (ball.position.z < courseShape.position.z + (courseShape.scale.z * courseMinBounds.z))
 	{
-		ball.position.z = (courseShape.scale.z * courseMinBounds.z);
+		ball.position.z = courseShape.position.z + (courseShape.scale.z * courseMinBounds.z);
 		unitCollisionNormal.set(0, 0, 1);
 		impulseBall.copy(ballWorldVelocity);
 		impulseBall.reflect(unitCollisionNormal);
@@ -1829,49 +1976,49 @@ function updateVariablesAndUniforms()
 
 	// CHECK FOR PLAYER GOAL vs MIN/MAX BOUNDARY WALLS
 	
-	if (playerGoal.position.x > (courseShape.scale.x * courseMaxBounds.x))
+	if (playerGoal.position.x > courseShape.position.x + (courseShape.scale.x * courseMaxBounds.x))
 	{
-		playerGoal.position.x = (courseShape.scale.x * courseMaxBounds.x);
+		playerGoal.position.x = courseShape.position.x + (courseShape.scale.x * courseMaxBounds.x);
 		unitCollisionNormal.set(-1, 0, 0);
 		impulsePlayerGoal.copy(unitCollisionNormal).multiplyScalar(10);
 		playerGoalLocalVelocity.x = impulsePlayerGoal.dot(playerGoalRight);
 		playerGoalLocalVelocity.z = impulsePlayerGoal.dot(playerGoalForward);
 	}
-	else if (playerGoal.position.x < (courseShape.scale.x * courseMinBounds.x))
+	else if (playerGoal.position.x < courseShape.position.x + (courseShape.scale.x * courseMinBounds.x))
 	{
-		playerGoal.position.x = (courseShape.scale.x * courseMinBounds.x);
+		playerGoal.position.x = courseShape.position.x + (courseShape.scale.x * courseMinBounds.x);
 		unitCollisionNormal.set(1, 0, 0);
 		impulsePlayerGoal.copy(unitCollisionNormal).multiplyScalar(10);
 		playerGoalLocalVelocity.x = impulsePlayerGoal.dot(playerGoalRight);
 		playerGoalLocalVelocity.z = impulsePlayerGoal.dot(playerGoalForward);
 	}
-	if (playerGoal.position.y > (courseShape.scale.y * courseMaxBounds.y))
+	if (playerGoal.position.y > courseShape.position.y + (courseShape.scale.y * courseMaxBounds.y))
 	{
-		playerGoal.position.y = (courseShape.scale.y * courseMaxBounds.y);
+		playerGoal.position.y = courseShape.position.y + (courseShape.scale.y * courseMaxBounds.y);
 		unitCollisionNormal.set(0, -1, 0);
 		impulsePlayerGoal.copy(unitCollisionNormal).multiplyScalar(10);
 		playerGoalLocalVelocity.x = impulsePlayerGoal.dot(playerGoalRight);
 		playerGoalLocalVelocity.z = impulsePlayerGoal.dot(playerGoalForward);
 	}
-	else if (playerGoal.position.y < (courseShape.scale.y * courseMinBounds.y))
+	else if (playerGoal.position.y < courseShape.position.y + (courseShape.scale.y * courseMinBounds.y))
 	{
-		playerGoal.position.y = (courseShape.scale.y * courseMinBounds.y);
+		playerGoal.position.y = courseShape.position.y + (courseShape.scale.y * courseMinBounds.y);
 		unitCollisionNormal.set(0, 1, 0);
 		impulsePlayerGoal.copy(unitCollisionNormal).multiplyScalar(10);
 		playerGoalLocalVelocity.x = impulsePlayerGoal.dot(playerGoalRight);
 		playerGoalLocalVelocity.z = impulsePlayerGoal.dot(playerGoalForward);
 	}
-	if (playerGoal.position.z > (courseShape.scale.z * courseMaxBounds.z))
+	if (playerGoal.position.z > courseShape.position.z + (courseShape.scale.z * courseMaxBounds.z))
 	{
-		playerGoal.position.z = (courseShape.scale.z * courseMaxBounds.z);
+		playerGoal.position.z = courseShape.position.z + (courseShape.scale.z * courseMaxBounds.z);
 		unitCollisionNormal.set(0, 0, -1);
 		impulsePlayerGoal.copy(unitCollisionNormal).multiplyScalar(10);
 		playerGoalLocalVelocity.x = impulsePlayerGoal.dot(playerGoalRight);
 		playerGoalLocalVelocity.z = impulsePlayerGoal.dot(playerGoalForward);
 	}
-	else if (playerGoal.position.z < (courseShape.scale.z * courseMinBounds.z))
+	else if (playerGoal.position.z < courseShape.position.z + (courseShape.scale.z * courseMinBounds.z))
 	{
-		playerGoal.position.z = (courseShape.scale.z * courseMinBounds.z);
+		playerGoal.position.z = courseShape.position.z + (courseShape.scale.z * courseMinBounds.z);
 		unitCollisionNormal.set(0, 0, 1);
 		impulsePlayerGoal.copy(unitCollisionNormal).multiplyScalar(10);
 		playerGoalLocalVelocity.x = impulsePlayerGoal.dot(playerGoalRight);
@@ -2036,49 +2183,49 @@ function updateVariablesAndUniforms()
 
 	// CHECK FOR COMPUTER GOAL vs MIN/MAX BOUNDARY WALLS
 	
-	if (computerGoal.position.x > (courseShape.scale.x * courseMaxBounds.x))
+	if (computerGoal.position.x > courseShape.position.x + (courseShape.scale.x * courseMaxBounds.x))
 	{
-		computerGoal.position.x = (courseShape.scale.x * courseMaxBounds.x);
+		computerGoal.position.x = courseShape.position.x + (courseShape.scale.x * courseMaxBounds.x);
 		unitCollisionNormal.set(-1, 0, 0);
 		impulseComputerGoal.copy(unitCollisionNormal).multiplyScalar(10);
 		computerGoalLocalVelocity.x = impulseComputerGoal.dot(computerGoalRight);
 		computerGoalLocalVelocity.z = impulseComputerGoal.dot(computerGoalForward);
 	}
-	else if (computerGoal.position.x < (courseShape.scale.x * courseMinBounds.x))
+	else if (computerGoal.position.x < courseShape.position.x + (courseShape.scale.x * courseMinBounds.x))
 	{
-		computerGoal.position.x = (courseShape.scale.x * courseMinBounds.x);
+		computerGoal.position.x = courseShape.position.x + (courseShape.scale.x * courseMinBounds.x);
 		unitCollisionNormal.set(1, 0, 0);
 		impulseComputerGoal.copy(unitCollisionNormal).multiplyScalar(10);
 		computerGoalLocalVelocity.x = impulseComputerGoal.dot(computerGoalRight);
 		computerGoalLocalVelocity.z = impulseComputerGoal.dot(computerGoalForward);
 	}
-	if (computerGoal.position.y > (courseShape.scale.y * courseMaxBounds.y))
+	if (computerGoal.position.y > courseShape.position.y + (courseShape.scale.y * courseMaxBounds.y))
 	{
-		computerGoal.position.y = (courseShape.scale.y * courseMaxBounds.y);
+		computerGoal.position.y = courseShape.position.y + (courseShape.scale.y * courseMaxBounds.y);
 		unitCollisionNormal.set(0, -1, 0);
 		impulseComputerGoal.copy(unitCollisionNormal).multiplyScalar(10);
 		computerGoalLocalVelocity.x = impulseComputerGoal.dot(computerGoalRight);
 		computerGoalLocalVelocity.z = impulseComputerGoal.dot(computerGoalForward);
 	}
-	else if (computerGoal.position.y < (courseShape.scale.y * courseMinBounds.y))
+	else if (computerGoal.position.y < courseShape.position.y + (courseShape.scale.y * courseMinBounds.y))
 	{
-		computerGoal.position.y = (courseShape.scale.y * courseMinBounds.y);
+		computerGoal.position.y = courseShape.position.y + (courseShape.scale.y * courseMinBounds.y);
 		unitCollisionNormal.set(0, 1, 0);
 		impulseComputerGoal.copy(unitCollisionNormal).multiplyScalar(10);
 		computerGoalLocalVelocity.x = impulseComputerGoal.dot(computerGoalRight);
 		computerGoalLocalVelocity.z = impulseComputerGoal.dot(computerGoalForward);
 	}
-	if (computerGoal.position.z > (courseShape.scale.z * courseMaxBounds.z))
+	if (computerGoal.position.z > courseShape.position.z + (courseShape.scale.z * courseMaxBounds.z))
 	{
-		computerGoal.position.z = (courseShape.scale.z * courseMaxBounds.z);
+		computerGoal.position.z = courseShape.position.z + (courseShape.scale.z * courseMaxBounds.z);
 		unitCollisionNormal.set(0, 0, -1);
 		impulseComputerGoal.copy(unitCollisionNormal).multiplyScalar(10);
 		computerGoalLocalVelocity.x = impulseComputerGoal.dot(computerGoalRight);
 		computerGoalLocalVelocity.z = impulseComputerGoal.dot(computerGoalForward);
 	}
-	else if (computerGoal.position.z < (courseShape.scale.z * courseMinBounds.z))
+	else if (computerGoal.position.z < courseShape.position.z + (courseShape.scale.z * courseMinBounds.z))
 	{
-		computerGoal.position.z = (courseShape.scale.z * courseMinBounds.z);
+		computerGoal.position.z = courseShape.position.z + (courseShape.scale.z * courseMinBounds.z);
 		unitCollisionNormal.set(0, 0, 1);
 		impulseComputerGoal.copy(unitCollisionNormal).multiplyScalar(10);
 		computerGoalLocalVelocity.x = impulseComputerGoal.dot(computerGoalRight);
