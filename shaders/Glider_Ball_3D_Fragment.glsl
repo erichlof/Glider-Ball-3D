@@ -61,6 +61,22 @@ UnitParaboloid unitParaboloids[N_UNIT_PARABOLOIDS];
 #include <pathtracing_sample_sphere_light>
 
 
+float XZPlane_ParamIntersect( vec3 ro, vec3 rd, out vec3 n )
+{
+	vec3 hit;
+	float t;
+	n = vec3(0, 1, 0);
+	t = -(dot(ro, n)) / dot(rd, n);
+
+	hit = ro + (rd * t);
+	if ( t > 0.0 && all(greaterThanEqual(hit, uCourseMinBounds)) && all(lessThanEqual(hit, uCourseMaxBounds)) )
+	{
+		return t;
+	}
+	
+	return INFINITY;
+}
+
 float UnitSphereInterior_ParamIntersect( vec3 ro, vec3 rd, out vec3 n )
 {
 	vec3 hit;
@@ -208,25 +224,76 @@ float UnitHyperbolicParaboloidInterior_ParamIntersect( vec3 ro, vec3 rd, out vec
 	float t0, t1;
 	float t = INFINITY;
 	float a = (rd.x * rd.x) - (rd.z * rd.z);
-	float b = 2.0 * ((rd.x * ro.x) - (rd.z * ro.z)) + rd.y;
-	float c = (ro.x * ro.x) - (ro.z * ro.z) + ro.y;
+	float b = 2.0 * ((rd.x * ro.x) - (rd.z * ro.z)) - rd.y;
+	float c = (ro.x * ro.x) - (ro.z * ro.z) - ro.y;
 	solveQuadratic(a, b, c, t0, t1);
 
 	hit = ro + (rd * t1);
-	if ( t1 > 0.0 && all(greaterThanEqual(hit, uCourseMinBounds)) && all(lessThanEqual(hit, uCourseMaxBounds)) )
+	if ( t1 > 1.0 && all(greaterThanEqual(hit, uCourseMinBounds)) && all(lessThanEqual(hit, uCourseMaxBounds)) )
 	{
-		n = vec3(2.0 * hit.x, 1.0, 2.0 * -hit.z);
+		n = vec3(2.0 * hit.x, -1.0, 2.0 * -hit.z);
 		t = t1;
 	}
 
 	hit = ro + (rd * t0);
-	if ( t0 > 0.0 && all(greaterThanEqual(hit, uCourseMinBounds)) && all(lessThanEqual(hit, uCourseMaxBounds)) )
+	if ( t0 > 1.0 && all(greaterThanEqual(hit, uCourseMinBounds)) && all(lessThanEqual(hit, uCourseMaxBounds)) )
 	{
-		n = vec3(2.0 * hit.x, 1.0, 2.0 * -hit.z);
+		n = vec3(2.0 * hit.x, -1.0, 2.0 * -hit.z);
 		t = t0;
 	}
 
 	return t;
+}
+
+float UnitCapsuleInterior_ParamIntersect( vec3 ro, vec3 rd, out vec3 n )
+{
+	vec3 hit;
+	float t0, t1;
+	
+	// first, check the cylinder interior
+	float a = (rd.x * rd.x) + (rd.y * rd.y);
+	float b = 2.0 * ((rd.x * ro.x) + (rd.y * ro.y));
+	float c = ((ro.x * ro.x) + (ro.y * ro.y)) - 1.0;// radius * radius = 1.0 * 1.0 = 1.0 
+	solveQuadratic(a, b, c, t0, t1);
+
+	hit = ro + (rd * t1);
+	if ( abs(hit.z) <= 1.0 && t1 > 0.0 && all(greaterThanEqual(hit, uCourseMinBounds)) && all(lessThanEqual(hit, uCourseMaxBounds)) )
+	{
+		n = vec3(hit.x, hit.y, 0.0);
+		return t1;
+	}
+
+	// now check the negative Z sphere cap
+	ro.z += 1.0; // ray origin is displaced in opposite Z direction (positive), the inverse of the sphere located at (0,0,-1)
+
+	a = dot(rd, rd);
+	b = 2.0 * dot(rd, ro);
+	c = dot(ro, ro) - 1.0;// radius * radius = 1.0 * 1.0 = 1.0 
+	solveQuadratic(a, b, c, t0, t1);
+
+	hit = ro + (rd * t1);
+	if ( hit.z < 0.0 && t1 > 0.0 && all(greaterThanEqual(hit, uCourseMinBounds+vec3(0,0,1))) && all(lessThanEqual(hit, uCourseMaxBounds)) )
+	{
+		n = hit;
+		return t1;
+	}
+
+	// finally, check the positive Z sphere cap
+	ro.z -= 2.0; // ray origin is moved back in opposite Z direction (negative) 2 units instead of 1, to compensate for previous(+Z) displacement
+
+	a = dot(rd, rd);
+	b = 2.0 * dot(rd, ro);
+	c = dot(ro, ro) - 1.0;// radius * radius = 1.0 * 1.0 = 1.0 
+	solveQuadratic(a, b, c, t0, t1);
+
+	hit = ro + (rd * t1);
+	if ( hit.z > 0.0 && t1 > 0.0 && all(greaterThanEqual(hit, uCourseMinBounds)) && all(lessThanEqual(hit, uCourseMaxBounds-vec3(0,0,1))) )
+	{
+		n = hit;
+		return t1;
+	}
+	
+	return INFINITY;
 }
 
 
@@ -295,6 +362,10 @@ float SceneIntersect(out int finalIsRayExiting)
 		d = UnitHyperboloidInterior_ParamIntersect(rObjOrigin, rObjDirection, uCourseShapeKparameter, normal);
 	else if (uCourseShapeType == 6)
 		d = UnitHyperbolicParaboloidInterior_ParamIntersect(rObjOrigin, rObjDirection, normal);
+	else if (uCourseShapeType == 7)
+		d = XZPlane_ParamIntersect(rObjOrigin, rObjDirection, normal);
+	else if (uCourseShapeType == 8)
+		d = UnitCapsuleInterior_ParamIntersect(rObjOrigin, rObjDirection, normal);
 	if (d < t)
 	{
 		t = d;
