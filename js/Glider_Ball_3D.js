@@ -29,7 +29,7 @@ let glider1ThrustersForward = new THREE.Vector3(0,0,1);
 let glider1LocalVelocity = new THREE.Vector3();
 let glider1WorldVelocity = new THREE.Vector3();
 let glider1StartingPosition = new THREE.Vector3();
-let glider1IsInAir = true;
+let glider1IsInAir = false;
 let glider1IsAcceleratingRight = false;
 let glider1IsAcceleratingUp = false;
 let glider1IsAcceleratingForward = false;
@@ -53,7 +53,7 @@ let glider2ThrustersForward = new THREE.Vector3(0,0,1);
 let glider2LocalVelocity = new THREE.Vector3();
 let glider2WorldVelocity = new THREE.Vector3();
 let glider2StartingPosition = new THREE.Vector3();
-let glider2IsInAir = true;
+let glider2IsInAir = false;
 let glider2IsAcceleratingRight = false;
 let glider2IsAcceleratingUp = false;
 let glider2IsAcceleratingForward = false;
@@ -73,7 +73,7 @@ let ballForward = new THREE.Vector3();
 let ballLocalVelocity = new THREE.Vector3();
 let ballWorldVelocity = new THREE.Vector3();
 let ballStartingPosition = new THREE.Vector3();
-let ballIsInAir = true;
+let ballIsInAir = false;
 let ballYRotateAngle = 0;
 
 let playerGoal = new THREE.Object3D();
@@ -90,7 +90,7 @@ let playerGoalForward = new THREE.Vector3();
 let playerGoalLocalVelocity = new THREE.Vector3();
 let playerGoalWorldVelocity = new THREE.Vector3();
 let playerGoalStartingPosition = new THREE.Vector3();
-let playerGoalIsInAir = true;
+let playerGoalIsInAir = false;
 let playerGoalYRotateAngle = 0;
 
 let computerGoal = new THREE.Object3D();
@@ -107,7 +107,7 @@ let computerGoalForward = new THREE.Vector3();
 let computerGoalLocalVelocity = new THREE.Vector3();
 let computerGoalWorldVelocity = new THREE.Vector3();
 let computerGoalStartingPosition = new THREE.Vector3();
-let computerGoalIsInAir = true;
+let computerGoalIsInAir = false;
 let computerGoalYRotateAngle = 0;
 
 let impulseGlider1 = new THREE.Vector3();
@@ -173,6 +173,10 @@ function intersectCourse()
 		courseT = intersectUnitHyperboloid(rayObjectOrigin, rayObjectDirection, courseShapeKparameter, intersectionNormal);
 	else if (courseShapeType == 'HyperbolicParaboloid')
 		courseT = intersectUnitHyperbolicParaboloid(rayObjectOrigin, rayObjectDirection, intersectionNormal);
+	else if (courseShapeType == 'Plane')
+		courseT = intersectXZPlane(rayObjectOrigin, rayObjectDirection, intersectionNormal);
+	else if (courseShapeType == 'Capsule')
+		courseT = intersectUnitCapsule(rayObjectOrigin, rayObjectDirection, intersectionNormal);
 	
 	return courseT;
 }
@@ -259,7 +263,8 @@ function initSceneData()
 	function handleCourseClipXYZChange() { needChangeCourseClipXYZBounds = true; }
 	function handleCourseShapeKparamChange() { needChangeCourseShapeKparameter = true; }
 
-	course_TypeController = gui.add(course_TypeObject, 'Course_Type', ['Sphere', 'Ellipsoid', 'Cylinder', 'Paraboloid', 'Cone', 'Hyperboloid', 'HyperbolicParaboloid']).onChange(handleCourseTypeChange);
+	course_TypeController = gui.add(course_TypeObject, 'Course_Type', ['Sphere', 'Ellipsoid', 'Cylinder', 'Paraboloid', 'Cone', 'Hyperboloid', 'HyperbolicParaboloid',
+		'Plane', 'Capsule']).onChange(handleCourseTypeChange);
 	
 	scale_Folder = gui.addFolder('Scale');
 	course_ScaleUniformController = scale_Folder.add(course_ScaleUniformObject, 'uniformScale', 200, 1500, 1).onChange(handleCourseScaleUniformChange);
@@ -322,8 +327,10 @@ function updateVariablesAndUniforms()
 			course_ScaleZController.setValue(500);
 			course_ClipMinXController.min(-1); course_ClipMaxXController.max(1);
 			course_ClipMinYController.min(-1); course_ClipMaxYController.max(1);
+			course_ClipMinZController.min(-1); course_ClipMaxZController.max(1);
 			course_ClipMinXController.setValue(-1); course_ClipMaxXController.setValue(1);
 			course_ClipMinYController.setValue(-1); course_ClipMaxYController.setValue(1);
+			course_ClipMinZController.setValue(-1); course_ClipMaxZController.setValue(1);
 			course_ShapeKparameterController.disable();
 			pathTracingUniforms.uCourseShapeType.value = 0;
 		}
@@ -335,8 +342,10 @@ function updateVariablesAndUniforms()
 			course_ScaleZController.setValue(600);
 			course_ClipMinXController.min(-1); course_ClipMaxXController.max(1);
 			course_ClipMinYController.min(-1); course_ClipMaxYController.max(1);
+			course_ClipMinZController.min(-1); course_ClipMaxZController.max(1);
 			course_ClipMinXController.setValue(-1); course_ClipMaxXController.setValue(1);
 			course_ClipMinYController.setValue(-1); course_ClipMaxYController.setValue(1);
+			course_ClipMinZController.setValue(-1); course_ClipMaxZController.setValue(1);
 			course_ShapeKparameterController.disable();
 			pathTracingUniforms.uCourseShapeType.value = 1;
 		}
@@ -348,8 +357,10 @@ function updateVariablesAndUniforms()
 			course_ScaleZController.setValue(500);
 			course_ClipMinXController.min(-1); course_ClipMaxXController.max(1);
 			course_ClipMinYController.min(-1); course_ClipMaxYController.max(1);
+			course_ClipMinZController.min(-1); course_ClipMaxZController.max(1);
 			course_ClipMinXController.setValue(-1); course_ClipMaxXController.setValue(1);
 			course_ClipMinYController.setValue(-1); course_ClipMaxYController.setValue(1);
+			course_ClipMinZController.setValue(-1); course_ClipMaxZController.setValue(1);
 			course_ShapeKparameterController.disable();
 			pathTracingUniforms.uCourseShapeType.value = 2;
 		}
@@ -361,8 +372,10 @@ function updateVariablesAndUniforms()
 			course_ScaleZController.setValue(500);
 			course_ClipMinXController.min(-1); course_ClipMaxXController.max(1);
 			course_ClipMinYController.min(-1); course_ClipMaxYController.max(1);
+			course_ClipMinZController.min(-1); course_ClipMaxZController.max(1);
 			course_ClipMinXController.setValue(-1); course_ClipMaxXController.setValue(1);
 			course_ClipMinYController.setValue(-1); course_ClipMaxYController.setValue(1);
+			course_ClipMinZController.setValue(-1); course_ClipMaxZController.setValue(1);
 			courseShapeKparameter = 0.5;
 			course_ShapeKparameterController.enable();
 			course_ShapeKparameterController.min(0.1); course_ShapeKparameterController.max(0.5);
@@ -378,8 +391,10 @@ function updateVariablesAndUniforms()
 			course_ScaleZController.setValue(500);
 			course_ClipMinXController.min(-1); course_ClipMaxXController.max(1);
 			course_ClipMinYController.min(-1); course_ClipMaxYController.max(1);
+			course_ClipMinZController.min(-1); course_ClipMaxZController.max(1);
 			course_ClipMinXController.setValue(-1); course_ClipMaxXController.setValue(1);
 			course_ClipMinYController.setValue(-1); course_ClipMaxYController.setValue(1);
+			course_ClipMinZController.setValue(-1); course_ClipMaxZController.setValue(1);
 			courseShapeKparameter = 0.0;
 			course_ShapeKparameterController.enable();
 			course_ShapeKparameterController.min(0.0); course_ShapeKparameterController.max(0.5);
@@ -395,8 +410,10 @@ function updateVariablesAndUniforms()
 			course_ScaleZController.setValue(500);
 			course_ClipMinXController.min(-0.9); course_ClipMaxXController.max(0.9);
 			course_ClipMinYController.min(-0.9); course_ClipMaxYController.max(0.9);
+			course_ClipMinZController.min(-1); course_ClipMaxZController.max(1);
 			course_ClipMinXController.setValue(-0.9); course_ClipMaxXController.setValue(0.9);
 			course_ClipMinYController.setValue(-0.9); course_ClipMaxYController.setValue(0.9);
+			course_ClipMinZController.setValue(-1); course_ClipMaxZController.setValue(1);
 			courseShapeKparameter = 0.94;
 			course_ShapeKparameterController.enable();
 			course_ShapeKparameterController.min(0.0); course_ShapeKparameterController.max(0.97);
@@ -406,16 +423,48 @@ function updateVariablesAndUniforms()
 		}
 		else if (courseShapeType == 'HyperbolicParaboloid')
 		{
-			courseShape.position.set(0, -300, 0);
+			courseShape.position.set(0, -200, 0);
+			course_ScaleXController.setValue(500);
+			course_ScaleYController.setValue(500);
+			course_ScaleZController.setValue(500);
+			course_ClipMinXController.min(-1); course_ClipMaxXController.max(1);
+			course_ClipMinYController.min(-1); course_ClipMaxYController.max(1.5);
+			course_ClipMinZController.min(-1); course_ClipMaxZController.max(1);
+			course_ClipMinXController.setValue(-1); course_ClipMaxXController.setValue(1);
+			course_ClipMinYController.setValue(-1); course_ClipMaxYController.setValue(1.5);
+			course_ClipMinZController.setValue(-1); course_ClipMaxZController.setValue(1);
+			course_ShapeKparameterController.disable();
+			pathTracingUniforms.uCourseShapeType.value = 6;
+		}
+		if (courseShapeType == 'Plane')
+		{
+			courseShape.position.set(0, -200, 0);
 			course_ScaleXController.setValue(500);
 			course_ScaleYController.setValue(500);
 			course_ScaleZController.setValue(500);
 			course_ClipMinXController.min(-1); course_ClipMaxXController.max(1);
 			course_ClipMinYController.min(-1); course_ClipMaxYController.max(1);
+			course_ClipMinZController.min(-1); course_ClipMaxZController.max(1);
 			course_ClipMinXController.setValue(-1); course_ClipMaxXController.setValue(1);
 			course_ClipMinYController.setValue(-1); course_ClipMaxYController.setValue(1);
+			course_ClipMinZController.setValue(-1); course_ClipMaxZController.setValue(1);
 			course_ShapeKparameterController.disable();
-			pathTracingUniforms.uCourseShapeType.value = 6;
+			pathTracingUniforms.uCourseShapeType.value = 7;
+		}
+		else if (courseShapeType == 'Capsule')
+		{
+			courseShape.position.set(0, 0, 0);
+			course_ScaleXController.setValue(500);
+			course_ScaleYController.setValue(500);
+			course_ScaleZController.setValue(500);
+			course_ClipMinXController.min(-1); course_ClipMaxXController.max(1);
+			course_ClipMinYController.min(-1); course_ClipMaxYController.max(1);
+			course_ClipMinZController.min(-2); course_ClipMaxZController.max(2);
+			course_ClipMinXController.setValue(-1); course_ClipMaxXController.setValue(1);
+			course_ClipMinYController.setValue(-1); course_ClipMaxYController.setValue(1);
+			course_ClipMinZController.setValue(-2); course_ClipMaxZController.setValue(2);
+			course_ShapeKparameterController.disable();
+			pathTracingUniforms.uCourseShapeType.value = 8;
 		}
 
 		cameraIsMoving = true;
@@ -495,6 +544,7 @@ function updateVariablesAndUniforms()
 		glider1BaseUp.set(0, 1, 0);
 		glider1BaseForward.set(0, 0, 1);
 		glider1LocalVelocity.set(0, 0, 0);
+		glider1IsInAir = true;
 
 		// GLIDER 2 (AI controlled)
 		glider2StartingPosition.set(0, -10, -75);
@@ -505,6 +555,7 @@ function updateVariablesAndUniforms()
 		glider2BaseUp.set(0, 1, 0);
 		glider2BaseForward.set(0, 0, 1);
 		glider2LocalVelocity.set(0, 0, 0);
+		glider2IsInAir = true;
 
 		// BALL
 		ballStartingPosition.set(0, -10, 0);
@@ -515,6 +566,7 @@ function updateVariablesAndUniforms()
 		ballUp.set(0, 1, 0);
 		ballForward.set(0, 0, 1);
 		ballLocalVelocity.set(0, 0, 0);
+		ballIsInAir = true;
 
 		// PLAYER's GOAL
 		playerGoalStartingPosition.set(75, -10, 0);
@@ -524,6 +576,7 @@ function updateVariablesAndUniforms()
 		playerGoalUp.set(0, 1, 0);
 		playerGoalForward.set(0, 0, 1);
 		playerGoalLocalVelocity.set(10, 0, 0);
+		playerGoalIsInAir = true;
 
 		// COMPUTER's GOAL
 		computerGoalStartingPosition.set(-75, -10, 0);
@@ -533,6 +586,7 @@ function updateVariablesAndUniforms()
 		computerGoalUp.set(0, 1, 0);
 		computerGoalForward.set(0, 0, 1);
 		computerGoalLocalVelocity.set(10, 0, 0);
+		computerGoalIsInAir = true;
 
 		levelBeginFlag = false;
 	} // end if (levelBeginFlag)
@@ -991,7 +1045,7 @@ function updateVariablesAndUniforms()
 
 	
 	// CHECK FOR GLIDER1 OUT-OF-BOUNDS (see if glider1's current position has left the course)
-
+	
 	// first check glider1 forward motion probe for intersection with course (a ray is cast from glider1's position in the direction of its forward motion)
 	rayObjectOrigin.copy(glider1RayOrigin);
 	rayObjectDirection.copy(glider1RayDirection);
