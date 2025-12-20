@@ -497,7 +497,7 @@ function updateVariablesAndUniforms()
 			clipBoundaries_Folder.hide();
 			courseShapeKparameter = 0.1;
 			course_ShapeKparameterController.enable();
-			course_ShapeKparameterController.min(0.02); course_ShapeKparameterController.max(0.25);
+			course_ShapeKparameterController.min(0.05); course_ShapeKparameterController.max(0.5);
 			course_ShapeKparameterController.setValue(courseShapeKparameter);
 			pathTracingUniforms.uCourseShapeKparameter.value = courseShapeKparameter;
 			pathTracingUniforms.uCourseShapeType.value = 9;
