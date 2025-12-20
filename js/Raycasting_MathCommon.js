@@ -371,18 +371,22 @@ let far = new THREE.Vector3();
 let tmin = new THREE.Vector3();
 let tmax = new THREE.Vector3();
 let initialRayO = new THREE.Vector3();
+let oneMinusK = 0;
+let K_squared = 0;
 
 function intersectUnitRoundedBox(rayO, rayD, K, normal)
 {
 	initialRayO.copy(rayO);
+	oneMinusK = 1 - K;
+	K_squared = K * K;
 
 	// check the left lower back sphere cap
-	rayO.x += (1 - K); rayO.y += (1 - K); rayO.z += (1 - K);
-	// Unit Sphere implicit equation
-	// X^2 + Y^2 + Z^2 - 1 = 0
+	rayO.x += oneMinusK; rayO.y += oneMinusK; rayO.z += oneMinusK;
+	// K-radius size Sphere implicit equation
+	// X^2 + Y^2 + Z^2 - K^2 = 0
 	a = rayD.dot(rayD);
 	b = 2 * rayD.dot(rayO);
-	c = rayO.dot(rayO) - (K * K);
+	c = rayO.dot(rayO) - K_squared;
 
 	if (solveQuadratic(a, b, c) == true)
 	{
@@ -395,12 +399,12 @@ function intersectUnitRoundedBox(rayO, rayD, K, normal)
 	rayO.copy(initialRayO);
 
 	// check the right lower back sphere cap
-	rayO.x -= (1 - K); rayO.y += (1 - K); rayO.z += (1 - K);
-	// Unit Sphere implicit equation
-	// X^2 + Y^2 + Z^2 - 1 = 0
+	rayO.x -= oneMinusK; rayO.y += oneMinusK; rayO.z += oneMinusK;
+	// K-radius size Sphere implicit equation
+	// X^2 + Y^2 + Z^2 - K^2 = 0
 	a = rayD.dot(rayD);
 	b = 2 * rayD.dot(rayO);
-	c = rayO.dot(rayO) - (K * K);
+	c = rayO.dot(rayO) - K_squared;
 
 	if (solveQuadratic(a, b, c) == true)
 	{
@@ -413,12 +417,12 @@ function intersectUnitRoundedBox(rayO, rayD, K, normal)
 	rayO.copy(initialRayO);
 
 	// check the left upper back sphere cap
-	rayO.x += (1 - K); rayO.y -= (1 - K); rayO.z += (1 - K);
-	// Unit Sphere implicit equation
-	// X^2 + Y^2 + Z^2 - 1 = 0
+	rayO.x += oneMinusK; rayO.y -= oneMinusK; rayO.z += oneMinusK;
+	// K-radius size Sphere implicit equation
+	// X^2 + Y^2 + Z^2 - K^2 = 0
 	a = rayD.dot(rayD);
 	b = 2 * rayD.dot(rayO);
-	c = rayO.dot(rayO) - (K * K);
+	c = rayO.dot(rayO) - K_squared;
 
 	if (solveQuadratic(a, b, c) == true)
 	{
@@ -431,12 +435,12 @@ function intersectUnitRoundedBox(rayO, rayD, K, normal)
 	rayO.copy(initialRayO);
 
 	// check the right upper back sphere cap
-	rayO.x -= (1 - K); rayO.y -= (1 - K); rayO.z += (1 - K);
-	// Unit Sphere implicit equation
-	// X^2 + Y^2 + Z^2 - 1 = 0
+	rayO.x -= oneMinusK; rayO.y -= oneMinusK; rayO.z += oneMinusK;
+	// K-radius size Sphere implicit equation
+	// X^2 + Y^2 + Z^2 - K^2 = 0
 	a = rayD.dot(rayD);
 	b = 2 * rayD.dot(rayO);
-	c = rayO.dot(rayO) - (K * K);
+	c = rayO.dot(rayO) - K_squared;
 
 	if (solveQuadratic(a, b, c) == true)
 	{
@@ -449,12 +453,12 @@ function intersectUnitRoundedBox(rayO, rayD, K, normal)
 	rayO.copy(initialRayO);
 
 	// check the left lower front sphere cap
-	rayO.x += (1 - K); rayO.y += (1 - K); rayO.z -= (1 - K);
-	// Unit Sphere implicit equation
-	// X^2 + Y^2 + Z^2 - 1 = 0
+	rayO.x += oneMinusK; rayO.y += oneMinusK; rayO.z -= oneMinusK;
+	// K-radius size Sphere implicit equation
+	// X^2 + Y^2 + Z^2 - K^2 = 0
 	a = rayD.dot(rayD);
 	b = 2 * rayD.dot(rayO);
-	c = rayO.dot(rayO) - (K * K);
+	c = rayO.dot(rayO) - K_squared;
 
 	if (solveQuadratic(a, b, c) == true)
 	{
@@ -467,12 +471,12 @@ function intersectUnitRoundedBox(rayO, rayD, K, normal)
 	rayO.copy(initialRayO);
 
 	// check the right lower front sphere cap
-	rayO.x -= (1 - K); rayO.y += (1 - K); rayO.z -= (1 - K);
-	// Unit Sphere implicit equation
-	// X^2 + Y^2 + Z^2 - 1 = 0
+	rayO.x -= oneMinusK; rayO.y += oneMinusK; rayO.z -= oneMinusK;
+	// K-radius size Sphere implicit equation
+	// X^2 + Y^2 + Z^2 - K^2 = 0
 	a = rayD.dot(rayD);
 	b = 2 * rayD.dot(rayO);
-	c = rayO.dot(rayO) - (K * K);
+	c = rayO.dot(rayO) - K_squared;
 
 	if (solveQuadratic(a, b, c) == true)
 	{
@@ -485,12 +489,12 @@ function intersectUnitRoundedBox(rayO, rayD, K, normal)
 	rayO.copy(initialRayO);
 
 	// check the left upper front sphere cap
-	rayO.x += (1 - K); rayO.y -= (1 - K); rayO.z -= (1 - K);
-	// Unit Sphere implicit equation
-	// X^2 + Y^2 + Z^2 - 1 = 0
+	rayO.x += oneMinusK; rayO.y -= oneMinusK; rayO.z -= oneMinusK;
+	// K-radius size Sphere implicit equation
+	// X^2 + Y^2 + Z^2 - K^2 = 0
 	a = rayD.dot(rayD);
 	b = 2 * rayD.dot(rayO);
-	c = rayO.dot(rayO) - (K * K);
+	c = rayO.dot(rayO) - K_squared;
 
 	if (solveQuadratic(a, b, c) == true)
 	{
@@ -503,12 +507,12 @@ function intersectUnitRoundedBox(rayO, rayD, K, normal)
 	rayO.copy(initialRayO);
 
 	// check the right upper front sphere cap
-	rayO.x -= (1 - K); rayO.y -= (1 - K); rayO.z -= (1 - K);
-	// Unit Sphere implicit equation
-	// X^2 + Y^2 + Z^2 - 1 = 0
+	rayO.x -= oneMinusK; rayO.y -= oneMinusK; rayO.z -= oneMinusK;
+	// K-radius size Sphere implicit equation
+	// X^2 + Y^2 + Z^2 - K^2 = 0
 	a = rayD.dot(rayD);
 	b = 2 * rayD.dot(rayO);
-	c = rayO.dot(rayO) - (K * K);
+	c = rayO.dot(rayO) - K_squared;
 
 	if (solveQuadratic(a, b, c) == true)
 	{
@@ -522,17 +526,17 @@ function intersectUnitRoundedBox(rayO, rayD, K, normal)
 	
 
 	// check lower left cylinder along Z axis
-	rayO.x += (1 - K);
-	rayO.y += (1 - K);
-	// Unit Cylinder (along Z axis) implicit equation
-	// X^2 + Y^2 - 1 = 0
+	rayO.x += oneMinusK;
+	rayO.y += oneMinusK;
+	// K-radius size Cylinder (along Z axis) implicit equation
+	// X^2 + Y^2 - K^2 = 0
 	a = (rayD.x * rayD.x) + (rayD.y * rayD.y);
 	b = 2 * ((rayD.x * rayO.x) + (rayD.y * rayO.y));
-	c = ((rayO.x * rayO.x) + (rayO.y * rayO.y)) - (K * K);
+	c = ((rayO.x * rayO.x) + (rayO.y * rayO.y)) - K_squared;
 	if (solveQuadratic(a, b, c) == true)
 	{
 		normal.getPointAlongRay(rayO, rayD, t1);
-		if (normal.x < 0 && normal.y < 0 && Math.abs(normal.z) <= (1 - K) && t1 > 0)
+		if (normal.x < 0 && normal.y < 0 && Math.abs(normal.z) <= oneMinusK && t1 > 0)
 		{
 			normal.z = 0;
 			return t1;
@@ -541,17 +545,17 @@ function intersectUnitRoundedBox(rayO, rayD, K, normal)
 	rayO.copy(initialRayO);
 
 	// check lower right cylinder along Z axis
-	rayO.x -= (1 - K);
-	rayO.y += (1 - K);
-	// Unit Cylinder (along Z axis) implicit equation
-	// X^2 + Y^2 - 1 = 0
+	rayO.x -= oneMinusK;
+	rayO.y += oneMinusK;
+	// K-radius size Cylinder (along Z axis) implicit equation
+	// X^2 + Y^2 - K^2 = 0
 	a = (rayD.x * rayD.x) + (rayD.y * rayD.y);
 	b = 2 * ((rayD.x * rayO.x) + (rayD.y * rayO.y));
-	c = ((rayO.x * rayO.x) + (rayO.y * rayO.y)) - (K * K);
+	c = ((rayO.x * rayO.x) + (rayO.y * rayO.y)) - K_squared;
 	if (solveQuadratic(a, b, c) == true)
 	{
 		normal.getPointAlongRay(rayO, rayD, t1);
-		if (normal.x > 0 && normal.y < 0 && Math.abs(normal.z) <= (1 - K) && t1 > 0)
+		if (normal.x > 0 && normal.y < 0 && Math.abs(normal.z) <= oneMinusK && t1 > 0)
 		{
 			normal.z = 0;
 			return t1;
@@ -560,17 +564,17 @@ function intersectUnitRoundedBox(rayO, rayD, K, normal)
 	rayO.copy(initialRayO);
 
 	// check upper left cylinder along Z axis
-	rayO.x += (1 - K);
-	rayO.y -= (1 - K);
-	// Unit Cylinder (along Z axis) implicit equation
-	// X^2 + Y^2 - 1 = 0
+	rayO.x += oneMinusK;
+	rayO.y -= oneMinusK;
+	// K-radius size Cylinder (along Z axis) implicit equation
+	// X^2 + Y^2 - K^2 = 0
 	a = (rayD.x * rayD.x) + (rayD.y * rayD.y);
 	b = 2 * ((rayD.x * rayO.x) + (rayD.y * rayO.y));
-	c = ((rayO.x * rayO.x) + (rayO.y * rayO.y)) - (K * K);
+	c = ((rayO.x * rayO.x) + (rayO.y * rayO.y)) - K_squared;
 	if (solveQuadratic(a, b, c) == true)
 	{
 		normal.getPointAlongRay(rayO, rayD, t1);
-		if (normal.x < 0 && normal.y > 0 && Math.abs(normal.z) <= (1 - K) && t1 > 0)
+		if (normal.x < 0 && normal.y > 0 && Math.abs(normal.z) <= oneMinusK && t1 > 0)
 		{
 			normal.z = 0;
 			return t1;
@@ -579,17 +583,17 @@ function intersectUnitRoundedBox(rayO, rayD, K, normal)
 	rayO.copy(initialRayO);
 
 	// check upper right cylinder along Z axis
-	rayO.x -= (1 - K);
-	rayO.y -= (1 - K);
-	// Unit Cylinder (along Z axis) implicit equation
-	// X^2 + Y^2 - 1 = 0
+	rayO.x -= oneMinusK;
+	rayO.y -= oneMinusK;
+	// K-radius size Cylinder (along Z axis) implicit equation
+	// X^2 + Y^2 - K^2 = 0
 	a = (rayD.x * rayD.x) + (rayD.y * rayD.y);
 	b = 2 * ((rayD.x * rayO.x) + (rayD.y * rayO.y));
-	c = ((rayO.x * rayO.x) + (rayO.y * rayO.y)) - (K * K);
+	c = ((rayO.x * rayO.x) + (rayO.y * rayO.y)) - K_squared;
 	if (solveQuadratic(a, b, c) == true)
 	{
 		normal.getPointAlongRay(rayO, rayD, t1);
-		if (normal.x > 0 && normal.y > 0 && Math.abs(normal.z) <= (1 - K) && t1 > 0)
+		if (normal.x > 0 && normal.y > 0 && Math.abs(normal.z) <= oneMinusK && t1 > 0)
 		{
 			normal.z = 0;
 			return t1;
@@ -598,17 +602,17 @@ function intersectUnitRoundedBox(rayO, rayD, K, normal)
 	rayO.copy(initialRayO);
 
 	// check lower back cylinder along X axis
-	rayO.y += (1 - K);
-	rayO.z += (1 - K);
-	// Unit Cylinder (along X axis) implicit equation
-	// X^2 + Y^2 - 1 = 0
+	rayO.y += oneMinusK;
+	rayO.z += oneMinusK;
+	// K-radius size Cylinder (along X axis) implicit equation
+	// Y^2 + Z^2 - K^2 = 0
 	a = (rayD.y * rayD.y) + (rayD.z * rayD.z);
 	b = 2 * ((rayD.y * rayO.y) + (rayD.z * rayO.z));
-	c = ((rayO.y * rayO.y) + (rayO.z * rayO.z)) - (K * K);
+	c = ((rayO.y * rayO.y) + (rayO.z * rayO.z)) - K_squared;
 	if (solveQuadratic(a, b, c) == true)
 	{
 		normal.getPointAlongRay(rayO, rayD, t1);
-		if (Math.abs(normal.x) <= (1 - K) && normal.y < 0 && normal.z < 0 && t1 > 0)
+		if (Math.abs(normal.x) <= oneMinusK && normal.y < 0 && normal.z < 0 && t1 > 0)
 		{
 			normal.x = 0;
 			return t1;
@@ -617,17 +621,17 @@ function intersectUnitRoundedBox(rayO, rayD, K, normal)
 	rayO.copy(initialRayO);
 
 	// check lower front cylinder along X axis
-	rayO.y += (1 - K);
-	rayO.z -= (1 - K);
-	// Unit Cylinder (along X axis) implicit equation
-	// X^2 + Y^2 - 1 = 0
+	rayO.y += oneMinusK;
+	rayO.z -= oneMinusK;
+	// K-radius size Cylinder (along X axis) implicit equation
+	// Y^2 + Z^2 - K^2 = 0
 	a = (rayD.y * rayD.y) + (rayD.z * rayD.z);
 	b = 2 * ((rayD.y * rayO.y) + (rayD.z * rayO.z));
-	c = ((rayO.y * rayO.y) + (rayO.z * rayO.z)) - (K * K);
+	c = ((rayO.y * rayO.y) + (rayO.z * rayO.z)) - K_squared;
 	if (solveQuadratic(a, b, c) == true)
 	{
 		normal.getPointAlongRay(rayO, rayD, t1);
-		if (Math.abs(normal.x) <= (1 - K) && normal.y < 0 && normal.z > 0 && t1 > 0)
+		if (Math.abs(normal.x) <= oneMinusK && normal.y < 0 && normal.z > 0 && t1 > 0)
 		{
 			normal.x = 0;
 			return t1;
@@ -636,17 +640,17 @@ function intersectUnitRoundedBox(rayO, rayD, K, normal)
 	rayO.copy(initialRayO);
 
 	// check upper back cylinder along X axis
-	rayO.y -= (1 - K);
-	rayO.z += (1 - K);
-	// Unit Cylinder (along X axis) implicit equation
-	// X^2 + Y^2 - 1 = 0
+	rayO.y -= oneMinusK;
+	rayO.z += oneMinusK;
+	// K-radius size Cylinder (along X axis) implicit equation
+	// Y^2 + Z^2 - K^2 = 0
 	a = (rayD.y * rayD.y) + (rayD.z * rayD.z);
 	b = 2 * ((rayD.y * rayO.y) + (rayD.z * rayO.z));
-	c = ((rayO.y * rayO.y) + (rayO.z * rayO.z)) - (K * K);
+	c = ((rayO.y * rayO.y) + (rayO.z * rayO.z)) - K_squared;
 	if (solveQuadratic(a, b, c) == true)
 	{
 		normal.getPointAlongRay(rayO, rayD, t1);
-		if (Math.abs(normal.x) <= (1 - K) && normal.y > 0 && normal.z < 0 && t1 > 0)
+		if (Math.abs(normal.x) <= oneMinusK && normal.y > 0 && normal.z < 0 && t1 > 0)
 		{
 			normal.x = 0;
 			return t1;
@@ -655,17 +659,17 @@ function intersectUnitRoundedBox(rayO, rayD, K, normal)
 	rayO.copy(initialRayO);
 
 	// check upper front cylinder along X axis
-	rayO.y -= (1 - K);
-	rayO.z -= (1 - K);
-	// Unit Cylinder (along X axis) implicit equation
-	// X^2 + Y^2 - 1 = 0
+	rayO.y -= oneMinusK;
+	rayO.z -= oneMinusK;
+	// K-radius size Cylinder (along X axis) implicit equation
+	// Y^2 + Z^2 - K^2 = 0
 	a = (rayD.y * rayD.y) + (rayD.z * rayD.z);
 	b = 2 * ((rayD.y * rayO.y) + (rayD.z * rayO.z));
-	c = ((rayO.y * rayO.y) + (rayO.z * rayO.z)) - (K * K);
+	c = ((rayO.y * rayO.y) + (rayO.z * rayO.z)) - K_squared;
 	if (solveQuadratic(a, b, c) == true)
 	{
 		normal.getPointAlongRay(rayO, rayD, t1);
-		if (Math.abs(normal.x) <= (1 - K) && normal.y > 0 && normal.z > 0 && t1 > 0)
+		if (Math.abs(normal.x) <= oneMinusK && normal.y > 0 && normal.z > 0 && t1 > 0)
 		{
 			normal.x = 0;
 			return t1;
@@ -674,17 +678,17 @@ function intersectUnitRoundedBox(rayO, rayD, K, normal)
 	rayO.copy(initialRayO);
 
 	// check back left cylinder along Y axis
-	rayO.x += (1 - K);
-	rayO.z += (1 - K);
-	// Unit Cylinder (along Y axis) implicit equation
-	// X^2 + Z^2 - 1 = 0
+	rayO.x += oneMinusK;
+	rayO.z += oneMinusK;
+	// K-radius size Cylinder (along Y axis) implicit equation
+	// X^2 + Z^2 - K^2 = 0
 	a = (rayD.x * rayD.x) + (rayD.z * rayD.z);
 	b = 2 * ((rayD.x * rayO.x) + (rayD.z * rayO.z));
-	c = ((rayO.x * rayO.x) + (rayO.z * rayO.z)) - (K * K);
+	c = ((rayO.x * rayO.x) + (rayO.z * rayO.z)) - K_squared;
 	if (solveQuadratic(a, b, c) == true)
 	{
 		normal.getPointAlongRay(rayO, rayD, t1);
-		if (normal.x < 0 && Math.abs(normal.y) <= (1 - K) && normal.z < 0 && t1 > 0)
+		if (normal.x < 0 && Math.abs(normal.y) <= oneMinusK && normal.z < 0 && t1 > 0)
 		{
 			normal.y = 0;
 			return t1;
@@ -693,17 +697,17 @@ function intersectUnitRoundedBox(rayO, rayD, K, normal)
 	rayO.copy(initialRayO);
 
 	// check back right cylinder along Y axis
-	rayO.x -= (1 - K);
-	rayO.z += (1 - K);
-	// Unit Cylinder (along Y axis) implicit equation
-	// X^2 + Z^2 - 1 = 0
+	rayO.x -= oneMinusK;
+	rayO.z += oneMinusK;
+	// K-radius size Cylinder (along Y axis) implicit equation
+	// X^2 + Z^2 - K^2 = 0
 	a = (rayD.x * rayD.x) + (rayD.z * rayD.z);
 	b = 2 * ((rayD.x * rayO.x) + (rayD.z * rayO.z));
-	c = ((rayO.x * rayO.x) + (rayO.z * rayO.z)) - (K * K);
+	c = ((rayO.x * rayO.x) + (rayO.z * rayO.z)) - K_squared;
 	if (solveQuadratic(a, b, c) == true)
 	{
 		normal.getPointAlongRay(rayO, rayD, t1);
-		if (normal.x > 0 && Math.abs(normal.y) <= (1 - K) && normal.z < 0 && t1 > 0)
+		if (normal.x > 0 && Math.abs(normal.y) <= oneMinusK && normal.z < 0 && t1 > 0)
 		{
 			normal.y = 0;
 			return t1;
@@ -712,17 +716,17 @@ function intersectUnitRoundedBox(rayO, rayD, K, normal)
 	rayO.copy(initialRayO);
 
 	// check front left cylinder along Y axis
-	rayO.x += (1 - K);
-	rayO.z -= (1 - K);
-	// Unit Cylinder (along Y axis) implicit equation
-	// X^2 + Z^2 - 1 = 0
+	rayO.x += oneMinusK;
+	rayO.z -= oneMinusK;
+	// K-radius size Cylinder (along Y axis) implicit equation
+	// X^2 + Z^2 - K^2 = 0
 	a = (rayD.x * rayD.x) + (rayD.z * rayD.z);
 	b = 2 * ((rayD.x * rayO.x) + (rayD.z * rayO.z));
-	c = ((rayO.x * rayO.x) + (rayO.z * rayO.z)) - (K * K);
+	c = ((rayO.x * rayO.x) + (rayO.z * rayO.z)) - K_squared;
 	if (solveQuadratic(a, b, c) == true)
 	{
 		normal.getPointAlongRay(rayO, rayD, t1);
-		if (normal.x < 0 && Math.abs(normal.y) <= (1 - K) && normal.z > 0 && t1 > 0)
+		if (normal.x < 0 && Math.abs(normal.y) <= oneMinusK && normal.z > 0 && t1 > 0)
 		{
 			normal.y = 0;
 			return t1;
@@ -731,17 +735,17 @@ function intersectUnitRoundedBox(rayO, rayD, K, normal)
 	rayO.copy(initialRayO);
 
 	// check front right cylinder along Y axis
-	rayO.x -= (1 - K);
-	rayO.z -= (1 - K);
-	// Unit Cylinder (along Y axis) implicit equation
-	// X^2 + Z^2 - 1 = 0
+	rayO.x -= oneMinusK;
+	rayO.z -= oneMinusK;
+	// K-radius size Cylinder (along Y axis) implicit equation
+	// X^2 + Z^2 - K^2 = 0
 	a = (rayD.x * rayD.x) + (rayD.z * rayD.z);
 	b = 2 * ((rayD.x * rayO.x) + (rayD.z * rayO.z));
-	c = ((rayO.x * rayO.x) + (rayO.z * rayO.z)) - (K * K);
+	c = ((rayO.x * rayO.x) + (rayO.z * rayO.z)) - K_squared;
 	if (solveQuadratic(a, b, c) == true)
 	{
 		normal.getPointAlongRay(rayO, rayD, t1);
-		if (normal.x > 0 && Math.abs(normal.y) <= (1 - K) && normal.z > 0 && t1 > 0)
+		if (normal.x > 0 && Math.abs(normal.y) <= oneMinusK && normal.z > 0 && t1 > 0)
 		{
 			normal.y = 0;
 			return t1;
@@ -750,7 +754,6 @@ function intersectUnitRoundedBox(rayO, rayD, K, normal)
 	rayO.copy(initialRayO);
 
 	
-
 	// finally, intersect the box interior
 	inverseDir.set(1 / rayD.x, 1 / rayD.y, 1 / rayD.z);
 	near.set(-1,-1,-1).sub(rayO);
