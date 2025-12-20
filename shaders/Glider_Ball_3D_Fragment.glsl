@@ -245,7 +245,7 @@ float UnitHyperbolicParaboloidInterior_ParamIntersect( vec3 ro, vec3 rd, out vec
 	return t;
 }
 
-float UnitCapsuleInterior_ParamIntersect( vec3 ro, vec3 rd, out vec3 n )
+float UnitCapsuleInterior_ParamIntersect( vec3 ro, vec3 rd, float k, out vec3 n )
 {
 	vec3 hit;
 	float t0, t1;
@@ -257,14 +257,14 @@ float UnitCapsuleInterior_ParamIntersect( vec3 ro, vec3 rd, out vec3 n )
 	solveQuadratic(a, b, c, t0, t1);
 
 	hit = ro + (rd * t1);
-	if ( abs(hit.z) <= 1.0 && t1 > 0.0 && all(greaterThanEqual(hit, uCourseMinBounds)) && all(lessThanEqual(hit, uCourseMaxBounds)) )
+	if ( abs(hit.z) <= k && t1 > 0.0 && all(greaterThanEqual(hit, uCourseMinBounds)) && all(lessThanEqual(hit, uCourseMaxBounds)) )
 	{
 		n = vec3(hit.x, hit.y, 0.0);
 		return t1;
 	}
 
 	// now check the negative Z sphere cap
-	ro.z += 1.0; // ray origin is displaced in opposite Z direction (positive), the inverse of the sphere located at (0,0,-1)
+	ro.z += k; // ray origin is displaced in opposite Z direction (positive), the inverse of the sphere located at (0,0,-1)
 
 	a = dot(rd, rd);
 	b = 2.0 * dot(rd, ro);
@@ -272,14 +272,14 @@ float UnitCapsuleInterior_ParamIntersect( vec3 ro, vec3 rd, out vec3 n )
 	solveQuadratic(a, b, c, t0, t1);
 
 	hit = ro + (rd * t1);
-	if ( hit.z < 0.0 && t1 > 0.0 && all(greaterThanEqual(hit, uCourseMinBounds+vec3(0,0,1))) && all(lessThanEqual(hit, uCourseMaxBounds)) )
+	if ( hit.z < 0.0 && t1 > 0.0 && all(greaterThanEqual(hit, uCourseMinBounds+vec3(0,0,k))) && all(lessThanEqual(hit, uCourseMaxBounds)) )
 	{
 		n = hit;
 		return t1;
 	}
 
 	// finally, check the positive Z sphere cap
-	ro.z -= 2.0; // ray origin is moved back in opposite Z direction (negative) 2 units instead of 1, to compensate for previous(+Z) displacement
+	ro.z -= (k * 2.0); // ray origin is moved back in opposite Z direction (negative) double, to compensate for previous(+Z) displacement
 
 	a = dot(rd, rd);
 	b = 2.0 * dot(rd, ro);
@@ -287,9 +287,369 @@ float UnitCapsuleInterior_ParamIntersect( vec3 ro, vec3 rd, out vec3 n )
 	solveQuadratic(a, b, c, t0, t1);
 
 	hit = ro + (rd * t1);
-	if ( hit.z > 0.0 && t1 > 0.0 && all(greaterThanEqual(hit, uCourseMinBounds)) && all(lessThanEqual(hit, uCourseMaxBounds-vec3(0,0,1))) )
+	if ( hit.z > 0.0 && t1 > 0.0 && all(greaterThanEqual(hit, uCourseMinBounds)) && all(lessThanEqual(hit, uCourseMaxBounds-vec3(0,0,k))) )
 	{
 		n = hit;
+		return t1;
+	}
+	
+	return INFINITY;
+}
+
+float UnitRoundedBoxInterior_ParamIntersect( vec3 ro, vec3 rd, float k, out vec3 n )
+{
+	vec3 hit, initialRayO;
+	float t0, t1;
+	
+	initialRayO = ro;
+
+	// check left lower back sphere cap
+	ro += vec3(1.0 - k, 1.0 - k, 1.0 - k);
+
+	float a = dot(rd, rd);
+	float b = 2.0 * dot(rd, ro);
+	float c = dot(ro, ro) - (k * k);
+	solveQuadratic(a, b, c, t0, t1);
+
+	hit = ro + (rd * t1);
+	if ( hit.x < 0.0 && hit.y < 0.0 && hit.z < 0.0 && t1 > 0.0 )
+	{
+		n = hit;
+		return t1;
+	}
+	ro = initialRayO;
+
+	// check right lower back sphere cap
+	ro += vec3(-(1.0 - k), 1.0 - k, 1.0 - k);
+
+	a = dot(rd, rd);
+	b = 2.0 * dot(rd, ro);
+	c = dot(ro, ro) - (k * k);
+	solveQuadratic(a, b, c, t0, t1);
+
+	hit = ro + (rd * t1);
+	if ( hit.x > 0.0 && hit.y < 0.0 && hit.z < 0.0 && t1 > 0.0 )
+	{
+		n = hit;
+		return t1;
+	}
+	ro = initialRayO;
+
+	// check left upper back sphere cap
+	ro += vec3(1.0 - k, -(1.0 - k), 1.0 - k);
+
+	a = dot(rd, rd);
+	b = 2.0 * dot(rd, ro);
+	c = dot(ro, ro) - (k * k);
+	solveQuadratic(a, b, c, t0, t1);
+
+	hit = ro + (rd * t1);
+	if ( hit.x < 0.0 && hit.y > 0.0 && hit.z < 0.0 && t1 > 0.0 )
+	{
+		n = hit;
+		return t1;
+	}
+	ro = initialRayO;
+
+	// check right upper back sphere cap
+	ro += vec3(-(1.0 - k), -(1.0 - k), 1.0 - k);
+
+	a = dot(rd, rd);
+	b = 2.0 * dot(rd, ro);
+	c = dot(ro, ro) - (k * k);
+	solveQuadratic(a, b, c, t0, t1);
+
+	hit = ro + (rd * t1);
+	if ( hit.x > 0.0 && hit.y > 0.0 && hit.z < 0.0 && t1 > 0.0 )
+	{
+		n = hit;
+		return t1;
+	}
+	ro = initialRayO;
+
+	// check left lower front sphere cap
+	ro += vec3(1.0 - k, 1.0 - k, -(1.0 - k));
+
+	a = dot(rd, rd);
+	b = 2.0 * dot(rd, ro);
+	c = dot(ro, ro) - (k * k);
+	solveQuadratic(a, b, c, t0, t1);
+
+	hit = ro + (rd * t1);
+	if ( hit.x < 0.0 && hit.y < 0.0 && hit.z > 0.0 && t1 > 0.0 )
+	{
+		n = hit;
+		return t1;
+	}
+	ro = initialRayO;
+
+	// check right lower front sphere cap
+	ro += vec3(-(1.0 - k), 1.0 - k, -(1.0 - k));
+
+	a = dot(rd, rd);
+	b = 2.0 * dot(rd, ro);
+	c = dot(ro, ro) - (k * k);
+	solveQuadratic(a, b, c, t0, t1);
+
+	hit = ro + (rd * t1);
+	if ( hit.x > 0.0 && hit.y < 0.0 && hit.z > 0.0 && t1 > 0.0 )
+	{
+		n = hit;
+		return t1;
+	}
+	ro = initialRayO;
+
+	// check left upper front sphere cap
+	ro += vec3(1.0 - k, -(1.0 - k), -(1.0 - k));
+
+	a = dot(rd, rd);
+	b = 2.0 * dot(rd, ro);
+	c = dot(ro, ro) - (k * k);
+	solveQuadratic(a, b, c, t0, t1);
+
+	hit = ro + (rd * t1);
+	if ( hit.x < 0.0 && hit.y > 0.0 && hit.z > 0.0 && t1 > 0.0 )
+	{
+		n = hit;
+		return t1;
+	}
+	ro = initialRayO;
+
+	// check right upper front sphere cap
+	ro += vec3(-(1.0 - k), -(1.0 - k), -(1.0 - k));
+
+	a = dot(rd, rd);
+	b = 2.0 * dot(rd, ro);
+	c = dot(ro, ro) - (k * k);
+	solveQuadratic(a, b, c, t0, t1);
+
+	hit = ro + (rd * t1);
+	if ( hit.x > 0.0 && hit.y > 0.0 && hit.z > 0.0 && t1 > 0.0 )
+	{
+		n = hit;
+		return t1;
+	}
+	ro = initialRayO;
+
+
+	// check lower left cylinder along Z axis
+	ro.x += (1.0 - k);
+	ro.y += (1.0 - k);
+
+	a = (rd.x * rd.x) + (rd.y * rd.y);
+	b = 2.0 * ((rd.x * ro.x) + (rd.y * ro.y));
+	c = ((ro.x * ro.x) + (ro.y * ro.y)) - (k * k);
+	solveQuadratic(a, b, c, t0, t1);
+
+	hit = ro + (rd * t1);
+	if ( hit.x < 0.0 && hit.y < 0.0 && abs(hit.z) <= (1.0 - k) && t1 > 0.0 )
+	{
+		n = vec3(hit.x, hit.y, 0.0);
+		return t1;
+	}
+	ro = initialRayO;
+
+	// check lower right cylinder along Z axis
+	ro.x -= (1.0 - k);
+	ro.y += (1.0 - k);
+
+	a = (rd.x * rd.x) + (rd.y * rd.y);
+	b = 2.0 * ((rd.x * ro.x) + (rd.y * ro.y));
+	c = ((ro.x * ro.x) + (ro.y * ro.y)) - (k * k);
+	solveQuadratic(a, b, c, t0, t1);
+
+	hit = ro + (rd * t1);
+	if ( hit.x > 0.0 && hit.y < 0.0 && abs(hit.z) <= (1.0 - k) && t1 > 0.0 )
+	{
+		n = vec3(hit.x, hit.y, 0.0);
+		return t1;
+	}
+	ro = initialRayO;
+
+	// check upper left cylinder along Z axis
+	ro.x += (1.0 - k);
+	ro.y -= (1.0 - k);
+
+	a = (rd.x * rd.x) + (rd.y * rd.y);
+	b = 2.0 * ((rd.x * ro.x) + (rd.y * ro.y));
+	c = ((ro.x * ro.x) + (ro.y * ro.y)) - (k * k);
+	solveQuadratic(a, b, c, t0, t1);
+
+	hit = ro + (rd * t1);
+	if ( hit.x < 0.0 && hit.y > 0.0 && abs(hit.z) <= (1.0 - k) && t1 > 0.0 )
+	{
+		n = vec3(hit.x, hit.y, 0.0);
+		return t1;
+	}
+	ro = initialRayO;
+
+	// check upper right cylinder along Z axis
+	ro.x -= (1.0 - k);
+	ro.y -= (1.0 - k);
+
+	a = (rd.x * rd.x) + (rd.y * rd.y);
+	b = 2.0 * ((rd.x * ro.x) + (rd.y * ro.y));
+	c = ((ro.x * ro.x) + (ro.y * ro.y)) - (k * k);
+	solveQuadratic(a, b, c, t0, t1);
+
+	hit = ro + (rd * t1);
+	if ( hit.x > 0.0 && hit.y > 0.0 && abs(hit.z) <= (1.0 - k) && t1 > 0.0 )
+	{
+		n = vec3(hit.x, hit.y, 0.0);
+		return t1;
+	}
+	ro = initialRayO;
+
+	// check lower back cylinder along X axis
+	ro.y += (1.0 - k);
+	ro.z += (1.0 - k);
+
+	a = (rd.y * rd.y) + (rd.z * rd.z);
+	b = 2.0 * ((rd.y * ro.y) + (rd.z * ro.z));
+	c = ((ro.y * ro.y) + (ro.z * ro.z)) - (k * k);
+	solveQuadratic(a, b, c, t0, t1);
+
+	hit = ro + (rd * t1);
+	if ( abs(hit.x) <= (1.0 - k) && hit.y < 0.0 && hit.z < 0.0 && t1 > 0.0 )
+	{
+		n = vec3(0.0, hit.y, hit.z);
+		return t1;
+	}
+	ro = initialRayO;
+
+	// check lower front cylinder along X axis
+	ro.y += (1.0 - k);
+	ro.z -= (1.0 - k);
+
+	a = (rd.y * rd.y) + (rd.z * rd.z);
+	b = 2.0 * ((rd.y * ro.y) + (rd.z * ro.z));
+	c = ((ro.y * ro.y) + (ro.z * ro.z)) - (k * k);
+	solveQuadratic(a, b, c, t0, t1);
+
+	hit = ro + (rd * t1);
+	if ( abs(hit.x) <= (1.0 - k) && hit.y < 0.0 && hit.z > 0.0 && t1 > 0.0 )
+	{
+		n = vec3(0.0, hit.y, hit.z);
+		return t1;
+	}
+	ro = initialRayO;
+
+	// check upper back cylinder along X axis
+	ro.y -= (1.0 - k);
+	ro.z += (1.0 - k);
+
+	a = (rd.y * rd.y) + (rd.z * rd.z);
+	b = 2.0 * ((rd.y * ro.y) + (rd.z * ro.z));
+	c = ((ro.y * ro.y) + (ro.z * ro.z)) - (k * k);
+	solveQuadratic(a, b, c, t0, t1);
+
+	hit = ro + (rd * t1);
+	if ( abs(hit.x) <= (1.0 - k) && hit.y > 0.0 && hit.z < 0.0 && t1 > 0.0 )
+	{
+		n = vec3(0.0, hit.y, hit.z);
+		return t1;
+	}
+	ro = initialRayO;
+
+	// check upper front cylinder along X axis
+	ro.y -= (1.0 - k);
+	ro.z -= (1.0 - k);
+
+	a = (rd.y * rd.y) + (rd.z * rd.z);
+	b = 2.0 * ((rd.y * ro.y) + (rd.z * ro.z));
+	c = ((ro.y * ro.y) + (ro.z * ro.z)) - (k * k);
+	solveQuadratic(a, b, c, t0, t1);
+
+	hit = ro + (rd * t1);
+	if ( abs(hit.x) <= (1.0 - k) && hit.y > 0.0 && hit.z > 0.0 && t1 > 0.0 )
+	{
+		n = vec3(0.0, hit.y, hit.z);
+		return t1;
+	}
+	ro = initialRayO;
+
+	// check back left cylinder along Y axis
+	ro.x += (1.0 - k);
+	ro.z += (1.0 - k);
+
+	a = (rd.x * rd.x) + (rd.z * rd.z);
+	b = 2.0 * ((rd.x * ro.x) + (rd.z * ro.z));
+	c = ((ro.x * ro.x) + (ro.z * ro.z)) - (k * k);
+	solveQuadratic(a, b, c, t0, t1);
+
+	hit = ro + (rd * t1);
+	if ( hit.x < 0.0 && abs(hit.y) <= (1.0 - k) && hit.z < 0.0 && t1 > 0.0 )
+	{
+		n = vec3(hit.x, 0.0, hit.z);
+		return t1;
+	}
+	ro = initialRayO;
+
+	// check back right cylinder along Y axis
+	ro.x -= (1.0 - k);
+	ro.z += (1.0 - k);
+
+	a = (rd.x * rd.x) + (rd.z * rd.z);
+	b = 2.0 * ((rd.x * ro.x) + (rd.z * ro.z));
+	c = ((ro.x * ro.x) + (ro.z * ro.z)) - (k * k);
+	solveQuadratic(a, b, c, t0, t1);
+
+	hit = ro + (rd * t1);
+	if ( hit.x > 0.0 && abs(hit.y) <= (1.0 - k) && hit.z < 0.0 && t1 > 0.0 )
+	{
+		n = vec3(hit.x, 0.0, hit.z);
+		return t1;
+	}
+	ro = initialRayO;
+
+	// check front left cylinder along Y axis
+	ro.x += (1.0 - k);
+	ro.z -= (1.0 - k);
+
+	a = (rd.x * rd.x) + (rd.z * rd.z);
+	b = 2.0 * ((rd.x * ro.x) + (rd.z * ro.z));
+	c = ((ro.x * ro.x) + (ro.z * ro.z)) - (k * k);
+	solveQuadratic(a, b, c, t0, t1);
+
+	hit = ro + (rd * t1);
+	if ( hit.x < 0.0 && abs(hit.y) <= (1.0 - k) && hit.z > 0.0 && t1 > 0.0 )
+	{
+		n = vec3(hit.x, 0.0, hit.z);
+		return t1;
+	}
+	ro = initialRayO;
+
+	// check front right cylinder along Y axis
+	ro.x -= (1.0 - k);
+	ro.z -= (1.0 - k);
+
+	a = (rd.x * rd.x) + (rd.z * rd.z);
+	b = 2.0 * ((rd.x * ro.x) + (rd.z * ro.z));
+	c = ((ro.x * ro.x) + (ro.z * ro.z)) - (k * k);
+	solveQuadratic(a, b, c, t0, t1);
+
+	hit = ro + (rd * t1);
+	if ( hit.x > 0.0 && abs(hit.y) <= (1.0 - k) && hit.z > 0.0 && t1 > 0.0 )
+	{
+		n = vec3(hit.x, 0.0, hit.z);
+		return t1;
+	}
+	ro = initialRayO;
+
+
+	vec3 invDir = 1.0 / rd;
+	vec3 near = (vec3(-1) - ro) * invDir; // unit radius box: vec3(-1,-1,-1) min corner
+	vec3 far  = (vec3( 1) - ro) * invDir;  // unit radius box: vec3(+1,+1,+1) max corner
+	
+	vec3 tmin = min(near, far);
+	vec3 tmax = max(near, far);
+	t0 = max( max(tmin.x, tmin.y), tmin.z);
+	t1 = min( min(tmax.x, tmax.y), tmax.z);
+
+	hit = ro + (rd * t1);
+	if ( t1 > t0 && t1 > 0.0 )
+	{
+		n = -sign(rd) * step(tmax, tmax.yzx) * step(tmax, tmax.zxy);
 		return t1;
 	}
 	
@@ -365,7 +725,9 @@ float SceneIntersect(out int finalIsRayExiting)
 	else if (uCourseShapeType == 7)
 		d = XZPlane_ParamIntersect(rObjOrigin, rObjDirection, normal);
 	else if (uCourseShapeType == 8)
-		d = UnitCapsuleInterior_ParamIntersect(rObjOrigin, rObjDirection, normal);
+		d = UnitCapsuleInterior_ParamIntersect(rObjOrigin, rObjDirection, uCourseShapeKparameter, normal);
+	else if (uCourseShapeType == 9)
+		d = UnitRoundedBoxInterior_ParamIntersect(rObjOrigin, rObjDirection, uCourseShapeKparameter, normal);
 	if (d < t)
 	{
 		t = d;
