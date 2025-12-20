@@ -310,7 +310,7 @@ function intersectUnitHyperbolicParaboloid(rayO, rayD, normal)
 	}
 }
 
-function intersectUnitCapsule(rayO, rayD, normal)
+function intersectUnitCapsule(rayO, rayD, K, normal)
 {
 	// Unit Cylinder (along Z axis) implicit equation
 	// X^2 + Y^2 - 1 = 0
@@ -321,7 +321,7 @@ function intersectUnitCapsule(rayO, rayD, normal)
 	if (solveQuadratic(a, b, c) == true)
 	{
 		normal.getPointAlongRay(rayO, rayD, t1);
-		if (Math.abs(normal.z) <= 1.0 && t1 > 0)
+		if (Math.abs(normal.z) <= K && t1 > 0)
 		{
 			normal.z = 0;
 			return t1;
@@ -329,7 +329,7 @@ function intersectUnitCapsule(rayO, rayD, normal)
 	}
 
 	// now check the negative Z sphere cap
-	rayO.z += 1;
+	rayO.z += K;
 
 	// Unit Sphere implicit equation
 	// X^2 + Y^2 + Z^2 - 1 = 0
@@ -347,7 +347,7 @@ function intersectUnitCapsule(rayO, rayD, normal)
 	}
 
 	// finally, check the positive Z sphere cap
-	rayO.z -= 2;
+	rayO.z -= (K * 2);
 
 	// Unit Sphere implicit equation
 	// X^2 + Y^2 + Z^2 - 1 = 0
@@ -365,12 +365,416 @@ function intersectUnitCapsule(rayO, rayD, normal)
 	}
 }
 
-
 let inverseDir = new THREE.Vector3();
 let near = new THREE.Vector3();
 let far = new THREE.Vector3();
 let tmin = new THREE.Vector3();
 let tmax = new THREE.Vector3();
+let initialRayO = new THREE.Vector3();
+
+function intersectUnitRoundedBox(rayO, rayD, K, normal)
+{
+	initialRayO.copy(rayO);
+
+	// check the left lower back sphere cap
+	rayO.x += (1 - K); rayO.y += (1 - K); rayO.z += (1 - K);
+	// Unit Sphere implicit equation
+	// X^2 + Y^2 + Z^2 - 1 = 0
+	a = rayD.dot(rayD);
+	b = 2 * rayD.dot(rayO);
+	c = rayO.dot(rayO) - (K * K);
+
+	if (solveQuadratic(a, b, c) == true)
+	{
+		normal.getPointAlongRay(rayO, rayD, t1);
+		if (normal.x < 0.0 && normal.y < 0.0 && normal.z < 0.0 && t1 > 0)
+		{
+			return t1;
+		}
+	}
+	rayO.copy(initialRayO);
+
+	// check the right lower back sphere cap
+	rayO.x -= (1 - K); rayO.y += (1 - K); rayO.z += (1 - K);
+	// Unit Sphere implicit equation
+	// X^2 + Y^2 + Z^2 - 1 = 0
+	a = rayD.dot(rayD);
+	b = 2 * rayD.dot(rayO);
+	c = rayO.dot(rayO) - (K * K);
+
+	if (solveQuadratic(a, b, c) == true)
+	{
+		normal.getPointAlongRay(rayO, rayD, t1);
+		if (normal.x > 0.0 && normal.y < 0.0 && normal.z < 0.0 && t1 > 0)
+		{
+			return t1;
+		}
+	}
+	rayO.copy(initialRayO);
+
+	// check the left upper back sphere cap
+	rayO.x += (1 - K); rayO.y -= (1 - K); rayO.z += (1 - K);
+	// Unit Sphere implicit equation
+	// X^2 + Y^2 + Z^2 - 1 = 0
+	a = rayD.dot(rayD);
+	b = 2 * rayD.dot(rayO);
+	c = rayO.dot(rayO) - (K * K);
+
+	if (solveQuadratic(a, b, c) == true)
+	{
+		normal.getPointAlongRay(rayO, rayD, t1);
+		if (normal.x < 0.0 && normal.y > 0.0 && normal.z < 0.0 && t1 > 0)
+		{
+			return t1;
+		}
+	}
+	rayO.copy(initialRayO);
+
+	// check the right upper back sphere cap
+	rayO.x -= (1 - K); rayO.y -= (1 - K); rayO.z += (1 - K);
+	// Unit Sphere implicit equation
+	// X^2 + Y^2 + Z^2 - 1 = 0
+	a = rayD.dot(rayD);
+	b = 2 * rayD.dot(rayO);
+	c = rayO.dot(rayO) - (K * K);
+
+	if (solveQuadratic(a, b, c) == true)
+	{
+		normal.getPointAlongRay(rayO, rayD, t1);
+		if (normal.x > 0.0 && normal.y > 0.0 && normal.z < 0.0 && t1 > 0)
+		{
+			return t1;
+		}
+	}
+	rayO.copy(initialRayO);
+
+	// check the left lower front sphere cap
+	rayO.x += (1 - K); rayO.y += (1 - K); rayO.z -= (1 - K);
+	// Unit Sphere implicit equation
+	// X^2 + Y^2 + Z^2 - 1 = 0
+	a = rayD.dot(rayD);
+	b = 2 * rayD.dot(rayO);
+	c = rayO.dot(rayO) - (K * K);
+
+	if (solveQuadratic(a, b, c) == true)
+	{
+		normal.getPointAlongRay(rayO, rayD, t1);
+		if (normal.x < 0.0 && normal.y < 0.0 && normal.z > 0.0 && t1 > 0)
+		{
+			return t1;
+		}
+	}
+	rayO.copy(initialRayO);
+
+	// check the right lower front sphere cap
+	rayO.x -= (1 - K); rayO.y += (1 - K); rayO.z -= (1 - K);
+	// Unit Sphere implicit equation
+	// X^2 + Y^2 + Z^2 - 1 = 0
+	a = rayD.dot(rayD);
+	b = 2 * rayD.dot(rayO);
+	c = rayO.dot(rayO) - (K * K);
+
+	if (solveQuadratic(a, b, c) == true)
+	{
+		normal.getPointAlongRay(rayO, rayD, t1);
+		if (normal.x > 0.0 && normal.y < 0.0 && normal.z > 0.0 && t1 > 0)
+		{
+			return t1;
+		}
+	}
+	rayO.copy(initialRayO);
+
+	// check the left upper front sphere cap
+	rayO.x += (1 - K); rayO.y -= (1 - K); rayO.z -= (1 - K);
+	// Unit Sphere implicit equation
+	// X^2 + Y^2 + Z^2 - 1 = 0
+	a = rayD.dot(rayD);
+	b = 2 * rayD.dot(rayO);
+	c = rayO.dot(rayO) - (K * K);
+
+	if (solveQuadratic(a, b, c) == true)
+	{
+		normal.getPointAlongRay(rayO, rayD, t1);
+		if (normal.x < 0.0 && normal.y > 0.0 && normal.z > 0.0 && t1 > 0)
+		{
+			return t1;
+		}
+	}
+	rayO.copy(initialRayO);
+
+	// check the right upper front sphere cap
+	rayO.x -= (1 - K); rayO.y -= (1 - K); rayO.z -= (1 - K);
+	// Unit Sphere implicit equation
+	// X^2 + Y^2 + Z^2 - 1 = 0
+	a = rayD.dot(rayD);
+	b = 2 * rayD.dot(rayO);
+	c = rayO.dot(rayO) - (K * K);
+
+	if (solveQuadratic(a, b, c) == true)
+	{
+		normal.getPointAlongRay(rayO, rayD, t1);
+		if (normal.x > 0.0 && normal.y > 0.0 && normal.z > 0.0 && t1 > 0)
+		{
+			return t1;
+		}
+	}
+	rayO.copy(initialRayO);
+	
+
+	// check lower left cylinder along Z axis
+	rayO.x += (1 - K);
+	rayO.y += (1 - K);
+	// Unit Cylinder (along Z axis) implicit equation
+	// X^2 + Y^2 - 1 = 0
+	a = (rayD.x * rayD.x) + (rayD.y * rayD.y);
+	b = 2 * ((rayD.x * rayO.x) + (rayD.y * rayO.y));
+	c = ((rayO.x * rayO.x) + (rayO.y * rayO.y)) - (K * K);
+	if (solveQuadratic(a, b, c) == true)
+	{
+		normal.getPointAlongRay(rayO, rayD, t1);
+		if (normal.x < 0 && normal.y < 0 && Math.abs(normal.z) <= (1 - K) && t1 > 0)
+		{
+			normal.z = 0;
+			return t1;
+		}
+	}
+	rayO.copy(initialRayO);
+
+	// check lower right cylinder along Z axis
+	rayO.x -= (1 - K);
+	rayO.y += (1 - K);
+	// Unit Cylinder (along Z axis) implicit equation
+	// X^2 + Y^2 - 1 = 0
+	a = (rayD.x * rayD.x) + (rayD.y * rayD.y);
+	b = 2 * ((rayD.x * rayO.x) + (rayD.y * rayO.y));
+	c = ((rayO.x * rayO.x) + (rayO.y * rayO.y)) - (K * K);
+	if (solveQuadratic(a, b, c) == true)
+	{
+		normal.getPointAlongRay(rayO, rayD, t1);
+		if (normal.x > 0 && normal.y < 0 && Math.abs(normal.z) <= (1 - K) && t1 > 0)
+		{
+			normal.z = 0;
+			return t1;
+		}
+	}
+	rayO.copy(initialRayO);
+
+	// check upper left cylinder along Z axis
+	rayO.x += (1 - K);
+	rayO.y -= (1 - K);
+	// Unit Cylinder (along Z axis) implicit equation
+	// X^2 + Y^2 - 1 = 0
+	a = (rayD.x * rayD.x) + (rayD.y * rayD.y);
+	b = 2 * ((rayD.x * rayO.x) + (rayD.y * rayO.y));
+	c = ((rayO.x * rayO.x) + (rayO.y * rayO.y)) - (K * K);
+	if (solveQuadratic(a, b, c) == true)
+	{
+		normal.getPointAlongRay(rayO, rayD, t1);
+		if (normal.x < 0 && normal.y > 0 && Math.abs(normal.z) <= (1 - K) && t1 > 0)
+		{
+			normal.z = 0;
+			return t1;
+		}
+	}
+	rayO.copy(initialRayO);
+
+	// check upper right cylinder along Z axis
+	rayO.x -= (1 - K);
+	rayO.y -= (1 - K);
+	// Unit Cylinder (along Z axis) implicit equation
+	// X^2 + Y^2 - 1 = 0
+	a = (rayD.x * rayD.x) + (rayD.y * rayD.y);
+	b = 2 * ((rayD.x * rayO.x) + (rayD.y * rayO.y));
+	c = ((rayO.x * rayO.x) + (rayO.y * rayO.y)) - (K * K);
+	if (solveQuadratic(a, b, c) == true)
+	{
+		normal.getPointAlongRay(rayO, rayD, t1);
+		if (normal.x > 0 && normal.y > 0 && Math.abs(normal.z) <= (1 - K) && t1 > 0)
+		{
+			normal.z = 0;
+			return t1;
+		}
+	}
+	rayO.copy(initialRayO);
+
+	// check lower back cylinder along X axis
+	rayO.y += (1 - K);
+	rayO.z += (1 - K);
+	// Unit Cylinder (along X axis) implicit equation
+	// X^2 + Y^2 - 1 = 0
+	a = (rayD.y * rayD.y) + (rayD.z * rayD.z);
+	b = 2 * ((rayD.y * rayO.y) + (rayD.z * rayO.z));
+	c = ((rayO.y * rayO.y) + (rayO.z * rayO.z)) - (K * K);
+	if (solveQuadratic(a, b, c) == true)
+	{
+		normal.getPointAlongRay(rayO, rayD, t1);
+		if (Math.abs(normal.x) <= (1 - K) && normal.y < 0 && normal.z < 0 && t1 > 0)
+		{
+			normal.x = 0;
+			return t1;
+		}
+	}
+	rayO.copy(initialRayO);
+
+	// check lower front cylinder along X axis
+	rayO.y += (1 - K);
+	rayO.z -= (1 - K);
+	// Unit Cylinder (along X axis) implicit equation
+	// X^2 + Y^2 - 1 = 0
+	a = (rayD.y * rayD.y) + (rayD.z * rayD.z);
+	b = 2 * ((rayD.y * rayO.y) + (rayD.z * rayO.z));
+	c = ((rayO.y * rayO.y) + (rayO.z * rayO.z)) - (K * K);
+	if (solveQuadratic(a, b, c) == true)
+	{
+		normal.getPointAlongRay(rayO, rayD, t1);
+		if (Math.abs(normal.x) <= (1 - K) && normal.y < 0 && normal.z > 0 && t1 > 0)
+		{
+			normal.x = 0;
+			return t1;
+		}
+	}
+	rayO.copy(initialRayO);
+
+	// check upper back cylinder along X axis
+	rayO.y -= (1 - K);
+	rayO.z += (1 - K);
+	// Unit Cylinder (along X axis) implicit equation
+	// X^2 + Y^2 - 1 = 0
+	a = (rayD.y * rayD.y) + (rayD.z * rayD.z);
+	b = 2 * ((rayD.y * rayO.y) + (rayD.z * rayO.z));
+	c = ((rayO.y * rayO.y) + (rayO.z * rayO.z)) - (K * K);
+	if (solveQuadratic(a, b, c) == true)
+	{
+		normal.getPointAlongRay(rayO, rayD, t1);
+		if (Math.abs(normal.x) <= (1 - K) && normal.y > 0 && normal.z < 0 && t1 > 0)
+		{
+			normal.x = 0;
+			return t1;
+		}
+	}
+	rayO.copy(initialRayO);
+
+	// check upper front cylinder along X axis
+	rayO.y -= (1 - K);
+	rayO.z -= (1 - K);
+	// Unit Cylinder (along X axis) implicit equation
+	// X^2 + Y^2 - 1 = 0
+	a = (rayD.y * rayD.y) + (rayD.z * rayD.z);
+	b = 2 * ((rayD.y * rayO.y) + (rayD.z * rayO.z));
+	c = ((rayO.y * rayO.y) + (rayO.z * rayO.z)) - (K * K);
+	if (solveQuadratic(a, b, c) == true)
+	{
+		normal.getPointAlongRay(rayO, rayD, t1);
+		if (Math.abs(normal.x) <= (1 - K) && normal.y > 0 && normal.z > 0 && t1 > 0)
+		{
+			normal.x = 0;
+			return t1;
+		}
+	}
+	rayO.copy(initialRayO);
+
+	// check back left cylinder along Y axis
+	rayO.x += (1 - K);
+	rayO.z += (1 - K);
+	// Unit Cylinder (along Y axis) implicit equation
+	// X^2 + Z^2 - 1 = 0
+	a = (rayD.x * rayD.x) + (rayD.z * rayD.z);
+	b = 2 * ((rayD.x * rayO.x) + (rayD.z * rayO.z));
+	c = ((rayO.x * rayO.x) + (rayO.z * rayO.z)) - (K * K);
+	if (solveQuadratic(a, b, c) == true)
+	{
+		normal.getPointAlongRay(rayO, rayD, t1);
+		if (normal.x < 0 && Math.abs(normal.y) <= (1 - K) && normal.z < 0 && t1 > 0)
+		{
+			normal.y = 0;
+			return t1;
+		}
+	}
+	rayO.copy(initialRayO);
+
+	// check back right cylinder along Y axis
+	rayO.x -= (1 - K);
+	rayO.z += (1 - K);
+	// Unit Cylinder (along Y axis) implicit equation
+	// X^2 + Z^2 - 1 = 0
+	a = (rayD.x * rayD.x) + (rayD.z * rayD.z);
+	b = 2 * ((rayD.x * rayO.x) + (rayD.z * rayO.z));
+	c = ((rayO.x * rayO.x) + (rayO.z * rayO.z)) - (K * K);
+	if (solveQuadratic(a, b, c) == true)
+	{
+		normal.getPointAlongRay(rayO, rayD, t1);
+		if (normal.x > 0 && Math.abs(normal.y) <= (1 - K) && normal.z < 0 && t1 > 0)
+		{
+			normal.y = 0;
+			return t1;
+		}
+	}
+	rayO.copy(initialRayO);
+
+	// check front left cylinder along Y axis
+	rayO.x += (1 - K);
+	rayO.z -= (1 - K);
+	// Unit Cylinder (along Y axis) implicit equation
+	// X^2 + Z^2 - 1 = 0
+	a = (rayD.x * rayD.x) + (rayD.z * rayD.z);
+	b = 2 * ((rayD.x * rayO.x) + (rayD.z * rayO.z));
+	c = ((rayO.x * rayO.x) + (rayO.z * rayO.z)) - (K * K);
+	if (solveQuadratic(a, b, c) == true)
+	{
+		normal.getPointAlongRay(rayO, rayD, t1);
+		if (normal.x < 0 && Math.abs(normal.y) <= (1 - K) && normal.z > 0 && t1 > 0)
+		{
+			normal.y = 0;
+			return t1;
+		}
+	}
+	rayO.copy(initialRayO);
+
+	// check front right cylinder along Y axis
+	rayO.x -= (1 - K);
+	rayO.z -= (1 - K);
+	// Unit Cylinder (along Y axis) implicit equation
+	// X^2 + Z^2 - 1 = 0
+	a = (rayD.x * rayD.x) + (rayD.z * rayD.z);
+	b = 2 * ((rayD.x * rayO.x) + (rayD.z * rayO.z));
+	c = ((rayO.x * rayO.x) + (rayO.z * rayO.z)) - (K * K);
+	if (solveQuadratic(a, b, c) == true)
+	{
+		normal.getPointAlongRay(rayO, rayD, t1);
+		if (normal.x > 0 && Math.abs(normal.y) <= (1 - K) && normal.z > 0 && t1 > 0)
+		{
+			normal.y = 0;
+			return t1;
+		}
+	}
+	rayO.copy(initialRayO);
+
+	
+
+	// finally, intersect the box interior
+	inverseDir.set(1 / rayD.x, 1 / rayD.y, 1 / rayD.z);
+	near.set(-1,-1,-1).sub(rayO);
+	near.multiply(inverseDir);
+	far.set(1, 1, 1).sub(rayO);
+	far.multiply(inverseDir);
+	tmin.copy(near).min(far);
+	tmax.copy(near).max(far);
+	t0 = Math.max(Math.max(tmin.x, tmin.y), tmin.z);
+	t1 = Math.min(Math.min(tmax.x, tmax.y), tmax.z);
+
+	if (t1 > t0 && t1 > 0) // if we are inside the box
+	{
+		intersectionPoint.getPointAlongRay(rayO, rayD, t1); // intersection in box's object space, vec3(-1,-1,-1) to vec3(+1,+1,+1)
+		// start out with default Z normal of (0,0,-1) or (0,0,+1)
+		normal.set(0, 0, intersectionPoint.z);
+		if (Math.abs(intersectionPoint.x) > Math.abs(intersectionPoint.y) && Math.abs(intersectionPoint.x) >= Math.abs(intersectionPoint.z))
+			normal.set(intersectionPoint.x, 0, 0);	
+		else if (Math.abs(intersectionPoint.y) > Math.abs(intersectionPoint.x) && Math.abs(intersectionPoint.y) >= Math.abs(intersectionPoint.z))
+			normal.set(0, intersectionPoint.y, 0);
+		return t1;
+	}
+} // end function intersectUnitRoundedBox(rayO, rayD, K, normal)
+
 
 function raycastUnitBox(rayO, rayD)
 {
