@@ -300,15 +300,16 @@ float UnitRoundedBoxInterior_ParamIntersect( vec3 ro, vec3 rd, float k, out vec3
 {
 	vec3 hit, initialRayO;
 	float t0, t1;
-	
+	float oneMinusK = 1.0 - k;
+	float k_squared = k * k;
 	initialRayO = ro;
 
 	// check left lower back sphere cap
-	ro += vec3(1.0 - k, 1.0 - k, 1.0 - k);
+	ro += vec3(oneMinusK, oneMinusK, oneMinusK);
 
 	float a = dot(rd, rd);
 	float b = 2.0 * dot(rd, ro);
-	float c = dot(ro, ro) - (k * k);
+	float c = dot(ro, ro) - k_squared;
 	solveQuadratic(a, b, c, t0, t1);
 
 	hit = ro + (rd * t1);
@@ -320,11 +321,11 @@ float UnitRoundedBoxInterior_ParamIntersect( vec3 ro, vec3 rd, float k, out vec3
 	ro = initialRayO;
 
 	// check right lower back sphere cap
-	ro += vec3(-(1.0 - k), 1.0 - k, 1.0 - k);
+	ro += vec3(-oneMinusK, oneMinusK, oneMinusK);
 
 	a = dot(rd, rd);
 	b = 2.0 * dot(rd, ro);
-	c = dot(ro, ro) - (k * k);
+	c = dot(ro, ro) - k_squared;
 	solveQuadratic(a, b, c, t0, t1);
 
 	hit = ro + (rd * t1);
@@ -336,11 +337,11 @@ float UnitRoundedBoxInterior_ParamIntersect( vec3 ro, vec3 rd, float k, out vec3
 	ro = initialRayO;
 
 	// check left upper back sphere cap
-	ro += vec3(1.0 - k, -(1.0 - k), 1.0 - k);
+	ro += vec3(oneMinusK, -oneMinusK, oneMinusK);
 
 	a = dot(rd, rd);
 	b = 2.0 * dot(rd, ro);
-	c = dot(ro, ro) - (k * k);
+	c = dot(ro, ro) - k_squared;
 	solveQuadratic(a, b, c, t0, t1);
 
 	hit = ro + (rd * t1);
@@ -352,11 +353,11 @@ float UnitRoundedBoxInterior_ParamIntersect( vec3 ro, vec3 rd, float k, out vec3
 	ro = initialRayO;
 
 	// check right upper back sphere cap
-	ro += vec3(-(1.0 - k), -(1.0 - k), 1.0 - k);
+	ro += vec3(-oneMinusK, -oneMinusK, oneMinusK);
 
 	a = dot(rd, rd);
 	b = 2.0 * dot(rd, ro);
-	c = dot(ro, ro) - (k * k);
+	c = dot(ro, ro) - k_squared;
 	solveQuadratic(a, b, c, t0, t1);
 
 	hit = ro + (rd * t1);
@@ -368,11 +369,11 @@ float UnitRoundedBoxInterior_ParamIntersect( vec3 ro, vec3 rd, float k, out vec3
 	ro = initialRayO;
 
 	// check left lower front sphere cap
-	ro += vec3(1.0 - k, 1.0 - k, -(1.0 - k));
+	ro += vec3(oneMinusK, oneMinusK, -oneMinusK);
 
 	a = dot(rd, rd);
 	b = 2.0 * dot(rd, ro);
-	c = dot(ro, ro) - (k * k);
+	c = dot(ro, ro) - k_squared;
 	solveQuadratic(a, b, c, t0, t1);
 
 	hit = ro + (rd * t1);
@@ -384,11 +385,11 @@ float UnitRoundedBoxInterior_ParamIntersect( vec3 ro, vec3 rd, float k, out vec3
 	ro = initialRayO;
 
 	// check right lower front sphere cap
-	ro += vec3(-(1.0 - k), 1.0 - k, -(1.0 - k));
+	ro += vec3(-oneMinusK, oneMinusK, -oneMinusK);
 
 	a = dot(rd, rd);
 	b = 2.0 * dot(rd, ro);
-	c = dot(ro, ro) - (k * k);
+	c = dot(ro, ro) - k_squared;
 	solveQuadratic(a, b, c, t0, t1);
 
 	hit = ro + (rd * t1);
@@ -400,11 +401,11 @@ float UnitRoundedBoxInterior_ParamIntersect( vec3 ro, vec3 rd, float k, out vec3
 	ro = initialRayO;
 
 	// check left upper front sphere cap
-	ro += vec3(1.0 - k, -(1.0 - k), -(1.0 - k));
+	ro += vec3(oneMinusK, -oneMinusK, -oneMinusK);
 
 	a = dot(rd, rd);
 	b = 2.0 * dot(rd, ro);
-	c = dot(ro, ro) - (k * k);
+	c = dot(ro, ro) - k_squared;
 	solveQuadratic(a, b, c, t0, t1);
 
 	hit = ro + (rd * t1);
@@ -416,11 +417,11 @@ float UnitRoundedBoxInterior_ParamIntersect( vec3 ro, vec3 rd, float k, out vec3
 	ro = initialRayO;
 
 	// check right upper front sphere cap
-	ro += vec3(-(1.0 - k), -(1.0 - k), -(1.0 - k));
+	ro += vec3(-oneMinusK, -oneMinusK, -oneMinusK);
 
 	a = dot(rd, rd);
 	b = 2.0 * dot(rd, ro);
-	c = dot(ro, ro) - (k * k);
+	c = dot(ro, ro) - k_squared;
 	solveQuadratic(a, b, c, t0, t1);
 
 	hit = ro + (rd * t1);
@@ -433,16 +434,16 @@ float UnitRoundedBoxInterior_ParamIntersect( vec3 ro, vec3 rd, float k, out vec3
 
 
 	// check lower left cylinder along Z axis
-	ro.x += (1.0 - k);
-	ro.y += (1.0 - k);
+	ro.x += oneMinusK;
+	ro.y += oneMinusK;
 
 	a = (rd.x * rd.x) + (rd.y * rd.y);
 	b = 2.0 * ((rd.x * ro.x) + (rd.y * ro.y));
-	c = ((ro.x * ro.x) + (ro.y * ro.y)) - (k * k);
+	c = ((ro.x * ro.x) + (ro.y * ro.y)) - k_squared;
 	solveQuadratic(a, b, c, t0, t1);
 
 	hit = ro + (rd * t1);
-	if ( hit.x < 0.0 && hit.y < 0.0 && abs(hit.z) <= (1.0 - k) && t1 > 0.0 )
+	if ( hit.x < 0.0 && hit.y < 0.0 && abs(hit.z) <= oneMinusK && t1 > 0.0 )
 	{
 		n = vec3(hit.x, hit.y, 0.0);
 		return t1;
@@ -450,16 +451,16 @@ float UnitRoundedBoxInterior_ParamIntersect( vec3 ro, vec3 rd, float k, out vec3
 	ro = initialRayO;
 
 	// check lower right cylinder along Z axis
-	ro.x -= (1.0 - k);
-	ro.y += (1.0 - k);
+	ro.x -= oneMinusK;
+	ro.y += oneMinusK;
 
 	a = (rd.x * rd.x) + (rd.y * rd.y);
 	b = 2.0 * ((rd.x * ro.x) + (rd.y * ro.y));
-	c = ((ro.x * ro.x) + (ro.y * ro.y)) - (k * k);
+	c = ((ro.x * ro.x) + (ro.y * ro.y)) - k_squared;
 	solveQuadratic(a, b, c, t0, t1);
 
 	hit = ro + (rd * t1);
-	if ( hit.x > 0.0 && hit.y < 0.0 && abs(hit.z) <= (1.0 - k) && t1 > 0.0 )
+	if ( hit.x > 0.0 && hit.y < 0.0 && abs(hit.z) <= oneMinusK && t1 > 0.0 )
 	{
 		n = vec3(hit.x, hit.y, 0.0);
 		return t1;
@@ -467,16 +468,16 @@ float UnitRoundedBoxInterior_ParamIntersect( vec3 ro, vec3 rd, float k, out vec3
 	ro = initialRayO;
 
 	// check upper left cylinder along Z axis
-	ro.x += (1.0 - k);
-	ro.y -= (1.0 - k);
+	ro.x += oneMinusK;
+	ro.y -= oneMinusK;
 
 	a = (rd.x * rd.x) + (rd.y * rd.y);
 	b = 2.0 * ((rd.x * ro.x) + (rd.y * ro.y));
-	c = ((ro.x * ro.x) + (ro.y * ro.y)) - (k * k);
+	c = ((ro.x * ro.x) + (ro.y * ro.y)) - k_squared;
 	solveQuadratic(a, b, c, t0, t1);
 
 	hit = ro + (rd * t1);
-	if ( hit.x < 0.0 && hit.y > 0.0 && abs(hit.z) <= (1.0 - k) && t1 > 0.0 )
+	if ( hit.x < 0.0 && hit.y > 0.0 && abs(hit.z) <= oneMinusK && t1 > 0.0 )
 	{
 		n = vec3(hit.x, hit.y, 0.0);
 		return t1;
@@ -484,16 +485,16 @@ float UnitRoundedBoxInterior_ParamIntersect( vec3 ro, vec3 rd, float k, out vec3
 	ro = initialRayO;
 
 	// check upper right cylinder along Z axis
-	ro.x -= (1.0 - k);
-	ro.y -= (1.0 - k);
+	ro.x -= oneMinusK;
+	ro.y -= oneMinusK;
 
 	a = (rd.x * rd.x) + (rd.y * rd.y);
 	b = 2.0 * ((rd.x * ro.x) + (rd.y * ro.y));
-	c = ((ro.x * ro.x) + (ro.y * ro.y)) - (k * k);
+	c = ((ro.x * ro.x) + (ro.y * ro.y)) - k_squared;
 	solveQuadratic(a, b, c, t0, t1);
 
 	hit = ro + (rd * t1);
-	if ( hit.x > 0.0 && hit.y > 0.0 && abs(hit.z) <= (1.0 - k) && t1 > 0.0 )
+	if ( hit.x > 0.0 && hit.y > 0.0 && abs(hit.z) <= oneMinusK && t1 > 0.0 )
 	{
 		n = vec3(hit.x, hit.y, 0.0);
 		return t1;
@@ -501,16 +502,16 @@ float UnitRoundedBoxInterior_ParamIntersect( vec3 ro, vec3 rd, float k, out vec3
 	ro = initialRayO;
 
 	// check lower back cylinder along X axis
-	ro.y += (1.0 - k);
-	ro.z += (1.0 - k);
+	ro.y += oneMinusK;
+	ro.z += oneMinusK;
 
 	a = (rd.y * rd.y) + (rd.z * rd.z);
 	b = 2.0 * ((rd.y * ro.y) + (rd.z * ro.z));
-	c = ((ro.y * ro.y) + (ro.z * ro.z)) - (k * k);
+	c = ((ro.y * ro.y) + (ro.z * ro.z)) - k_squared;
 	solveQuadratic(a, b, c, t0, t1);
 
 	hit = ro + (rd * t1);
-	if ( abs(hit.x) <= (1.0 - k) && hit.y < 0.0 && hit.z < 0.0 && t1 > 0.0 )
+	if ( abs(hit.x) <= oneMinusK && hit.y < 0.0 && hit.z < 0.0 && t1 > 0.0 )
 	{
 		n = vec3(0.0, hit.y, hit.z);
 		return t1;
@@ -518,16 +519,16 @@ float UnitRoundedBoxInterior_ParamIntersect( vec3 ro, vec3 rd, float k, out vec3
 	ro = initialRayO;
 
 	// check lower front cylinder along X axis
-	ro.y += (1.0 - k);
-	ro.z -= (1.0 - k);
+	ro.y += oneMinusK;
+	ro.z -= oneMinusK;
 
 	a = (rd.y * rd.y) + (rd.z * rd.z);
 	b = 2.0 * ((rd.y * ro.y) + (rd.z * ro.z));
-	c = ((ro.y * ro.y) + (ro.z * ro.z)) - (k * k);
+	c = ((ro.y * ro.y) + (ro.z * ro.z)) - k_squared;
 	solveQuadratic(a, b, c, t0, t1);
 
 	hit = ro + (rd * t1);
-	if ( abs(hit.x) <= (1.0 - k) && hit.y < 0.0 && hit.z > 0.0 && t1 > 0.0 )
+	if ( abs(hit.x) <= oneMinusK && hit.y < 0.0 && hit.z > 0.0 && t1 > 0.0 )
 	{
 		n = vec3(0.0, hit.y, hit.z);
 		return t1;
@@ -535,16 +536,16 @@ float UnitRoundedBoxInterior_ParamIntersect( vec3 ro, vec3 rd, float k, out vec3
 	ro = initialRayO;
 
 	// check upper back cylinder along X axis
-	ro.y -= (1.0 - k);
-	ro.z += (1.0 - k);
+	ro.y -= oneMinusK;
+	ro.z += oneMinusK;
 
 	a = (rd.y * rd.y) + (rd.z * rd.z);
 	b = 2.0 * ((rd.y * ro.y) + (rd.z * ro.z));
-	c = ((ro.y * ro.y) + (ro.z * ro.z)) - (k * k);
+	c = ((ro.y * ro.y) + (ro.z * ro.z)) - k_squared;
 	solveQuadratic(a, b, c, t0, t1);
 
 	hit = ro + (rd * t1);
-	if ( abs(hit.x) <= (1.0 - k) && hit.y > 0.0 && hit.z < 0.0 && t1 > 0.0 )
+	if ( abs(hit.x) <= oneMinusK && hit.y > 0.0 && hit.z < 0.0 && t1 > 0.0 )
 	{
 		n = vec3(0.0, hit.y, hit.z);
 		return t1;
@@ -552,16 +553,16 @@ float UnitRoundedBoxInterior_ParamIntersect( vec3 ro, vec3 rd, float k, out vec3
 	ro = initialRayO;
 
 	// check upper front cylinder along X axis
-	ro.y -= (1.0 - k);
-	ro.z -= (1.0 - k);
+	ro.y -= oneMinusK;
+	ro.z -= oneMinusK;
 
 	a = (rd.y * rd.y) + (rd.z * rd.z);
 	b = 2.0 * ((rd.y * ro.y) + (rd.z * ro.z));
-	c = ((ro.y * ro.y) + (ro.z * ro.z)) - (k * k);
+	c = ((ro.y * ro.y) + (ro.z * ro.z)) - k_squared;
 	solveQuadratic(a, b, c, t0, t1);
 
 	hit = ro + (rd * t1);
-	if ( abs(hit.x) <= (1.0 - k) && hit.y > 0.0 && hit.z > 0.0 && t1 > 0.0 )
+	if ( abs(hit.x) <= oneMinusK && hit.y > 0.0 && hit.z > 0.0 && t1 > 0.0 )
 	{
 		n = vec3(0.0, hit.y, hit.z);
 		return t1;
@@ -569,16 +570,16 @@ float UnitRoundedBoxInterior_ParamIntersect( vec3 ro, vec3 rd, float k, out vec3
 	ro = initialRayO;
 
 	// check back left cylinder along Y axis
-	ro.x += (1.0 - k);
-	ro.z += (1.0 - k);
+	ro.x += oneMinusK;
+	ro.z += oneMinusK;
 
 	a = (rd.x * rd.x) + (rd.z * rd.z);
 	b = 2.0 * ((rd.x * ro.x) + (rd.z * ro.z));
-	c = ((ro.x * ro.x) + (ro.z * ro.z)) - (k * k);
+	c = ((ro.x * ro.x) + (ro.z * ro.z)) - k_squared;
 	solveQuadratic(a, b, c, t0, t1);
 
 	hit = ro + (rd * t1);
-	if ( hit.x < 0.0 && abs(hit.y) <= (1.0 - k) && hit.z < 0.0 && t1 > 0.0 )
+	if ( hit.x < 0.0 && abs(hit.y) <= oneMinusK && hit.z < 0.0 && t1 > 0.0 )
 	{
 		n = vec3(hit.x, 0.0, hit.z);
 		return t1;
@@ -586,16 +587,16 @@ float UnitRoundedBoxInterior_ParamIntersect( vec3 ro, vec3 rd, float k, out vec3
 	ro = initialRayO;
 
 	// check back right cylinder along Y axis
-	ro.x -= (1.0 - k);
-	ro.z += (1.0 - k);
+	ro.x -= oneMinusK;
+	ro.z += oneMinusK;
 
 	a = (rd.x * rd.x) + (rd.z * rd.z);
 	b = 2.0 * ((rd.x * ro.x) + (rd.z * ro.z));
-	c = ((ro.x * ro.x) + (ro.z * ro.z)) - (k * k);
+	c = ((ro.x * ro.x) + (ro.z * ro.z)) - k_squared;
 	solveQuadratic(a, b, c, t0, t1);
 
 	hit = ro + (rd * t1);
-	if ( hit.x > 0.0 && abs(hit.y) <= (1.0 - k) && hit.z < 0.0 && t1 > 0.0 )
+	if ( hit.x > 0.0 && abs(hit.y) <= oneMinusK && hit.z < 0.0 && t1 > 0.0 )
 	{
 		n = vec3(hit.x, 0.0, hit.z);
 		return t1;
@@ -603,16 +604,16 @@ float UnitRoundedBoxInterior_ParamIntersect( vec3 ro, vec3 rd, float k, out vec3
 	ro = initialRayO;
 
 	// check front left cylinder along Y axis
-	ro.x += (1.0 - k);
-	ro.z -= (1.0 - k);
+	ro.x += oneMinusK;
+	ro.z -= oneMinusK;
 
 	a = (rd.x * rd.x) + (rd.z * rd.z);
 	b = 2.0 * ((rd.x * ro.x) + (rd.z * ro.z));
-	c = ((ro.x * ro.x) + (ro.z * ro.z)) - (k * k);
+	c = ((ro.x * ro.x) + (ro.z * ro.z)) - k_squared;
 	solveQuadratic(a, b, c, t0, t1);
 
 	hit = ro + (rd * t1);
-	if ( hit.x < 0.0 && abs(hit.y) <= (1.0 - k) && hit.z > 0.0 && t1 > 0.0 )
+	if ( hit.x < 0.0 && abs(hit.y) <= oneMinusK && hit.z > 0.0 && t1 > 0.0 )
 	{
 		n = vec3(hit.x, 0.0, hit.z);
 		return t1;
@@ -620,16 +621,16 @@ float UnitRoundedBoxInterior_ParamIntersect( vec3 ro, vec3 rd, float k, out vec3
 	ro = initialRayO;
 
 	// check front right cylinder along Y axis
-	ro.x -= (1.0 - k);
-	ro.z -= (1.0 - k);
+	ro.x -= oneMinusK;
+	ro.z -= oneMinusK;
 
 	a = (rd.x * rd.x) + (rd.z * rd.z);
 	b = 2.0 * ((rd.x * ro.x) + (rd.z * ro.z));
-	c = ((ro.x * ro.x) + (ro.z * ro.z)) - (k * k);
+	c = ((ro.x * ro.x) + (ro.z * ro.z)) - k_squared;
 	solveQuadratic(a, b, c, t0, t1);
 
 	hit = ro + (rd * t1);
-	if ( hit.x > 0.0 && abs(hit.y) <= (1.0 - k) && hit.z > 0.0 && t1 > 0.0 )
+	if ( hit.x > 0.0 && abs(hit.y) <= oneMinusK && hit.z > 0.0 && t1 > 0.0 )
 	{
 		n = vec3(hit.x, 0.0, hit.z);
 		return t1;
