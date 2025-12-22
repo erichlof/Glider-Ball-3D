@@ -13,9 +13,13 @@ uniform mat4 uComputerGoalInvMatrix;
 uniform mat4 uBallCollisionVolumeInvMatrix;
 uniform mat4 uGlider1CollisionVolumeInvMatrix;
 uniform mat4 uGlider2CollisionVolumeInvMatrix;
+uniform vec3 uLight1Position;
+uniform vec3 uLight2Position;
+uniform vec3 uLight3Position;
 uniform vec3 uCourseMinBounds;
 uniform vec3 uCourseMaxBounds;
 uniform float uCourseShapeKparameter;
+uniform float uTorusUpperBound;
 uniform int uCourseShapeType;
 
 #define N_LIGHTS 3.0
@@ -657,6 +661,117 @@ float UnitRoundedBoxInterior_ParamIntersect( vec3 ro, vec3 rd, float k, out vec3
 	return INFINITY;
 }
 
+// TORUS ////////////////////////////////////////////////////
+
+// standard modern quadratic solver (degree 2)
+int root_find2(out float r[4], float a, float b, float c) 
+{
+	int count = 0;
+	float d = b*b - 4.*a*c;
+	if (d < 0.)
+		return count;
+	float h = sqrt(d);
+	float q = -.5 * (b + (b > 0. ? h : -h));
+	vec2 v = vec2(q/a, c/q);
+	if (v.x > v.y) v.xy = v.yx; // keep them ordered
+	if (v.x >= 0.) r[count++] = v.x;
+	if (v.y >= 0.) r[count++] = v.y;
+	return count;
+}
+
+float poly4(float a, float b, float c, float d, float e, float t) 
+{
+	return (((a * t + b) * t + c) * t + d) * t + e;
+}
+
+// Newton bisection
+//
+// a,b,c,d,e: 4th degree polynomial parameters
+// t: x-axis boundaries
+// v: respectively f(t.x) and f(t.y)
+float bisect4(float a, float b, float c, float d, float e, vec2 t, vec2 v) {
+    float x = (t.x+t.y) * .5; // mid point
+    float s = v.x < v.y ? 1. : -1.; // sign flip
+    for (int i = 0; i < 32; i++) {
+        // Evaluate polynomial (y) and its derivative (q) using Horner's method in one pass
+        float y = a*x + b, q = a*x + y;
+              y = y*x + c; q = q*x + y;
+              y = y*x + d; q = q*x + y;
+              y = y*x + e;
+
+        t = s*y < 0. ? vec2(x, t.y) : vec2(t.x, x);
+        float next = x - y/q; // Newton iteration
+        next = next >= t.x && next <= t.y ? next : (t.x+t.y) * .5;
+        if (abs(next - x) < 1e-4) // eps
+            return next;
+        x = next;
+    }
+    return x;
+}
+
+// Quartic: solve ax⁴+bx³+cx²+dx+e=0
+int cy_find4(out float r[4], float r4[4], int n, float a, float b, float c, float d, float e, float upper_bound) 
+{
+	int count = 0;
+	vec2 p = vec2(0, poly4(a,b,c,d,e, 0.));
+	for (int i = 0; i <= n; i++) 
+	{
+		float x = i == n ? upper_bound : r4[i],
+		y = poly4(a,b,c,d,e, x);
+		if (p.y * y > 0.)
+			continue;
+		float v = bisect4(a,b,c,d,e, vec2(p.x,x), vec2(p.y,y));
+		r[count++] = v;
+		p = vec2(x, y);
+	}
+	return count;
+}
+
+// f4(x) =   ax^4 +  bx^3 +  cx^2 + dx + e;
+// f3(x) =  4ax^3 + 3bx^2 + 2cx   + d;
+// f2(x) = 12ax^2 + 6bx   + 2c; can be simplified by dividing all coefficients by 2
+//         /2      /2      /2  now becomes...
+// f2(x) =  6ax^2 + 3bx   +  c;
+int root_find4_cy(out float r[4], float a, float b, float c, float d, float e, float upper_bound) 
+{
+	float r2[4], r3[4];
+	int n = root_find2(r2,      6.*a, 3.*b,    c);                   // degree 2
+	n = cy_find4(r3, r2, n, 0., 4.*a, 3.*b, 2.*c, d,    upper_bound);// degree 3
+	n = cy_find4(r,  r3, n,        a,    b,    c, d, e, upper_bound);// degree 4
+	return n;
+}
+
+float UnitTorusInterior_ParamIntersect(vec3 ro, vec3 rd, float torus_r, float upper_bound, out vec3 n) 
+{
+	//torus_R is the distance (Major-Radius) from the torus center to the middle of the surrounding tubing
+	//  in this implementation, torus_R is set to unit radius of 1.0, which makes instancing easier
+	//torus_r is the user-defined thickness (minor-radius) of circular tubing part of torus/ring, range: 0.01 to 1.0
+	float torusR2 = 1.0; // Unit torus with torus_R (Major-Radius) of 1.0, torus_R * torus_R = 1.0 * 1.0
+	float torusr2 = torus_r * torus_r; // user-defined minor-radius, range: 0.01 to 1.0
+	// Note: the vec3 'rd' might not be normalized to unit length of 1, 
+	//  in order to allow for inverse transform of intersecting rays into Torus' object space
+	float u = dot(rd, rd);
+	float v = 2.0 * dot(ro, rd);
+	float w = dot(ro, ro) - (torusR2 + torusr2);
+	// at^4 + bt^3 + ct^2 + dt + e = 0
+	float a = u * u;
+	float b = 2.0 * u * v;
+	float c = (v * v) + (2.0 * u * w) + (4.0 * torusR2 * rd.z * rd.z);
+	float d = (2.0 * v * w) + (8.0 * torusR2 * ro.z * rd.z);
+	float e = (w * w) + (4.0 * torusR2 * ((ro.z * ro.z) - torusr2));
+
+	float roots[4];
+	int numRoots = root_find4_cy(roots, a, b, c, d, e, upper_bound);
+	
+	vec3 pos = ro + (roots[0] * rd);
+	n = pos * (dot(pos, pos) - torusr2 - (torusR2 * vec3(1, 1, -1)));
+
+	if (roots[0] > 0.0)
+		return roots[0];
+
+	return INFINITY;
+}
+
 
 //-------------------------------------------------------------------------------------------------------------------
 float SceneIntersect(out int finalIsRayExiting)
@@ -729,6 +844,8 @@ float SceneIntersect(out int finalIsRayExiting)
 		d = UnitCapsuleInterior_ParamIntersect(rObjOrigin, rObjDirection, uCourseShapeKparameter, normal);
 	else if (uCourseShapeType == 9)
 		d = UnitRoundedBoxInterior_ParamIntersect(rObjOrigin, rObjDirection, uCourseShapeKparameter, normal);
+	else if (uCourseShapeType == 10)
+		d = UnitTorusInterior_ParamIntersect(rObjOrigin, rObjDirection, uCourseShapeKparameter, uTorusUpperBound, normal);
 	if (d < t)
 	{
 		t = d;
@@ -1161,9 +1278,9 @@ void SetupScene(void)
 	vec3 L2 = vec3(1.0, 0.8, 0.2) * lightPower;// Yellow light
 	vec3 L3 = vec3(0.1, 0.7, 1.0) * lightPower;// Blue light
 		
-	spheres[0] = Sphere(30.0, vec3(-100,-150, 50), L1, vec3(0), LIGHT);//spherical white Light1 
-	spheres[1] = Sphere(20.0, vec3( 100,-100,-150), L2, vec3(0), LIGHT);//spherical yellow Light2
-	spheres[2] = Sphere(10.0, vec3( 150,-120, 50), L3, vec3(0), LIGHT);//spherical blue Light3
+	spheres[0] = Sphere(30.0, uLight1Position, L1, vec3(0), LIGHT);//spherical white Light1 
+	spheres[1] = Sphere(20.0, uLight2Position, L2, vec3(0), LIGHT);//spherical yellow Light2
+	spheres[2] = Sphere(10.0, uLight3Position, L3, vec3(0), LIGHT);//spherical blue Light3
 	
 	unitSpheres[0] = UnitSphere(vec3(0), vec3(1.0, 1.0, 1.0), DIFF);//checkered Course
 
