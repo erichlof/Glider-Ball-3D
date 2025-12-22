@@ -778,6 +778,150 @@ function intersectUnitRoundedBox(rayO, rayD, K, normal)
 	}
 } // end function intersectUnitRoundedBox(rayO, rayD, K, normal)
 
+// TORUS ////////////////////////////////////////////////////
+
+let count = 0;
+let h = 0;
+let q = 0;
+let V = new THREE.Vector2();
+// standard modern quadratic solver (degree 2)
+function root_find2(r, a, b, c) 
+{
+	count = 0;
+	d = (b*b) - (4*a*c);
+	if (d < 0)
+		return count;
+	h = Math.sqrt(d);
+	q = -0.5 * (b + (b > 0 ? h : -h));
+	V.set(q/a, c/q);
+	if (V.x > V.y) V.set(V.y, V.x); // keep them ordered
+	if (V.x >= 0) r[count++] = V.x;
+	if (V.y >= 0) r[count++] = V.y;
+	return count;
+}
+
+function poly4(a, b, c, d, e, t) 
+{
+	return (((a * t + b) * t + c) * t + d) * t + e;
+}
+
+// Newton bisection
+//
+// a,b,c,d,e: 4th degree polynomial parameters
+// t: x-axis boundaries
+// v: respectively f(t.x) and f(t.y)
+
+let x = 0;
+let y = 0;
+let s = 0;
+let next = 0;
+function bisect4(a, b, c, d, e, t, v) 
+{
+	x = (t.x+t.y) * 0.5; // mid point
+	s = v.x < v.y ? 1 : -1; // sign flip
+	for (let i = 0; i < 32; i++) 
+	{
+		// Evaluate polynomial (y) and its derivative (q) using Horner's method in one pass
+		y = a*x + b, q = a*x + y;
+		y = y*x + c; q = q*x + y;
+		y = y*x + d; q = q*x + y;
+		y = y*x + e;
+
+		if (s*y < 0) 
+			t.set(x, t.y) 
+		else t.set(t.x, x);
+		next = x - y/q; // Newton iteration
+		next = next >= t.x && next <= t.y ? next : (t.x+t.y) * 0.5;
+		if (Math.abs(next - x) < 1e-4) // eps
+		return next;
+		x = next;
+	}
+
+    	return x;
+}
+
+let P = new THREE.Vector2();
+let P1 = new THREE.Vector2();
+let P2 = new THREE.Vector2();
+let v = 0;
+// Quartic: solve ax⁴+bx³+cx²+dx+e=0
+function cy_find4(r, r4, n, a, b, c, d, e, upper_bound) 
+{
+	count = 0;
+	P.set(0, poly4(a,b,c,d,e, 0));
+	for (let i = 0; i <= n; i++) 
+	{
+		x = i == n ? upper_bound : r4[i],
+		y = poly4(a,b,c,d,e, x);
+		if (P.y * y > 0)
+			continue;
+		P1.set(P.x,x); P2.set(P.y,y);
+		v = bisect4(a,b,c,d,e, P1, P2);
+		r[count++] = v;
+		P.set(x, y);
+	}
+	return count;
+}
+
+let r2 = [];
+let r3 = [];
+let n = 0;
+// f4(x) =   ax^4 +  bx^3 +  cx^2 + dx + e;
+// f3(x) =  4ax^3 + 3bx^2 + 2cx   + d;
+// f2(x) = 12ax^2 + 6bx   + 2c; can be simplified by dividing all coefficients by 2
+//         /2      /2      /2  now becomes...
+// f2(x) =  6ax^2 + 3bx   +  c;
+function root_find4_cy(r, a, b, c, d, e, upper_bound) 
+{
+	
+	n = root_find2(        r2, 6*a, 3*b,   c);                   // degree 2
+	n = cy_find4(r3, r2, n, 0, 4*a, 3*b, 2*c, d,    upper_bound);// degree 3
+	n = cy_find4( r, r3, n,      a,   b,   c, d, e, upper_bound);// degree 4
+	return n;
+}
+
+let e = 0;
+let w = 0;
+let torusR2 = 0;
+let torusr2 = 0;
+let roots = [];
+let numRoots = 0;
+let pos = new THREE.Vector3();
+
+
+function intersectUnitTorus(rayO, rayD, torus_r, upper_bound, normal) 
+{
+	//torus_R is the distance (Major-Radius) from the torus center to the middle of the surrounding tubing
+	//  in this implementation, torus_R is set to unit radius of 1.0, which makes instancing easier
+	//torus_r is the user-defined thickness (minor-radius) of circular tubing part of torus/ring, range: 0.01 to 1.0
+	torusR2 = 1; // Unit torus with torus_R (Major-Radius) of 1.0, torus_R * torus_R = 1.0 * 1.0
+	torusr2 = torus_r * torus_r; // user-defined minor-radius, range: 0.01 to 1.0
+	// Note: the vec3 'rd' might not be normalized to unit length of 1, 
+	//  in order to allow for inverse transform of intersecting rays into Torus' object space
+	u = rayD.dot(rayD)
+	v = 2 * rayO.dot(rayD);
+	w = rayO.dot(rayO) - (torusR2 + torusr2);
+	// at^4 + bt^3 + ct^2 + dt + e = 0
+	a = u * u;
+	b = 2 * u * v;
+	c = (v * v) + (2 * u * w) + (4 * torusR2 * rayD.z * rayD.z);
+	d = (2 * v * w) + (8 * torusR2 * rayO.z * rayD.z);
+	e = (w * w) + (4 * torusR2 * ((rayO.z * rayO.z) - torusr2));
+
+	numRoots = root_find4_cy(roots, a, b, c, d, e, upper_bound);
+	
+	pos.getPointAlongRay(rayO, rayD, roots[0]);
+	//n = pos * (dot(pos, pos) - torusr2 - (torusR2 * vec3(1, 1, -1)));
+	normal.x = pos.x * (pos.dot(pos) - torusr2 - torusR2);
+	normal.y = pos.y * (pos.dot(pos) - torusr2 - torusR2);
+	normal.z = pos.z * (pos.dot(pos) - torusr2 + torusR2);
+
+	if (roots[0] > 0)
+		return roots[0];
+}
+
+
+
 
 function raycastUnitBox(rayO, rayD)
 {
