@@ -9,6 +9,10 @@ let courseShape = new THREE.Object3D();
 let courseShape_invMatrix = new THREE.Matrix4();
 let courseMinBounds = new THREE.Vector3(-1, -1, -1);
 let courseMaxBounds = new THREE.Vector3( 1, 1, 1);
+let torusUpperBound = 0;
+let light1Position = new THREE.Vector3();
+let light2Position = new THREE.Vector3();
+let light3Position = new THREE.Vector3();
 
 let glider1Base = new THREE.Object3D();
 let glider1CollisionVolume = new THREE.Object3D();
@@ -179,6 +183,8 @@ function intersectCourse()
 		courseT = intersectUnitCapsule(rayObjectOrigin, rayObjectDirection, courseShapeKparameter, intersectionNormal);
 	else if (courseShapeType == 'RoundedBox')
 		courseT = intersectUnitRoundedBox(rayObjectOrigin, rayObjectDirection, courseShapeKparameter, intersectionNormal);
+	else if (courseShapeType == 'Torus')
+		courseT = intersectUnitTorus(rayObjectOrigin, rayObjectDirection, courseShapeKparameter, torusUpperBound, intersectionNormal);
 	return courseT;
 }
 
@@ -264,8 +270,8 @@ function initSceneData()
 	function handleCourseClipXYZChange() { needChangeCourseClipXYZBounds = true; }
 	function handleCourseShapeKparamChange() { needChangeCourseShapeKparameter = true; }
 
-	course_TypeController = gui.add(course_TypeObject, 'Course_Type', ['Sphere', 'Ellipsoid', 'Cylinder', 'Paraboloid', 'Cone', 'Hyperboloid', 'HyperbolicParaboloid',
-		'Plane', 'Capsule', 'RoundedBox']).onChange(handleCourseTypeChange);
+	course_TypeController = gui.add(course_TypeObject, 'Course_Type', ['Sphere', 'Ellipsoid', 'Cylinder', 'Paraboloid', 'Cone', 'Hyperboloid', 
+		'HyperbolicParaboloid', 'Plane', 'Capsule', 'RoundedBox', 'Torus']).onChange(handleCourseTypeChange);
 	
 	scale_Folder = gui.addFolder('Scale');
 	course_ScaleUniformController = scale_Folder.add(course_ScaleUniformObject, 'uniformScale', 200, 1500, 1).onChange(handleCourseScaleUniformChange);
@@ -302,10 +308,14 @@ function initSceneData()
 	pathTracingUniforms.uBallCollisionVolumeInvMatrix = { value: new THREE.Matrix4() };
 	pathTracingUniforms.uGlider1CollisionVolumeInvMatrix = { value: new THREE.Matrix4() };
 	pathTracingUniforms.uGlider2CollisionVolumeInvMatrix = { value: new THREE.Matrix4() };
+	pathTracingUniforms.uLight1Position = { value: light1Position };
+	pathTracingUniforms.uLight2Position = { value: light2Position };
+	pathTracingUniforms.uLight3Position = { value: light3Position };
 	pathTracingUniforms.uCourseMinBounds = { value: courseMinBounds };
 	pathTracingUniforms.uCourseMaxBounds = { value: courseMaxBounds };
 	pathTracingUniforms.uCourseShapeType = { value: 0 };
 	pathTracingUniforms.uCourseShapeKparameter = { value: 1.0 };
+	pathTracingUniforms.uTorusUpperBound = { value: 0.0 };
 
 } // end function initSceneData()
 
@@ -322,6 +332,14 @@ function updateVariablesAndUniforms()
 
 		if (courseShapeType == 'Sphere')
 		{
+			glider1StartingPosition.set(0, -10, 75);
+			glider2StartingPosition.set(0, -10, -75);
+			ballStartingPosition.set(0, -10, 0);
+			playerGoalStartingPosition.set(75, -10, 0);
+			computerGoalStartingPosition.set(-75, -10, 0);
+			light1Position.set(-100, -150, 50);
+			light2Position.set(100, -100, -150);
+			light3Position.set(150, -120, 50);
 			courseShape.position.set(0, 0, 0);
 			course_ScaleXController.setValue(500);
 			course_ScaleYController.setValue(500);
@@ -338,6 +356,14 @@ function updateVariablesAndUniforms()
 		}
 		else if (courseShapeType == 'Ellipsoid')
 		{
+			glider1StartingPosition.set(0, -10, 75);
+			glider2StartingPosition.set(0, -10, -75);
+			ballStartingPosition.set(0, -10, 0);
+			playerGoalStartingPosition.set(75, -10, 0);
+			computerGoalStartingPosition.set(-75, -10, 0);
+			light1Position.set(-100, -150, 50);
+			light2Position.set(100, -100, -150);
+			light3Position.set(150, -120, 50);
 			courseShape.position.set(0, 0, 0);
 			course_ScaleXController.setValue(600);
 			course_ScaleYController.setValue(300);
@@ -354,6 +380,14 @@ function updateVariablesAndUniforms()
 		}
 		else if (courseShapeType == 'Cylinder')
 		{
+			glider1StartingPosition.set(0, -10, 75);
+			glider2StartingPosition.set(0, -10, -75);
+			ballStartingPosition.set(0, -10, 0);
+			playerGoalStartingPosition.set(75, -10, 0);
+			computerGoalStartingPosition.set(-75, -10, 0);
+			light1Position.set(-100, -150, 50);
+			light2Position.set(100, -100, -150);
+			light3Position.set(150, -120, 50);
 			courseShape.position.set(0, 0, 0);
 			course_ScaleXController.setValue(500);
 			course_ScaleYController.setValue(500);
@@ -370,6 +404,14 @@ function updateVariablesAndUniforms()
 		}
 		else if (courseShapeType == 'Paraboloid')
 		{
+			glider1StartingPosition.set(0, -10, 75);
+			glider2StartingPosition.set(0, -10, -75);
+			ballStartingPosition.set(0, -10, 0);
+			playerGoalStartingPosition.set(75, -10, 0);
+			computerGoalStartingPosition.set(-75, -10, 0);
+			light1Position.set(-100, -150, 50);
+			light2Position.set(100, -100, -150);
+			light3Position.set(150, -120, 50);
 			courseShape.position.set(0, 0, 0);
 			course_ScaleXController.setValue(500);
 			course_ScaleYController.setValue(500);
@@ -390,6 +432,14 @@ function updateVariablesAndUniforms()
 		}
 		else if (courseShapeType == 'Cone')
 		{
+			glider1StartingPosition.set(0, -10, 75);
+			glider2StartingPosition.set(0, -10, -75);
+			ballStartingPosition.set(0, -10, 0);
+			playerGoalStartingPosition.set(75, -10, 0);
+			computerGoalStartingPosition.set(-75, -10, 0);
+			light1Position.set(-100, -150, 50);
+			light2Position.set(100, -100, -150);
+			light3Position.set(150, -120, 50);
 			courseShape.position.set(0, 0, 0);
 			course_ScaleXController.setValue(500);
 			course_ScaleYController.setValue(500);
@@ -410,6 +460,14 @@ function updateVariablesAndUniforms()
 		}
 		else if (courseShapeType == 'Hyperboloid')
 		{
+			glider1StartingPosition.set(0, -10, 75);
+			glider2StartingPosition.set(0, -10, -75);
+			ballStartingPosition.set(0, -10, 0);
+			playerGoalStartingPosition.set(75, -10, 0);
+			computerGoalStartingPosition.set(-75, -10, 0);
+			light1Position.set(-100, -150, 50);
+			light2Position.set(100, -100, -150);
+			light3Position.set(150, -120, 50);
 			courseShape.position.set(0, 0, 0);
 			course_ScaleXController.setValue(500);
 			course_ScaleYController.setValue(500);
@@ -430,6 +488,14 @@ function updateVariablesAndUniforms()
 		}
 		else if (courseShapeType == 'HyperbolicParaboloid')
 		{
+			glider1StartingPosition.set(0, -10, 75);
+			glider2StartingPosition.set(0, -10, -75);
+			ballStartingPosition.set(0, -10, 0);
+			playerGoalStartingPosition.set(75, -10, 0);
+			computerGoalStartingPosition.set(-75, -10, 0);
+			light1Position.set(-100, -150, 50);
+			light2Position.set(100, -100, -150);
+			light3Position.set(150, -120, 50);
 			courseShape.position.set(0, -200, 0);
 			course_ScaleXController.setValue(500);
 			course_ScaleYController.setValue(500);
@@ -446,6 +512,14 @@ function updateVariablesAndUniforms()
 		}
 		if (courseShapeType == 'Plane')
 		{
+			glider1StartingPosition.set(0, -10, 75);
+			glider2StartingPosition.set(0, -10, -75);
+			ballStartingPosition.set(0, -10, 0);
+			playerGoalStartingPosition.set(75, -10, 0);
+			computerGoalStartingPosition.set(-75, -10, 0);
+			light1Position.set(-100, -150, 50);
+			light2Position.set(100, -100, -150);
+			light3Position.set(150, -120, 50);
 			courseShape.position.set(0, -200, 0);
 			course_ScaleXController.setValue(500);
 			course_ScaleYController.setValue(500);
@@ -462,6 +536,14 @@ function updateVariablesAndUniforms()
 		}
 		else if (courseShapeType == 'Capsule')
 		{
+			glider1StartingPosition.set(0, -10, 75);
+			glider2StartingPosition.set(0, -10, -75);
+			ballStartingPosition.set(0, -10, 0);
+			playerGoalStartingPosition.set(75, -10, 0);
+			computerGoalStartingPosition.set(-75, -10, 0);
+			light1Position.set(-100, -150, 50);
+			light2Position.set(100, -100, -150);
+			light3Position.set(150, -120, 50);
 			courseShape.position.set(0, 0, 0);
 			course_ScaleXController.setValue(500);
 			course_ScaleYController.setValue(500);
@@ -484,16 +566,18 @@ function updateVariablesAndUniforms()
 		}
 		else if (courseShapeType == 'RoundedBox')
 		{
+			glider1StartingPosition.set(0, -10, 75);
+			glider2StartingPosition.set(0, -10, -75);
+			ballStartingPosition.set(0, -10, 0);
+			playerGoalStartingPosition.set(75, -10, 0);
+			computerGoalStartingPosition.set(-75, -10, 0);
+			light1Position.set(-100, -150, 50);
+			light2Position.set(100, -100, -150);
+			light3Position.set(150, -120, 50);
 			courseShape.position.set(0, 0, 0);
 			course_ScaleXController.setValue(500);
 			course_ScaleYController.setValue(500);
 			course_ScaleZController.setValue(500);
-			course_ClipMinXController.min(-2); course_ClipMaxXController.max(2);
-			course_ClipMinYController.min(-2); course_ClipMaxYController.max(2);
-			course_ClipMinZController.min(-2); course_ClipMaxZController.max(2);
-			course_ClipMinXController.setValue(-2); course_ClipMaxXController.setValue(2);
-			course_ClipMinYController.setValue(-2); course_ClipMaxYController.setValue(2);
-			course_ClipMinZController.setValue(-2); course_ClipMaxZController.setValue(2);
 			clipBoundaries_Folder.hide();
 			courseShapeKparameter = 0.1;
 			course_ShapeKparameterController.enable();
@@ -501,6 +585,32 @@ function updateVariablesAndUniforms()
 			course_ShapeKparameterController.setValue(courseShapeKparameter);
 			pathTracingUniforms.uCourseShapeKparameter.value = courseShapeKparameter;
 			pathTracingUniforms.uCourseShapeType.value = 9;
+		}
+		else if (courseShapeType == 'Torus')
+		{
+			glider1StartingPosition.set(0 + course_ScaleXController.getValue(), -10, 75);
+			glider2StartingPosition.set(0 - course_ScaleXController.getValue(), -10, -75);
+			ballStartingPosition.set(0 + course_ScaleXController.getValue(), -10, 0);
+			playerGoalStartingPosition.set(75 + course_ScaleXController.getValue(), -10, 0);
+			computerGoalStartingPosition.set(-75 - course_ScaleXController.getValue(), -10, 0);
+			// (lights position placement is handled in needChangeCourseScale code further down)
+			courseShape.position.set(0, 0, 0);
+			course_ScaleXController.setValue(500);
+			course_ScaleYController.setValue(500);
+			course_ScaleZController.setValue(500);
+			clipBoundaries_Folder.show();
+			course_ClipMinXController.min(-2); course_ClipMaxXController.max(2);
+			course_ClipMinYController.min(-2); course_ClipMaxYController.max(2);
+			course_ClipMinZController.min(-2); course_ClipMaxZController.max(2);
+			course_ClipMinXController.setValue(-2); course_ClipMaxXController.setValue(2);
+			course_ClipMinYController.setValue(-2); course_ClipMaxYController.setValue(2);
+			course_ClipMinZController.setValue(-2); course_ClipMaxZController.setValue(2);
+			courseShapeKparameter = 0.5;
+			course_ShapeKparameterController.enable();
+			course_ShapeKparameterController.min(0.2); course_ShapeKparameterController.max(0.99);
+			course_ShapeKparameterController.setValue(courseShapeKparameter);
+			pathTracingUniforms.uCourseShapeKparameter.value = courseShapeKparameter;
+			pathTracingUniforms.uCourseShapeType.value = 10;
 		}
 
 		cameraIsMoving = true;
@@ -531,6 +641,26 @@ function updateVariablesAndUniforms()
 		courseShape.scale.set(course_ScaleXController.getValue(),
 			course_ScaleYController.getValue(),
 			course_ScaleZController.getValue());
+
+		if (courseShapeType == 'Torus')
+		{
+			glider1StartingPosition.set(0 + course_ScaleXController.getValue(), -10, 75);
+			glider2StartingPosition.set(0 - course_ScaleXController.getValue(), -10, -75);
+			ballStartingPosition.set(0 + course_ScaleXController.getValue(), -10, 0);
+			playerGoalStartingPosition.set(75 + course_ScaleXController.getValue(), -10, 0);
+			computerGoalStartingPosition.set(-75 - course_ScaleXController.getValue(), -10, 0);
+
+			light1Position.set(-10 - course_ScaleXController.getValue(), -15, 5);
+			light2Position.set(10 + course_ScaleXController.getValue(), -10, -15);
+			light3Position.set(5, course_ScaleYController.getValue(), 5);
+
+			torusUpperBound = courseShape.scale.x;
+			if (courseShape.scale.y > torusUpperBound) torusUpperBound = courseShape.scale.y;
+			if (courseShape.scale.z > torusUpperBound) torusUpperBound = courseShape.scale.z;
+
+			torusUpperBound *= 4;
+			pathTracingUniforms.uTorusUpperBound.value = torusUpperBound;
+		}
 
 		courseShape.updateMatrixWorld();
 		courseShape_invMatrix.copy(courseShape.matrixWorld).invert();
@@ -581,7 +711,6 @@ function updateVariablesAndUniforms()
 	if (levelBeginFlag)
 	{
 		// GLIDER 1 (player)
-		glider1StartingPosition.set(0, -10, 75);
 		glider1Base.position.copy(glider1StartingPosition);
 		glider1OldPosition.copy(glider1Base.position);
 		glider1CollisionVolume.position.copy(glider1Base.position);
@@ -592,7 +721,6 @@ function updateVariablesAndUniforms()
 		glider1IsInAir = true;
 
 		// GLIDER 2 (AI controlled)
-		glider2StartingPosition.set(0, -10, -75);
 		glider2Base.position.copy(glider2StartingPosition);
 		glider2OldPosition.copy(glider2Base.position);
 		glider2CollisionVolume.position.copy(glider2Base.position);
@@ -603,7 +731,6 @@ function updateVariablesAndUniforms()
 		glider2IsInAir = true;
 
 		// BALL
-		ballStartingPosition.set(0, -10, 0);
 		ball.position.copy(ballStartingPosition);
 		ballOldPosition.copy(ball.position);
 		ballCollisionVolume.position.copy(ball.position);
@@ -614,7 +741,6 @@ function updateVariablesAndUniforms()
 		ballIsInAir = true;
 
 		// PLAYER's GOAL
-		playerGoalStartingPosition.set(75, -10, 0);
 		playerGoal.position.copy(playerGoalStartingPosition);
 		playerGoalOldPosition.copy(playerGoal.position);
 		playerGoalRight.set(1, 0, 0);
@@ -624,7 +750,6 @@ function updateVariablesAndUniforms()
 		playerGoalIsInAir = true;
 
 		// COMPUTER's GOAL
-		computerGoalStartingPosition.set(-75, -10, 0);
 		computerGoal.position.copy(computerGoalStartingPosition);
 		computerGoalOldPosition.copy(computerGoal.position);
 		computerGoalRight.set(1, 0, 0);
