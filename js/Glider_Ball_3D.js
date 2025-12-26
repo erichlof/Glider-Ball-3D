@@ -158,6 +158,11 @@ let course_ClipMaxZObject, course_ClipMaxZController;
 let needChangeCourseClipXYZBounds = false;
 let level_RestartObject;
 
+let p0 = new THREE.Vector3(-1, 1, 1);
+let p1 = new THREE.Vector3( 1,-1, 1);
+let p2 = new THREE.Vector3( 1, 1,-1);
+let p3 = new THREE.Vector3(-1, 0,-1);
+
 let demoInfoElement = document.getElementById('demoInfo');
 
 
@@ -185,6 +190,9 @@ function intersectCourse()
 		courseT = intersectUnitRoundedBox(rayObjectOrigin, rayObjectDirection, courseShapeKparameter, intersectionNormal);
 	else if (courseShapeType == 'Torus')
 		courseT = intersectUnitTorus(rayObjectOrigin, rayObjectDirection, courseShapeKparameter, torusUpperBound, intersectionNormal);
+	else if (courseShapeType == 'BilinearPatch')
+		courseT = intersectBilinearPatch(p0, p1, p2, p3, rayObjectOrigin, rayObjectDirection, intersectionNormal);
+	
 	return courseT;
 }
 
@@ -611,6 +619,34 @@ function updateVariablesAndUniforms()
 			course_ShapeKparameterController.setValue(courseShapeKparameter);
 			pathTracingUniforms.uCourseShapeKparameter.value = courseShapeKparameter;
 			pathTracingUniforms.uCourseShapeType.value = 10;
+		}
+		else if (courseShapeType == 'BilinearPatch')
+		{
+			glider1StartingPosition.set(0, -10, 75);
+			glider2StartingPosition.set(0, -10, -75);
+			ballStartingPosition.set(0, -10, 0);
+			playerGoalStartingPosition.set(75, -10, 0);
+			computerGoalStartingPosition.set(-75, -10, 0);
+			light1Position.set(-100, -150, 50);
+			light2Position.set(100, -100, -150);
+			light3Position.set(150, -120, 50);
+			courseShape.position.set(0, -400, 0);
+			course_ScaleXController.setValue(500);
+			course_ScaleYController.setValue(500);
+			course_ScaleZController.setValue(500);
+			clipBoundaries_Folder.show();
+			course_ClipMinXController.min(-1); course_ClipMaxXController.max(1);
+			course_ClipMinYController.min(-1); course_ClipMaxYController.max(1);
+			course_ClipMinZController.min(-1); course_ClipMaxZController.max(1);
+			course_ClipMinXController.setValue(-1); course_ClipMaxXController.setValue(1);
+			course_ClipMinYController.setValue(-1); course_ClipMaxYController.setValue(1);
+			course_ClipMinZController.setValue(-1); course_ClipMaxZController.setValue(1);
+			courseShapeKparameter = 0.5;
+			course_ShapeKparameterController.enable();
+			course_ShapeKparameterController.min(0.0); course_ShapeKparameterController.max(1.0);
+			course_ShapeKparameterController.setValue(courseShapeKparameter);
+			pathTracingUniforms.uCourseShapeKparameter.value = courseShapeKparameter;
+			pathTracingUniforms.uCourseShapeType.value = 11;
 		}
 
 		cameraIsMoving = true;
