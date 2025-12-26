@@ -920,6 +920,91 @@ function intersectUnitTorus(rayO, rayD, torus_r, upper_bound, normal)
 		return roots[0];
 }
 
+let q00 = new THREE.Vector3();
+let q10 = new THREE.Vector3();
+let q11 = new THREE.Vector3();
+let q01 = new THREE.Vector3();
+let qn = new THREE.Vector3();
+let e10 = new THREE.Vector3();
+let e11 = new THREE.Vector3();
+let e00 = new THREE.Vector3();
+let pa = new THREE.Vector3();
+let pb = new THREE.Vector3();
+let pn = new THREE.Vector3();
+let VecA = new THREE.Vector3();
+let VecB = new THREE.Vector3();
+let det = 0;
+let u0 = 0;
+let u1 = 0;
+let v0 = 0;
+let v1 = 0;
+
+function intersectBilinearPatch( p0, p1, p2, p3, rayO, rayD, normal )
+{
+	q00.copy(p0); q10.copy(p1); q11.copy(p2); q01.copy(p3);
+	VecA.copy(q10).sub(q00); VecB.copy(q01).sub(q11);
+	qn.crossVectors(VecA, VecB);	
+	e10.copy(q10).sub(q00); e11.copy(q11).sub(q10); e00.copy(q01).sub(q00);
+	q00.sub(rayO);
+	q10.sub(rayO);
+	VecA.crossVectors(q00, rayD); VecB.crossVectors(q10, rayD);
+	a = VecA.dot(e00);
+	b = VecB.dot(e11);
+	c = qn.dot(rayD);
+	b -= (a + c);
+	det = (b * b) - (4 * a * c);
+	if (det < 0) 
+		return;
+
+	t = Infinity;
+	det = Math.sqrt(det);
+	det = (b < 0) ? -det : det;
+	u0 = (-b - det) * 0.5;
+	u1 = a / u0;
+	u0 /= c;
+
+	if (u0 >= 0 && u0 <= 1)
+	{ 
+		pa.lerpVectors(q00, q10, u0);
+		pb.lerpVectors(e00, e11, u0);
+		pn.crossVectors(rayD, pb);
+		det = pn.dot(pn);
+		pn.crossVectors(pn, pa);
+		t0 = pn.dot(pb);
+		v0 = pn.dot(rayD);
+		if (t0 > 0 && t0 < t && v0 >= 0 && v0 <= det)
+		{
+			t = t0 / det;
+			u = u0;
+			v = v0 / det;
+		} 
+	}
+
+	if (u1 >= 0 && u1 <= 1) 
+	{	
+		pa.lerpVectors(q00, q10, u1);
+		pb.lerpVectors(e00, e11, u1);
+		pn.crossVectors(rayD, pb);
+		det = pn.dot(pn);
+		pn.crossVectors(pn, pa);
+		t1 = pn.dot(pb) / det;
+		v1 = pn.dot(rayD);
+		if (t1 > 0 && t1 < t && v1 >= 0 && v1 <= det) 
+		{
+			t = t1;
+			u = u1;
+			v = v1 / det;
+		}
+	}
+
+	tempVec.copy(q11).sub(q01);
+	VecA.lerpVectors(e10, tempVec, v); VecB.lerpVectors(e00, e11, u);
+	normal.crossVectors(VecA, VecB).negate(); //geometric normal
+
+	if (t < Infinity)
+		return t;
+}
+
 
 
 
