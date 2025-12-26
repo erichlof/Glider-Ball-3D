@@ -763,13 +763,92 @@ float UnitTorusInterior_ParamIntersect(vec3 ro, vec3 rd, float torus_r, float up
 	float roots[4];
 	int numRoots = root_find4_cy(roots, a, b, c, d, e, upper_bound);
 	
-	vec3 pos = ro + (roots[0] * rd);
-	n = pos * (dot(pos, pos) - torusr2 - (torusR2 * vec3(1, 1, -1)));
-
-	if (roots[0] > 0.0)
+	vec3 hit = ro + (roots[0] * rd);
+	n = hit * (dot(hit, hit) - torusr2 - (torusR2 * vec3(1, 1, -1)));
+	if ( roots[0] > 0.0 && dot(rd, n) > 0.0 && all(greaterThanEqual(hit, uCourseMinBounds)) && all(lessThanEqual(hit, uCourseMaxBounds)) )
 		return roots[0];
+	hit = ro + (roots[1] * rd);
+	n = hit * (dot(hit, hit) - torusr2 - (torusR2 * vec3(1, 1, -1)));
+	if ( roots[1] > 0.0 && dot(rd, n) > 0.0 && all(greaterThanEqual(hit, uCourseMinBounds)) && all(lessThanEqual(hit, uCourseMaxBounds)) )
+		return roots[1];
+	hit = ro + (roots[2] * rd);
+	n = hit * (dot(hit, hit) - torusr2 - (torusR2 * vec3(1, 1, -1)));
+	if ( roots[2] > 0.0 && dot(rd, n) > 0.0 && all(greaterThanEqual(hit, uCourseMinBounds)) && all(lessThanEqual(hit, uCourseMaxBounds)) )
+		return roots[2];
+	hit = ro + (roots[3] * rd);
+	n = hit * (dot(hit, hit) - torusr2 - (torusR2 * vec3(1, 1, -1)));
+	if ( roots[3] > 0.0 && dot(rd, n) > 0.0 && all(greaterThanEqual(hit, uCourseMinBounds)) && all(lessThanEqual(hit, uCourseMaxBounds)) )
+		return roots[3];
 
 	return INFINITY;
+}
+
+float BilinearPatch_ParamIntersect( vec3 p0, vec3 p1, vec3 p2, vec3 p3, vec3 rayOrigin, vec3 rayDirection, out vec3 normal, out float u, out float v )
+{ // algorithm/code by Alexander Reshetov (NVIDIA), from the book "Ray Tracing Gems", pg 95-109 
+	// 4 corners + "normal" qn
+	vec3 q00 = p0, q10 = p1, q11 = p2, q01 = p3;
+	vec3 qn = cross(q10-q00, q01-q11);	
+	vec3 e10 = q10 - q00; // q01 ----------- q11
+	vec3 e11 = q11 - q10; // |                 |
+	vec3 e00 = q01 - q00; // | e00         e11 |
+	q00 -= rayOrigin;     // |       e10       |
+	q10 -= rayOrigin;     // q00 ----------- q10
+	float a = dot(cross(q00, rayDirection), e00); // the equation is
+	float b = dot(cross(q10, rayDirection), e11); // a + b u + c u^2
+	float c = dot(qn, rayDirection); 	      // first compute
+	b -= (a + c);                                 // a+b+c and then b
+	float det = (b * b) - (4.0 * a * c);
+	if (det < 0.0) return INFINITY;
+
+	vec3 pa, pb, n;
+	float u0, u1; // two roots(u parameter)
+	float t = INFINITY; // need solution for the smallest t > 0
+	float t0, t1, v0, v1;
+
+	det = sqrt(det);
+	det = (b < 0.0) ? -det : det;
+	u0 = (-b - det) * 0.5; // numerically "stable" root
+	u1 = a / u0; // Viete's formula for u0*u1
+	u0 /= c;
+
+	if (u0 >= 0.0 && u0 <= 1.0) // is it inside the patch?
+	{ 
+		pa = mix(q00, q10, u0); // point on edge e10
+		pb = mix(e00, e11, u0); // it is, actually, pb - pa
+		n = cross(rayDirection, pb);
+		det = dot(n, n);
+		n = cross(n, pa);
+		t0 = dot(n, pb);
+		v0 = dot(n, rayDirection);
+		if (t0 > 0.0 && t0 < t && v0 >= 0.0 && v0 <= det)
+		{
+			t = t0 / det;
+			u = u0;
+			v = v0 / det;
+		} 
+	}
+
+	if (u1 >= 0.0 && u1 <= 1.0) 
+	{				// it is slightly different,
+		pa = mix(q00, q10, u1); // since u0 might be good
+		pb = mix(e00, e11, u1); // and we need 0 < t2 < t1
+		n = cross(rayDirection, pb);
+		det = dot(n, n);
+		n = cross(n, pa);
+		t1 = dot(n, pb) / det;
+		v1 = dot(n, rayDirection);
+		if (t1 > 0.0 && t1 < t && v1 >= 0.0 && v1 <= det) 
+		{
+			t = t1;
+			u = u1;
+			v = v1 / det;
+		}
+	}
+
+	//geometric normal
+	normal = cross(mix(e10, q11 - q01, v), mix(e00, e11, u)); // geometric normal = cross(du, dv)
+
+	return t;
 }
 
 
@@ -780,6 +859,7 @@ float SceneIntersect(out int finalIsRayExiting)
 	vec3 rObjOrigin, rObjDirection;
 	vec3 normal;
 	vec3 hitPos;
+	float u, v;
 	float q;
 	float d, dt;
 	float t = INFINITY;
@@ -846,6 +926,8 @@ float SceneIntersect(out int finalIsRayExiting)
 		d = UnitRoundedBoxInterior_ParamIntersect(rObjOrigin, rObjDirection, uCourseShapeKparameter, normal);
 	else if (uCourseShapeType == 10)
 		d = UnitTorusInterior_ParamIntersect(rObjOrigin, rObjDirection, uCourseShapeKparameter, uTorusUpperBound, normal);
+	else if (uCourseShapeType == 11)
+		d = BilinearPatch_ParamIntersect(vec3(-1,1,1), vec3(1,-1,1), vec3(1,1,-1), vec3(-1,0,-1), rObjOrigin, rObjDirection, normal, u, v);
 	if (d < t)
 	{
 		t = d;
