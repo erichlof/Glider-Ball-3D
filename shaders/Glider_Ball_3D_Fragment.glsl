@@ -849,6 +849,10 @@ float BilinearPatch_ParamIntersect( vec3 p0, vec3 p1, vec3 p2, vec3 p3, vec3 ray
 	normal = cross(mix(e10, q11 - q01, v), mix(e00, e11, u)); // geometric normal = cross(du, dv)
 
 	return t;
+	//vec3 hit = rayOrigin + (t * rayDirection);
+	// if ( all(greaterThanEqual(hit, uCourseMinBounds)) && all(lessThanEqual(hit, uCourseMaxBounds)) )
+	// 	return t;
+	// return INFINITY;
 }
 
 
