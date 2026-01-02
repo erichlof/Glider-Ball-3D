@@ -279,7 +279,7 @@ function initSceneData()
 	function handleCourseShapeKparamChange() { needChangeCourseShapeKparameter = true; }
 
 	course_TypeController = gui.add(course_TypeObject, 'Course_Type', ['Sphere', 'Ellipsoid', 'Cylinder', 'Paraboloid', 'Cone', 'Hyperboloid', 
-		'HyperbolicParaboloid', 'Plane', 'Capsule', 'RoundedBox', 'Torus']).onChange(handleCourseTypeChange);
+		'HyperbolicParaboloid', 'Plane', 'Capsule', 'RoundedBox', 'Torus', 'BilinearPatch']).onChange(handleCourseTypeChange);
 	
 	scale_Folder = gui.addFolder('Scale');
 	course_ScaleUniformController = scale_Folder.add(course_ScaleUniformObject, 'uniformScale', 200, 1500, 1).onChange(handleCourseScaleUniformChange);
@@ -340,8 +340,8 @@ function updateVariablesAndUniforms()
 
 		if (courseShapeType == 'Sphere')
 		{
-			glider1StartingPosition.set(0, -10, 75);
-			glider2StartingPosition.set(0, -10, -75);
+			glider1StartingPosition.set(0.5, -10, 75);
+			glider2StartingPosition.set(-0.5, -10, -75);
 			ballStartingPosition.set(0, -10, 0);
 			playerGoalStartingPosition.set(75, -10, 0);
 			computerGoalStartingPosition.set(-75, -10, 0);
@@ -349,6 +349,9 @@ function updateVariablesAndUniforms()
 			light2Position.set(100, -100, -150);
 			light3Position.set(150, -120, 50);
 			courseShape.position.set(0, 0, 0);
+			course_ScaleXController.show();
+			course_ScaleYController.show();
+			course_ScaleZController.show();
 			course_ScaleXController.setValue(500);
 			course_ScaleYController.setValue(500);
 			course_ScaleZController.setValue(500);
@@ -359,13 +362,13 @@ function updateVariablesAndUniforms()
 			course_ClipMinXController.setValue(-1); course_ClipMaxXController.setValue(1);
 			course_ClipMinYController.setValue(-1); course_ClipMaxYController.setValue(1);
 			course_ClipMinZController.setValue(-1); course_ClipMaxZController.setValue(1);
-			course_ShapeKparameterController.disable();
+			course_ShapeKparameterController.hide();
 			pathTracingUniforms.uCourseShapeType.value = 0;
 		}
 		else if (courseShapeType == 'Ellipsoid')
 		{
-			glider1StartingPosition.set(0, -10, 75);
-			glider2StartingPosition.set(0, -10, -75);
+			glider1StartingPosition.set(0.5, -10, 75);
+			glider2StartingPosition.set(-0.5, -10, -75);
 			ballStartingPosition.set(0, -10, 0);
 			playerGoalStartingPosition.set(75, -10, 0);
 			computerGoalStartingPosition.set(-75, -10, 0);
@@ -373,6 +376,9 @@ function updateVariablesAndUniforms()
 			light2Position.set(100, -100, -150);
 			light3Position.set(150, -120, 50);
 			courseShape.position.set(0, 0, 0);
+			course_ScaleXController.show();
+			course_ScaleYController.show();
+			course_ScaleZController.show();
 			course_ScaleXController.setValue(600);
 			course_ScaleYController.setValue(300);
 			course_ScaleZController.setValue(600);
@@ -383,13 +389,13 @@ function updateVariablesAndUniforms()
 			course_ClipMinXController.setValue(-1); course_ClipMaxXController.setValue(1);
 			course_ClipMinYController.setValue(-1); course_ClipMaxYController.setValue(1);
 			course_ClipMinZController.setValue(-1); course_ClipMaxZController.setValue(1);
-			course_ShapeKparameterController.disable();
+			course_ShapeKparameterController.hide();
 			pathTracingUniforms.uCourseShapeType.value = 1;
 		}
 		else if (courseShapeType == 'Cylinder')
 		{
-			glider1StartingPosition.set(0, -10, 75);
-			glider2StartingPosition.set(0, -10, -75);
+			glider1StartingPosition.set(0.5, -10, 75);
+			glider2StartingPosition.set(-0.5, -10, -75);
 			ballStartingPosition.set(0, -10, 0);
 			playerGoalStartingPosition.set(75, -10, 0);
 			computerGoalStartingPosition.set(-75, -10, 0);
@@ -397,6 +403,9 @@ function updateVariablesAndUniforms()
 			light2Position.set(100, -100, -150);
 			light3Position.set(150, -120, 50);
 			courseShape.position.set(0, 0, 0);
+			course_ScaleXController.show();
+			course_ScaleYController.show();
+			course_ScaleZController.show();
 			course_ScaleXController.setValue(500);
 			course_ScaleYController.setValue(500);
 			course_ScaleZController.setValue(500);
@@ -407,13 +416,13 @@ function updateVariablesAndUniforms()
 			course_ClipMinXController.setValue(-1); course_ClipMaxXController.setValue(1);
 			course_ClipMinYController.setValue(-1); course_ClipMaxYController.setValue(1);
 			course_ClipMinZController.setValue(-1); course_ClipMaxZController.setValue(1);
-			course_ShapeKparameterController.disable();
+			course_ShapeKparameterController.hide();
 			pathTracingUniforms.uCourseShapeType.value = 2;
 		}
 		else if (courseShapeType == 'Paraboloid')
 		{
-			glider1StartingPosition.set(0, -10, 75);
-			glider2StartingPosition.set(0, -10, -75);
+			glider1StartingPosition.set(0.5, -10, 75);
+			glider2StartingPosition.set(-0.5, -10, -75);
 			ballStartingPosition.set(0, -10, 0);
 			playerGoalStartingPosition.set(75, -10, 0);
 			computerGoalStartingPosition.set(-75, -10, 0);
@@ -421,6 +430,9 @@ function updateVariablesAndUniforms()
 			light2Position.set(100, -100, -150);
 			light3Position.set(150, -120, 50);
 			courseShape.position.set(0, 0, 0);
+			course_ScaleXController.show();
+			course_ScaleYController.show();
+			course_ScaleZController.show();
 			course_ScaleXController.setValue(500);
 			course_ScaleYController.setValue(500);
 			course_ScaleZController.setValue(500);
@@ -432,7 +444,7 @@ function updateVariablesAndUniforms()
 			course_ClipMinYController.setValue(-1); course_ClipMaxYController.setValue(1);
 			course_ClipMinZController.setValue(-1); course_ClipMaxZController.setValue(1);
 			courseShapeKparameter = 0.5;
-			course_ShapeKparameterController.enable();
+			course_ShapeKparameterController.show();
 			course_ShapeKparameterController.min(0.1); course_ShapeKparameterController.max(0.5);
 			course_ShapeKparameterController.setValue(courseShapeKparameter);
 			pathTracingUniforms.uCourseShapeKparameter.value = courseShapeKparameter;
@@ -440,8 +452,8 @@ function updateVariablesAndUniforms()
 		}
 		else if (courseShapeType == 'Cone')
 		{
-			glider1StartingPosition.set(0, -10, 75);
-			glider2StartingPosition.set(0, -10, -75);
+			glider1StartingPosition.set(0.5, -10, 75);
+			glider2StartingPosition.set(-0.5, -10, -75);
 			ballStartingPosition.set(0, -10, 0);
 			playerGoalStartingPosition.set(75, -10, 0);
 			computerGoalStartingPosition.set(-75, -10, 0);
@@ -449,6 +461,9 @@ function updateVariablesAndUniforms()
 			light2Position.set(100, -100, -150);
 			light3Position.set(150, -120, 50);
 			courseShape.position.set(0, 0, 0);
+			course_ScaleXController.show();
+			course_ScaleYController.show();
+			course_ScaleZController.show();
 			course_ScaleXController.setValue(500);
 			course_ScaleYController.setValue(500);
 			course_ScaleZController.setValue(500);
@@ -460,7 +475,7 @@ function updateVariablesAndUniforms()
 			course_ClipMinYController.setValue(-1); course_ClipMaxYController.setValue(1);
 			course_ClipMinZController.setValue(-1); course_ClipMaxZController.setValue(1);
 			courseShapeKparameter = 0.0;
-			course_ShapeKparameterController.enable();
+			course_ShapeKparameterController.show();
 			course_ShapeKparameterController.min(0.0); course_ShapeKparameterController.max(0.5);
 			course_ShapeKparameterController.setValue(courseShapeKparameter);
 			pathTracingUniforms.uCourseShapeKparameter.value = courseShapeKparameter;
@@ -468,8 +483,8 @@ function updateVariablesAndUniforms()
 		}
 		else if (courseShapeType == 'Hyperboloid')
 		{
-			glider1StartingPosition.set(0, -10, 75);
-			glider2StartingPosition.set(0, -10, -75);
+			glider1StartingPosition.set(0.5, -10, 75);
+			glider2StartingPosition.set(-0.5, -10, -75);
 			ballStartingPosition.set(0, -10, 0);
 			playerGoalStartingPosition.set(75, -10, 0);
 			computerGoalStartingPosition.set(-75, -10, 0);
@@ -477,6 +492,9 @@ function updateVariablesAndUniforms()
 			light2Position.set(100, -100, -150);
 			light3Position.set(150, -120, 50);
 			courseShape.position.set(0, 0, 0);
+			course_ScaleXController.show();
+			course_ScaleYController.show();
+			course_ScaleZController.show();
 			course_ScaleXController.setValue(500);
 			course_ScaleYController.setValue(500);
 			course_ScaleZController.setValue(500);
@@ -488,7 +506,7 @@ function updateVariablesAndUniforms()
 			course_ClipMinYController.setValue(-0.9); course_ClipMaxYController.setValue(0.9);
 			course_ClipMinZController.setValue(-1); course_ClipMaxZController.setValue(1);
 			courseShapeKparameter = 0.94;
-			course_ShapeKparameterController.enable();
+			course_ShapeKparameterController.show();
 			course_ShapeKparameterController.min(0.0); course_ShapeKparameterController.max(0.97);
 			course_ShapeKparameterController.setValue(courseShapeKparameter);
 			pathTracingUniforms.uCourseShapeKparameter.value = courseShapeKparameter;
@@ -496,8 +514,8 @@ function updateVariablesAndUniforms()
 		}
 		else if (courseShapeType == 'HyperbolicParaboloid')
 		{
-			glider1StartingPosition.set(0, -10, 75);
-			glider2StartingPosition.set(0, -10, -75);
+			glider1StartingPosition.set(0.5, -10, 75);
+			glider2StartingPosition.set(-0.5, -10, -75);
 			ballStartingPosition.set(0, -10, 0);
 			playerGoalStartingPosition.set(75, -10, 0);
 			computerGoalStartingPosition.set(-75, -10, 0);
@@ -505,6 +523,9 @@ function updateVariablesAndUniforms()
 			light2Position.set(100, -100, -150);
 			light3Position.set(150, -120, 50);
 			courseShape.position.set(0, -200, 0);
+			course_ScaleXController.show();
+			course_ScaleYController.show();
+			course_ScaleZController.show();
 			course_ScaleXController.setValue(500);
 			course_ScaleYController.setValue(500);
 			course_ScaleZController.setValue(500);
@@ -515,13 +536,13 @@ function updateVariablesAndUniforms()
 			course_ClipMinXController.setValue(-1); course_ClipMaxXController.setValue(1);
 			course_ClipMinYController.setValue(-1); course_ClipMaxYController.setValue(1.5);
 			course_ClipMinZController.setValue(-1); course_ClipMaxZController.setValue(1);
-			course_ShapeKparameterController.disable();
+			course_ShapeKparameterController.hide();
 			pathTracingUniforms.uCourseShapeType.value = 6;
 		}
 		if (courseShapeType == 'Plane')
 		{
-			glider1StartingPosition.set(0, -10, 75);
-			glider2StartingPosition.set(0, -10, -75);
+			glider1StartingPosition.set(0.5, -10, 75);
+			glider2StartingPosition.set(-0.5, -10, -75);
 			ballStartingPosition.set(0, -10, 0);
 			playerGoalStartingPosition.set(75, -10, 0);
 			computerGoalStartingPosition.set(-75, -10, 0);
@@ -529,6 +550,9 @@ function updateVariablesAndUniforms()
 			light2Position.set(100, -100, -150);
 			light3Position.set(150, -120, 50);
 			courseShape.position.set(0, -200, 0);
+			course_ScaleXController.show();
+			course_ScaleYController.show();
+			course_ScaleZController.show();
 			course_ScaleXController.setValue(500);
 			course_ScaleYController.setValue(500);
 			course_ScaleZController.setValue(500);
@@ -539,13 +563,13 @@ function updateVariablesAndUniforms()
 			course_ClipMinXController.setValue(-1); course_ClipMaxXController.setValue(1);
 			course_ClipMinYController.setValue(-1); course_ClipMaxYController.setValue(1);
 			course_ClipMinZController.setValue(-1); course_ClipMaxZController.setValue(1);
-			course_ShapeKparameterController.disable();
+			course_ShapeKparameterController.hide();
 			pathTracingUniforms.uCourseShapeType.value = 7;
 		}
 		else if (courseShapeType == 'Capsule')
 		{
-			glider1StartingPosition.set(0, -10, 75);
-			glider2StartingPosition.set(0, -10, -75);
+			glider1StartingPosition.set(0.5, -10, 75);
+			glider2StartingPosition.set(-0.5, -10, -75);
 			ballStartingPosition.set(0, -10, 0);
 			playerGoalStartingPosition.set(75, -10, 0);
 			computerGoalStartingPosition.set(-75, -10, 0);
@@ -553,6 +577,9 @@ function updateVariablesAndUniforms()
 			light2Position.set(100, -100, -150);
 			light3Position.set(150, -120, 50);
 			courseShape.position.set(0, 0, 0);
+			course_ScaleXController.show();
+			course_ScaleYController.show();
+			course_ScaleZController.show();
 			course_ScaleXController.setValue(500);
 			course_ScaleYController.setValue(500);
 			course_ScaleZController.setValue(500);
@@ -566,7 +593,7 @@ function updateVariablesAndUniforms()
 			courseShapeKparameter = 1;
 			course_ClipMinZController.min(-courseShapeKparameter - 1); course_ClipMaxZController.max(courseShapeKparameter + 1);
 			course_ClipMinZController.setValue(-courseShapeKparameter - 1); course_ClipMaxZController.setValue(courseShapeKparameter + 1);
-			course_ShapeKparameterController.enable();
+			course_ShapeKparameterController.show();
 			course_ShapeKparameterController.min(0.5); course_ShapeKparameterController.max(4);
 			course_ShapeKparameterController.setValue(courseShapeKparameter);
 			pathTracingUniforms.uCourseShapeKparameter.value = courseShapeKparameter;
@@ -574,8 +601,8 @@ function updateVariablesAndUniforms()
 		}
 		else if (courseShapeType == 'RoundedBox')
 		{
-			glider1StartingPosition.set(0, -10, 75);
-			glider2StartingPosition.set(0, -10, -75);
+			glider1StartingPosition.set(0.5, -10, 75);
+			glider2StartingPosition.set(-0.5, -10, -75);
 			ballStartingPosition.set(0, -10, 0);
 			playerGoalStartingPosition.set(75, -10, 0);
 			computerGoalStartingPosition.set(-75, -10, 0);
@@ -583,12 +610,21 @@ function updateVariablesAndUniforms()
 			light2Position.set(100, -100, -150);
 			light3Position.set(150, -120, 50);
 			courseShape.position.set(0, 0, 0);
+			course_ScaleXController.show();
+			course_ScaleYController.show();
+			course_ScaleZController.show();
 			course_ScaleXController.setValue(500);
 			course_ScaleYController.setValue(500);
 			course_ScaleZController.setValue(500);
+			course_ClipMinXController.min(-2); course_ClipMaxXController.max(2);
+			course_ClipMinYController.min(-2); course_ClipMaxYController.max(2);
+			course_ClipMinZController.min(-2); course_ClipMaxZController.max(2);
+			course_ClipMinXController.setValue(-2); course_ClipMaxXController.setValue(2);
+			course_ClipMinYController.setValue(-2); course_ClipMaxYController.setValue(2);
+			course_ClipMinZController.setValue(-2); course_ClipMaxZController.setValue(2);
 			clipBoundaries_Folder.hide();
 			courseShapeKparameter = 0.1;
-			course_ShapeKparameterController.enable();
+			course_ShapeKparameterController.show();
 			course_ShapeKparameterController.min(0.05); course_ShapeKparameterController.max(0.5);
 			course_ShapeKparameterController.setValue(courseShapeKparameter);
 			pathTracingUniforms.uCourseShapeKparameter.value = courseShapeKparameter;
@@ -603,6 +639,9 @@ function updateVariablesAndUniforms()
 			computerGoalStartingPosition.set(-75 - course_ScaleXController.getValue(), -10, 0);
 			// (lights position placement is handled in needChangeCourseScale code further down)
 			courseShape.position.set(0, 0, 0);
+			course_ScaleXController.show();
+			course_ScaleYController.show();
+			course_ScaleZController.show();
 			course_ScaleXController.setValue(500);
 			course_ScaleYController.setValue(500);
 			course_ScaleZController.setValue(500);
@@ -614,7 +653,7 @@ function updateVariablesAndUniforms()
 			course_ClipMinYController.setValue(-2); course_ClipMaxYController.setValue(2);
 			course_ClipMinZController.setValue(-2); course_ClipMaxZController.setValue(2);
 			courseShapeKparameter = 0.5;
-			course_ShapeKparameterController.enable();
+			course_ShapeKparameterController.show();
 			course_ShapeKparameterController.min(0.2); course_ShapeKparameterController.max(0.99);
 			course_ShapeKparameterController.setValue(courseShapeKparameter);
 			pathTracingUniforms.uCourseShapeKparameter.value = courseShapeKparameter;
@@ -622,30 +661,30 @@ function updateVariablesAndUniforms()
 		}
 		else if (courseShapeType == 'BilinearPatch')
 		{
-			glider1StartingPosition.set(0, -10, 75);
-			glider2StartingPosition.set(0, -10, -75);
+			glider1StartingPosition.set(0.5, -10, 75);
+			glider2StartingPosition.set(-0.5, -10, -75);
 			ballStartingPosition.set(0, -10, 0);
 			playerGoalStartingPosition.set(75, -10, 0);
 			computerGoalStartingPosition.set(-75, -10, 0);
 			light1Position.set(-100, -150, 50);
 			light2Position.set(100, -100, -150);
 			light3Position.set(150, -120, 50);
-			courseShape.position.set(0, -400, 0);
+			courseShape.position.set(0, -700, 0);
+			course_ScaleUniformController.setValue(500);
 			course_ScaleXController.setValue(500);
 			course_ScaleYController.setValue(500);
 			course_ScaleZController.setValue(500);
-			clipBoundaries_Folder.show();
+			course_ScaleXController.hide();
+			course_ScaleYController.hide();
+			course_ScaleZController.hide();
 			course_ClipMinXController.min(-1); course_ClipMaxXController.max(1);
-			course_ClipMinYController.min(-1); course_ClipMaxYController.max(1);
+			course_ClipMinYController.min(-1); course_ClipMaxYController.max(2);
 			course_ClipMinZController.min(-1); course_ClipMaxZController.max(1);
-			course_ClipMinXController.setValue(-1); course_ClipMaxXController.setValue(1);
-			course_ClipMinYController.setValue(-1); course_ClipMaxYController.setValue(1);
-			course_ClipMinZController.setValue(-1); course_ClipMaxZController.setValue(1);
-			courseShapeKparameter = 0.5;
-			course_ShapeKparameterController.enable();
-			course_ShapeKparameterController.min(0.0); course_ShapeKparameterController.max(1.0);
-			course_ShapeKparameterController.setValue(courseShapeKparameter);
-			pathTracingUniforms.uCourseShapeKparameter.value = courseShapeKparameter;
+			course_ClipMinXController.setValue(-0.97); course_ClipMaxXController.setValue(0.97);
+			course_ClipMinYController.setValue(-1); course_ClipMaxYController.setValue(2);
+			course_ClipMinZController.setValue(-0.97); course_ClipMaxZController.setValue(0.97);
+			clipBoundaries_Folder.hide();
+			course_ShapeKparameterController.hide();
 			pathTracingUniforms.uCourseShapeType.value = 11;
 		}
 
@@ -1173,7 +1212,7 @@ function updateVariablesAndUniforms()
 		glider1LocalVelocity.x = impulseGlider1.dot(glider1ThrustersRight);
 		glider1LocalVelocity.z = impulseGlider1.dot(glider1ThrustersForward);
 	}
-	else if (glider1Base.position.x < courseShape.position.x + (courseShape.scale.x * courseMinBounds.x))
+	if (glider1Base.position.x < courseShape.position.x + (courseShape.scale.x * courseMinBounds.x))
 	{
 		glider1Base.position.x = courseShape.position.x + (courseShape.scale.x * courseMinBounds.x);
 		unitCollisionNormal.set(1, 0, 0);
@@ -1199,7 +1238,7 @@ function updateVariablesAndUniforms()
 		glider1LocalVelocity.x = impulseGlider1.dot(glider1ThrustersRight);
 		glider1LocalVelocity.z = impulseGlider1.dot(glider1ThrustersForward);
 	}
-	else if (glider1Base.position.y < courseShape.position.y + (courseShape.scale.y * courseMinBounds.y))
+	if (glider1Base.position.y < courseShape.position.y + (courseShape.scale.y * courseMinBounds.y))
 	{
 		glider1Base.position.y = courseShape.position.y + (courseShape.scale.y * courseMinBounds.y);
 		unitCollisionNormal.set(0, 1, 0);
@@ -1225,7 +1264,7 @@ function updateVariablesAndUniforms()
 		glider1LocalVelocity.x = impulseGlider1.dot(glider1ThrustersRight);
 		glider1LocalVelocity.z = impulseGlider1.dot(glider1ThrustersForward);
 	}
-	else if (glider1Base.position.z < courseShape.position.z + (courseShape.scale.z * courseMinBounds.z))
+	if (glider1Base.position.z < courseShape.position.z + (courseShape.scale.z * courseMinBounds.z))
 	{
 		glider1Base.position.z = courseShape.position.z + (courseShape.scale.z * courseMinBounds.z);
 		unitCollisionNormal.set(0, 0, 1);
@@ -1595,7 +1634,7 @@ function updateVariablesAndUniforms()
 		glider2LocalVelocity.x = impulseGlider2.dot(glider2ThrustersRight);
 		glider2LocalVelocity.z = impulseGlider2.dot(glider2ThrustersForward);
 	}
-	else if (glider2Base.position.x < courseShape.position.x + (courseShape.scale.x * courseMinBounds.x))
+	if (glider2Base.position.x < courseShape.position.x + (courseShape.scale.x * courseMinBounds.x))
 	{
 		glider2Base.position.x = courseShape.position.x + (courseShape.scale.x * courseMinBounds.x);
 		unitCollisionNormal.set(1, 0, 0);
@@ -1621,7 +1660,7 @@ function updateVariablesAndUniforms()
 		glider2LocalVelocity.x = impulseGlider2.dot(glider2ThrustersRight);
 		glider2LocalVelocity.z = impulseGlider2.dot(glider2ThrustersForward);
 	}
-	else if (glider2Base.position.y < courseShape.position.y + (courseShape.scale.y * courseMinBounds.y))
+	if (glider2Base.position.y < courseShape.position.y + (courseShape.scale.y * courseMinBounds.y))
 	{
 		glider2Base.position.y = courseShape.position.y + (courseShape.scale.y * courseMinBounds.y);
 		unitCollisionNormal.set(0, 1, 0);
@@ -1647,7 +1686,7 @@ function updateVariablesAndUniforms()
 		glider2LocalVelocity.x = impulseGlider2.dot(glider2ThrustersRight);
 		glider2LocalVelocity.z = impulseGlider2.dot(glider2ThrustersForward);
 	}
-	else if (glider2Base.position.z < courseShape.position.z + (courseShape.scale.z * courseMinBounds.z))
+	if (glider2Base.position.z < courseShape.position.z + (courseShape.scale.z * courseMinBounds.z))
 	{
 		glider2Base.position.z = courseShape.position.z + (courseShape.scale.z * courseMinBounds.z);
 		unitCollisionNormal.set(0, 0, 1);
@@ -2011,7 +2050,7 @@ function updateVariablesAndUniforms()
 		ballLocalVelocity.x = impulseBall.dot(ballRight);
 		ballLocalVelocity.z = impulseBall.dot(ballForward);
 	}
-	else if (ball.position.x < courseShape.position.x + (courseShape.scale.x * courseMinBounds.x))
+	if (ball.position.x < courseShape.position.x + (courseShape.scale.x * courseMinBounds.x))
 	{
 		ball.position.x = courseShape.position.x + (courseShape.scale.x * courseMinBounds.x);
 		unitCollisionNormal.set(1, 0, 0);
@@ -2033,7 +2072,7 @@ function updateVariablesAndUniforms()
 		ballLocalVelocity.x = impulseBall.dot(ballRight);
 		ballLocalVelocity.z = impulseBall.dot(ballForward);
 	}
-	else if (ball.position.y < courseShape.position.y + (courseShape.scale.y * courseMinBounds.y))
+	if (ball.position.y < courseShape.position.y + (courseShape.scale.y * courseMinBounds.y))
 	{
 		ball.position.y = courseShape.position.y + (courseShape.scale.y * courseMinBounds.y);
 		unitCollisionNormal.set(0, 1, 0);
@@ -2055,7 +2094,7 @@ function updateVariablesAndUniforms()
 		ballLocalVelocity.x = impulseBall.dot(ballRight);
 		ballLocalVelocity.z = impulseBall.dot(ballForward);
 	}
-	else if (ball.position.z < courseShape.position.z + (courseShape.scale.z * courseMinBounds.z))
+	if (ball.position.z < courseShape.position.z + (courseShape.scale.z * courseMinBounds.z))
 	{
 		ball.position.z = courseShape.position.z + (courseShape.scale.z * courseMinBounds.z);
 		unitCollisionNormal.set(0, 0, 1);
@@ -2244,7 +2283,7 @@ function updateVariablesAndUniforms()
 		playerGoalLocalVelocity.x = impulsePlayerGoal.dot(playerGoalRight);
 		playerGoalLocalVelocity.z = impulsePlayerGoal.dot(playerGoalForward);
 	}
-	else if (playerGoal.position.x < courseShape.position.x + (courseShape.scale.x * courseMinBounds.x))
+	if (playerGoal.position.x < courseShape.position.x + (courseShape.scale.x * courseMinBounds.x))
 	{
 		playerGoal.position.x = courseShape.position.x + (courseShape.scale.x * courseMinBounds.x);
 		unitCollisionNormal.set(1, 0, 0);
@@ -2260,7 +2299,7 @@ function updateVariablesAndUniforms()
 		playerGoalLocalVelocity.x = impulsePlayerGoal.dot(playerGoalRight);
 		playerGoalLocalVelocity.z = impulsePlayerGoal.dot(playerGoalForward);
 	}
-	else if (playerGoal.position.y < courseShape.position.y + (courseShape.scale.y * courseMinBounds.y))
+	if (playerGoal.position.y < courseShape.position.y + (courseShape.scale.y * courseMinBounds.y))
 	{
 		playerGoal.position.y = courseShape.position.y + (courseShape.scale.y * courseMinBounds.y);
 		unitCollisionNormal.set(0, 1, 0);
@@ -2276,7 +2315,7 @@ function updateVariablesAndUniforms()
 		playerGoalLocalVelocity.x = impulsePlayerGoal.dot(playerGoalRight);
 		playerGoalLocalVelocity.z = impulsePlayerGoal.dot(playerGoalForward);
 	}
-	else if (playerGoal.position.z < courseShape.position.z + (courseShape.scale.z * courseMinBounds.z))
+	if (playerGoal.position.z < courseShape.position.z + (courseShape.scale.z * courseMinBounds.z))
 	{
 		playerGoal.position.z = courseShape.position.z + (courseShape.scale.z * courseMinBounds.z);
 		unitCollisionNormal.set(0, 0, 1);
@@ -2451,7 +2490,7 @@ function updateVariablesAndUniforms()
 		computerGoalLocalVelocity.x = impulseComputerGoal.dot(computerGoalRight);
 		computerGoalLocalVelocity.z = impulseComputerGoal.dot(computerGoalForward);
 	}
-	else if (computerGoal.position.x < courseShape.position.x + (courseShape.scale.x * courseMinBounds.x))
+	if (computerGoal.position.x < courseShape.position.x + (courseShape.scale.x * courseMinBounds.x))
 	{
 		computerGoal.position.x = courseShape.position.x + (courseShape.scale.x * courseMinBounds.x);
 		unitCollisionNormal.set(1, 0, 0);
@@ -2467,7 +2506,7 @@ function updateVariablesAndUniforms()
 		computerGoalLocalVelocity.x = impulseComputerGoal.dot(computerGoalRight);
 		computerGoalLocalVelocity.z = impulseComputerGoal.dot(computerGoalForward);
 	}
-	else if (computerGoal.position.y < courseShape.position.y + (courseShape.scale.y * courseMinBounds.y))
+	if (computerGoal.position.y < courseShape.position.y + (courseShape.scale.y * courseMinBounds.y))
 	{
 		computerGoal.position.y = courseShape.position.y + (courseShape.scale.y * courseMinBounds.y);
 		unitCollisionNormal.set(0, 1, 0);
@@ -2483,7 +2522,7 @@ function updateVariablesAndUniforms()
 		computerGoalLocalVelocity.x = impulseComputerGoal.dot(computerGoalRight);
 		computerGoalLocalVelocity.z = impulseComputerGoal.dot(computerGoalForward);
 	}
-	else if (computerGoal.position.z < courseShape.position.z + (courseShape.scale.z * courseMinBounds.z))
+	if (computerGoal.position.z < courseShape.position.z + (courseShape.scale.z * courseMinBounds.z))
 	{
 		computerGoal.position.z = courseShape.position.z + (courseShape.scale.z * courseMinBounds.z);
 		unitCollisionNormal.set(0, 0, 1);
