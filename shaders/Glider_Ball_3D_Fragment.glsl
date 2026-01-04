@@ -65,7 +65,7 @@ UnitParaboloid unitParaboloids[N_UNIT_PARABOLOIDS];
 #include <pathtracing_sample_sphere_light>
 
 
-float XZPlane_ParamIntersect( vec3 ro, vec3 rd, out vec3 n )
+float XZPlane_ParamIntersect( vec3 ro, vec3 rd, out vec3 n, out vec2 uv, vec2 uvScale )
 {
 	vec3 hit;
 	float t;
@@ -73,6 +73,8 @@ float XZPlane_ParamIntersect( vec3 ro, vec3 rd, out vec3 n )
 	t = -(dot(ro, n)) / dot(rd, n);
 
 	hit = ro + (rd * t);
+	uv = vec2(hit.x, hit.z);
+	uv *= uvScale;
 	if ( t > 0.0 && all(greaterThanEqual(hit, uCourseMinBounds)) && all(lessThanEqual(hit, uCourseMaxBounds)) )
 	{
 		return t;
@@ -81,9 +83,10 @@ float XZPlane_ParamIntersect( vec3 ro, vec3 rd, out vec3 n )
 	return INFINITY;
 }
 
-float UnitSphereInterior_ParamIntersect( vec3 ro, vec3 rd, out vec3 n )
+float UnitSphereInterior_ParamIntersect( vec3 ro, vec3 rd, out vec3 n, out vec2 uv, vec2 uvScale )
 {
 	vec3 hit;
+	float phi, theta;
 	float t0, t1;
 	float a = dot(rd, rd);
 	float b = 2.0 * dot(rd, ro);
@@ -91,6 +94,11 @@ float UnitSphereInterior_ParamIntersect( vec3 ro, vec3 rd, out vec3 n )
 	solveQuadratic(a, b, c, t0, t1);
 
 	hit = ro + (rd * t1);
+	phi = atan(-hit.z, hit.x);
+	theta = acos(hit.y);
+	uv.x = (phi * ONE_OVER_TWO_PI) + 0.5;
+	uv.y = theta * ONE_OVER_PI;
+	uv *= uvScale;
 	if ( t1 > 0.0 && all(greaterThanEqual(hit, uCourseMinBounds)) && all(lessThanEqual(hit, uCourseMaxBounds)) )
 	{
 		n = hit;
@@ -98,6 +106,11 @@ float UnitSphereInterior_ParamIntersect( vec3 ro, vec3 rd, out vec3 n )
 	}
 
 	hit = ro + (rd * t0);
+	phi = atan(-hit.z, hit.x);
+	theta = acos(hit.y);
+	uv.x = (phi * ONE_OVER_TWO_PI) + 0.5;
+	uv.y = theta * ONE_OVER_PI;
+	uv *= uvScale;
 	if ( t0 > 0.0 && all(greaterThanEqual(hit, uCourseMinBounds)) && all(lessThanEqual(hit, uCourseMaxBounds)) )
 	{
 		n = hit;
@@ -107,9 +120,10 @@ float UnitSphereInterior_ParamIntersect( vec3 ro, vec3 rd, out vec3 n )
 	return INFINITY;
 }
 
-float UnitCylinderInterior_ParamIntersect( vec3 ro, vec3 rd, out vec3 n )
+float UnitCylinderInterior_ParamIntersect( vec3 ro, vec3 rd, out vec3 n, out vec2 uv, vec2 uvScale )
 {
 	vec3 hit;
+	float phi, theta;
 	float t0, t1;
 	float a = (rd.x * rd.x) + (rd.y * rd.y);
 	float b = 2.0 * ((rd.x * ro.x) + (rd.y * ro.y));
@@ -117,6 +131,11 @@ float UnitCylinderInterior_ParamIntersect( vec3 ro, vec3 rd, out vec3 n )
 	solveQuadratic(a, b, c, t0, t1);
 
 	hit = ro + (rd * t1);
+	phi = atan(-hit.y, hit.x);
+	theta = hit.z * 0.5;
+	uv.x = phi * ONE_OVER_TWO_PI + 0.5;
+	uv.y = -theta + 0.5;
+	uv *= uvScale;
 	if ( t1 > 0.0 && all(greaterThanEqual(hit, uCourseMinBounds)) && all(lessThanEqual(hit, uCourseMaxBounds)) )
 	{
 		n = vec3(hit.x, hit.y, 0.0);
@@ -124,6 +143,11 @@ float UnitCylinderInterior_ParamIntersect( vec3 ro, vec3 rd, out vec3 n )
 	}
 
 	hit = ro + (rd * t0);
+	phi = atan(-hit.y, hit.x);
+	theta = hit.z * 0.5;
+	uv.x = phi * ONE_OVER_TWO_PI + 0.5;
+	uv.y = -theta + 0.5;
+	uv *= uvScale;
 	if ( t0 > 0.0 && all(greaterThanEqual(hit, uCourseMinBounds)) && all(lessThanEqual(hit, uCourseMaxBounds)) )
 	{
 		n = vec3(hit.x, hit.y, 0.0);
@@ -133,9 +157,10 @@ float UnitCylinderInterior_ParamIntersect( vec3 ro, vec3 rd, out vec3 n )
 	return INFINITY;
 }
 
-float UnitParaboloidInterior_ParamIntersect( vec3 ro, vec3 rd, float k, out vec3 n )
+float UnitParaboloidInterior_ParamIntersect( vec3 ro, vec3 rd, float k, out vec3 n, out vec2 uv, vec2 uvScale )
 {
 	vec3 hit;
+	float phi, theta;
 	float t0, t1;
 	float a = (rd.x * rd.x) + (rd.y * rd.y);
 	float b = 2.0 * ((rd.x * ro.x) + (rd.y * ro.y)) + (k * rd.z);
@@ -143,6 +168,11 @@ float UnitParaboloidInterior_ParamIntersect( vec3 ro, vec3 rd, float k, out vec3
 	solveQuadratic(a, b, c, t0, t1);
 
 	hit = ro + (rd * t1);
+	phi = atan(-hit.y, hit.x);
+	theta = hit.z * 0.5;
+	uv.x = phi * ONE_OVER_TWO_PI + 0.5;
+	uv.y = -theta + 0.5;
+	uv *= uvScale;
 	if ( t1 > 0.0 && all(greaterThanEqual(hit, uCourseMinBounds)) && all(lessThanEqual(hit, uCourseMaxBounds)) )
 	{
 		n = vec3(2.0 * hit.x, 2.0 * hit.y, k);
@@ -150,6 +180,11 @@ float UnitParaboloidInterior_ParamIntersect( vec3 ro, vec3 rd, float k, out vec3
 	}
 
 	hit = ro + (rd * t0);
+	phi = atan(-hit.y, hit.x);
+	theta = hit.z * 0.5;
+	uv.x = phi * ONE_OVER_TWO_PI + 0.5;
+	uv.y = -theta + 0.5;
+	uv *= uvScale;
 	if ( t0 > 0.0 && all(greaterThanEqual(hit, uCourseMinBounds)) && all(lessThanEqual(hit, uCourseMaxBounds)) )
 	{
 		n = vec3(2.0 * hit.x, 2.0 * hit.y, k);
@@ -159,9 +194,10 @@ float UnitParaboloidInterior_ParamIntersect( vec3 ro, vec3 rd, float k, out vec3
 	return INFINITY;
 }
 
-float UnitConeInterior_ParamIntersect( vec3 ro, vec3 rd, float k, out vec3 n )
+float UnitConeInterior_ParamIntersect( vec3 ro, vec3 rd, float k, out vec3 n, out vec2 uv, vec2 uvScale )
 {
 	vec3 hit;
+	float phi, theta;
 	float t0, t1;
 	k = 1.0 - k; // k is the inverse of the cone's opening width
 	// valid range for k: 0.01 to 1.0 (a value of 1.0 makes a cone with a sharp, pointed apex)
@@ -176,6 +212,11 @@ float UnitConeInterior_ParamIntersect( vec3 ro, vec3 rd, float k, out vec3 n )
 	solveQuadratic(a, b, c, t0, t1);
 
 	hit = ro + (rd * t1);
+	phi = atan(-hit.y, hit.x);
+	theta = hit.z * 0.5;
+	uv.x = phi * ONE_OVER_TWO_PI + 0.5;
+	uv.y = -theta + 0.5;
+	uv *= uvScale;
 	if ( t1 > 0.0 && all(greaterThanEqual(hit, uCourseMinBounds)) && all(lessThanEqual(hit, uCourseMaxBounds)) )
 	{
 		n = vec3(j * hit.x, j * hit.y, (k * 0.25) * (h - hit.z));
@@ -183,6 +224,11 @@ float UnitConeInterior_ParamIntersect( vec3 ro, vec3 rd, float k, out vec3 n )
 	}
 
 	hit = ro + (rd * t0);
+	phi = atan(-hit.y, hit.x);
+	theta = hit.z * 0.5;
+	uv.x = phi * ONE_OVER_TWO_PI + 0.5;
+	uv.y = -theta + 0.5;
+	uv *= uvScale;
 	if ( t0 > 0.0 && all(greaterThanEqual(hit, uCourseMinBounds)) && all(lessThanEqual(hit, uCourseMaxBounds)) )
 	{
 		n = vec3(j * hit.x, j * hit.y, (k * 0.25) * (h - hit.z));
@@ -192,9 +238,10 @@ float UnitConeInterior_ParamIntersect( vec3 ro, vec3 rd, float k, out vec3 n )
 	return INFINITY;
 }
 
-float UnitHyperboloidInterior_ParamIntersect( vec3 ro, vec3 rd, float k, out vec3 n )
+float UnitHyperboloidInterior_ParamIntersect( vec3 ro, vec3 rd, float k, out vec3 n, out vec2 uv, vec2 uvScale )
 {
 	vec3 hit;
+	float phi, theta;
 	float t0, t1;
 	float t = INFINITY;
 	k = 1.0 - k;
@@ -209,6 +256,11 @@ float UnitHyperboloidInterior_ParamIntersect( vec3 ro, vec3 rd, float k, out vec
 	if ( t1 > 0.0 && all(greaterThanEqual(hit, uCourseMinBounds)) && all(lessThanEqual(hit, uCourseMaxBounds)) )
 	{
 		n = vec3(k * hit.x, k * hit.y, j * -hit.z);
+		phi = atan(-hit.y, hit.x);
+		theta = hit.z * 0.5;
+		uv.x = phi * ONE_OVER_TWO_PI + 0.5;
+		uv.y = -theta + 0.5;
+		uv *= uvScale;
 		t = t1;
 	}
 
@@ -216,13 +268,18 @@ float UnitHyperboloidInterior_ParamIntersect( vec3 ro, vec3 rd, float k, out vec
 	if ( t0 > 0.0 && all(greaterThanEqual(hit, uCourseMinBounds)) && all(lessThanEqual(hit, uCourseMaxBounds)) )
 	{
 		n = vec3(k * hit.x, k * hit.y, j * -hit.z);
+		phi = atan(-hit.y, hit.x);
+		theta = hit.z * 0.5;
+		uv.x = phi * ONE_OVER_TWO_PI + 0.5;
+		uv.y = -theta + 0.5;
+		uv *= uvScale;
 		t = t0;
 	}
 
 	return t;
 }
 
-float UnitHyperbolicParaboloidInterior_ParamIntersect( vec3 ro, vec3 rd, out vec3 n )
+float UnitHyperbolicParaboloidInterior_ParamIntersect( vec3 ro, vec3 rd, out vec3 n, out vec2 uv, vec2 uvScale )
 {
 	vec3 hit;
 	float t0, t1;
@@ -236,6 +293,8 @@ float UnitHyperbolicParaboloidInterior_ParamIntersect( vec3 ro, vec3 rd, out vec
 	if ( t1 > 1.0 && all(greaterThanEqual(hit, uCourseMinBounds)) && all(lessThanEqual(hit, uCourseMaxBounds)) )
 	{
 		n = vec3(2.0 * hit.x, -1.0, 2.0 * -hit.z);
+		uv = vec2(hit.x, hit.z);
+		uv *= uvScale;
 		t = t1;
 	}
 
@@ -243,15 +302,18 @@ float UnitHyperbolicParaboloidInterior_ParamIntersect( vec3 ro, vec3 rd, out vec
 	if ( t0 > 1.0 && all(greaterThanEqual(hit, uCourseMinBounds)) && all(lessThanEqual(hit, uCourseMaxBounds)) )
 	{
 		n = vec3(2.0 * hit.x, -1.0, 2.0 * -hit.z);
+		uv = vec2(hit.x, hit.z);
+		uv *= uvScale;
 		t = t0;
 	}
 
 	return t;
 }
 
-float UnitCapsuleInterior_ParamIntersect( vec3 ro, vec3 rd, float k, out vec3 n )
+float UnitCapsuleInterior_ParamIntersect( vec3 ro, vec3 rd, float k, out vec3 n, out vec2 uv, vec2 uvScale )
 {
 	vec3 hit;
+	float phi, theta;
 	float t0, t1;
 	
 	// first, check the cylinder interior
@@ -261,6 +323,11 @@ float UnitCapsuleInterior_ParamIntersect( vec3 ro, vec3 rd, float k, out vec3 n 
 	solveQuadratic(a, b, c, t0, t1);
 
 	hit = ro + (rd * t1);
+	phi = atan(-hit.y, hit.x);
+	theta = hit.z * 0.5;
+	uv.x = phi * ONE_OVER_TWO_PI + 0.5;
+	uv.y = -theta + 0.5;
+	uv *= uvScale;
 	if ( abs(hit.z) <= k && t1 > 0.0 && all(greaterThanEqual(hit, uCourseMinBounds)) && all(lessThanEqual(hit, uCourseMaxBounds)) )
 	{
 		n = vec3(hit.x, hit.y, 0.0);
@@ -276,6 +343,11 @@ float UnitCapsuleInterior_ParamIntersect( vec3 ro, vec3 rd, float k, out vec3 n 
 	solveQuadratic(a, b, c, t0, t1);
 
 	hit = ro + (rd * t1);
+	phi = atan(-hit.y, hit.x);
+	theta = hit.z * 0.5;
+	uv.x = phi * ONE_OVER_TWO_PI + 0.5;
+	uv.y = -theta + 0.5;
+	uv *= uvScale;
 	if ( hit.z < 0.0 && t1 > 0.0 && all(greaterThanEqual(hit, uCourseMinBounds+vec3(0,0,k))) && all(lessThanEqual(hit, uCourseMaxBounds)) )
 	{
 		n = hit;
@@ -291,6 +363,11 @@ float UnitCapsuleInterior_ParamIntersect( vec3 ro, vec3 rd, float k, out vec3 n 
 	solveQuadratic(a, b, c, t0, t1);
 
 	hit = ro + (rd * t1);
+	phi = atan(-hit.y, hit.x);
+	theta = hit.z * 0.5;
+	uv.x = phi * ONE_OVER_TWO_PI + 0.5;
+	uv.y = -theta + 0.5;
+	uv *= uvScale;
 	if ( hit.z > 0.0 && t1 > 0.0 && all(greaterThanEqual(hit, uCourseMinBounds)) && all(lessThanEqual(hit, uCourseMaxBounds-vec3(0,0,k))) )
 	{
 		n = hit;
@@ -300,14 +377,17 @@ float UnitCapsuleInterior_ParamIntersect( vec3 ro, vec3 rd, float k, out vec3 n 
 	return INFINITY;
 }
 
-float UnitRoundedBoxInterior_ParamIntersect( vec3 ro, vec3 rd, float k, out vec3 n )
+float UnitRoundedBoxInterior_ParamIntersect( vec3 ro, vec3 rd, float k, out vec3 n, out vec2 uv, vec2 uvScale )
 {
 	vec3 hit, initialRayO;
+	float phi, theta;
 	float t0, t1;
 	float oneMinusK = 1.0 - k;
 	float k_squared = k * k;
 	initialRayO = ro;
 
+	uv = vec2(0, 0);
+	
 	// check left lower back sphere cap
 	ro += vec3(oneMinusK, oneMinusK, oneMinusK);
 
@@ -436,6 +516,7 @@ float UnitRoundedBoxInterior_ParamIntersect( vec3 ro, vec3 rd, float k, out vec3
 	}
 	ro = initialRayO;
 
+	uv = vec2(0, 1);
 
 	// check lower left cylinder along Z axis
 	ro.x += oneMinusK;
@@ -655,6 +736,16 @@ float UnitRoundedBoxInterior_ParamIntersect( vec3 ro, vec3 rd, float k, out vec3
 	if ( t1 > t0 && t1 > 0.0 )
 	{
 		n = -sign(rd) * step(tmax, tmax.yzx) * step(tmax, tmax.zxy);
+		if (n.z != 0.0)
+			uv = (vec2( hit.x, hit.y) * 0.5 + 0.5) * 
+				(0.04 / vec2(uCourseShape_invMatrix[0][0],uCourseShape_invMatrix[1][1]));
+		else if (n.y != 0.0) 
+			uv = (vec2( hit.x,  hit.z) * 0.5 + 0.5) * 
+				(0.04 / vec2(uCourseShape_invMatrix[0][0],uCourseShape_invMatrix[2][2]));
+		else // (n.x != 0.0)
+			uv = (vec2( hit.z, hit.y) * 0.5 + 0.5) * 
+				(0.04 / vec2(uCourseShape_invMatrix[2][2],uCourseShape_invMatrix[1][1]));
+		
 		return t1;
 	}
 	
@@ -741,7 +832,7 @@ int root_find4_cy(out float r[4], float a, float b, float c, float d, float e, f
 	return n;
 }
 
-float UnitTorusInterior_ParamIntersect(vec3 ro, vec3 rd, float torus_r, float upper_bound, out vec3 n) 
+float UnitTorusInterior_ParamIntersect(vec3 ro, vec3 rd, float torus_r, float upper_bound, out vec3 n, out vec2 uv, vec2 uvScale) 
 {
 	//torus_R is the distance (Major-Radius) from the torus center to the middle of the surrounding tubing
 	//  in this implementation, torus_R is set to unit radius of 1.0, which makes instancing easier
@@ -764,18 +855,29 @@ float UnitTorusInterior_ParamIntersect(vec3 ro, vec3 rd, float torus_r, float up
 	int numRoots = root_find4_cy(roots, a, b, c, d, e, upper_bound);
 	
 	vec3 hit = ro + (roots[0] * rd);
+	uv = vec2( -(atan(hit.x, hit.y) + PI) * ONE_OVER_TWO_PI, -(atan(hit.z, length(hit.xy) - 1.0) + PI) * ONE_OVER_TWO_PI );
+	uv *= uvScale;
 	n = hit * (dot(hit, hit) - torusr2 - (torusR2 * vec3(1, 1, -1)));
 	if ( roots[0] > 0.0 && dot(rd, n) > 0.0 && all(greaterThanEqual(hit, uCourseMinBounds)) && all(lessThanEqual(hit, uCourseMaxBounds)) )
 		return roots[0];
+
 	hit = ro + (roots[1] * rd);
+	uv = vec2( -(atan(hit.x, hit.y) + PI) * ONE_OVER_TWO_PI, -(atan(hit.z, length(hit.xy) - 1.0) + PI) * ONE_OVER_TWO_PI );
+	uv *= uvScale;
 	n = hit * (dot(hit, hit) - torusr2 - (torusR2 * vec3(1, 1, -1)));
 	if ( roots[1] > 0.0 && dot(rd, n) > 0.0 && all(greaterThanEqual(hit, uCourseMinBounds)) && all(lessThanEqual(hit, uCourseMaxBounds)) )
 		return roots[1];
+
 	hit = ro + (roots[2] * rd);
+	uv = vec2( -(atan(hit.x, hit.y) + PI) * ONE_OVER_TWO_PI, -(atan(hit.z, length(hit.xy) - 1.0) + PI) * ONE_OVER_TWO_PI );
+	uv *= uvScale;
 	n = hit * (dot(hit, hit) - torusr2 - (torusR2 * vec3(1, 1, -1)));
 	if ( roots[2] > 0.0 && dot(rd, n) > 0.0 && all(greaterThanEqual(hit, uCourseMinBounds)) && all(lessThanEqual(hit, uCourseMaxBounds)) )
 		return roots[2];
+
 	hit = ro + (roots[3] * rd);
+	uv = vec2( -(atan(hit.x, hit.y) + PI) * ONE_OVER_TWO_PI, -(atan(hit.z, length(hit.xy) - 1.0) + PI) * ONE_OVER_TWO_PI );
+	uv *= uvScale;
 	n = hit * (dot(hit, hit) - torusr2 - (torusR2 * vec3(1, 1, -1)));
 	if ( roots[3] > 0.0 && dot(rd, n) > 0.0 && all(greaterThanEqual(hit, uCourseMinBounds)) && all(lessThanEqual(hit, uCourseMaxBounds)) )
 		return roots[3];
@@ -783,7 +885,7 @@ float UnitTorusInterior_ParamIntersect(vec3 ro, vec3 rd, float torus_r, float up
 	return INFINITY;
 }
 
-float BilinearPatch_ParamIntersect( vec3 p0, vec3 p1, vec3 p2, vec3 p3, vec3 rayOrigin, vec3 rayDirection, out vec3 normal, out float u, out float v )
+float BilinearPatch_ParamIntersect( vec3 p0, vec3 p1, vec3 p2, vec3 p3, vec3 rayOrigin, vec3 rayDirection, out vec3 normal, out vec2 uv, vec2 uvScale )
 { // algorithm/code by Alexander Reshetov (NVIDIA), from the book "Ray Tracing Gems", pg 95-109 
 	// 4 corners + "normal" qn
 	vec3 q00 = p0, q10 = p1, q11 = p2, q01 = p3;
@@ -823,8 +925,8 @@ float BilinearPatch_ParamIntersect( vec3 p0, vec3 p1, vec3 p2, vec3 p3, vec3 ray
 		if (t0 > 0.0 && t0 < t && v0 >= 0.0 && v0 <= det)
 		{
 			t = t0 / det;
-			u = u0;
-			v = v0 / det;
+			uv.x = u0;
+			uv.y = v0 / det;
 		} 
 	}
 
@@ -840,14 +942,14 @@ float BilinearPatch_ParamIntersect( vec3 p0, vec3 p1, vec3 p2, vec3 p3, vec3 ray
 		if (t1 > 0.0 && t1 < t && v1 >= 0.0 && v1 <= det) 
 		{
 			t = t1;
-			u = u1;
-			v = v1 / det;
+			uv.x = u1;
+			uv.y = v1 / det;
 		}
 	}
 
 	//geometric normal
-	normal = cross(mix(e10, q11 - q01, v), mix(e00, e11, u)); // geometric normal = cross(du, dv)
-
+	normal = cross(mix(e10, q11 - q01, uv.y), mix(e00, e11, uv.x)); // geometric normal = cross(du, dv)
+	uv *= uvScale;
 	return t;
 	//vec3 hit = rayOrigin + (t * rayDirection);
 	// if ( all(greaterThanEqual(hit, uCourseMinBounds)) && all(lessThanEqual(hit, uCourseMaxBounds)) )
@@ -863,7 +965,7 @@ float SceneIntersect(out int finalIsRayExiting)
 	vec3 rObjOrigin, rObjDirection;
 	vec3 normal;
 	vec3 hitPos;
-	float u, v;
+	vec2 uv;
 	float q;
 	float d, dt;
 	float t = INFINITY;
@@ -911,34 +1013,34 @@ float SceneIntersect(out int finalIsRayExiting)
 	rObjOrigin = vec3( uCourseShape_invMatrix * vec4(rayOrigin, 1.0) );
 	rObjDirection = vec3( uCourseShape_invMatrix * vec4(rayDirection, 0.0) );
 	if (uCourseShapeType < 2)
-		d = UnitSphereInterior_ParamIntersect(rObjOrigin, rObjDirection, normal);
+		d = UnitSphereInterior_ParamIntersect(rObjOrigin, rObjDirection, normal, uv, vec2(32,16));
 	else if (uCourseShapeType == 2)
-		d = UnitCylinderInterior_ParamIntersect(rObjOrigin, rObjDirection, normal);
+		d = UnitCylinderInterior_ParamIntersect(rObjOrigin, rObjDirection, normal, uv, vec2(32,16));
 	else if (uCourseShapeType == 3)
-		d = UnitParaboloidInterior_ParamIntersect(rObjOrigin, rObjDirection, uCourseShapeKparameter, normal);
+		d = UnitParaboloidInterior_ParamIntersect(rObjOrigin, rObjDirection, uCourseShapeKparameter, normal, uv, vec2(32,16));
 	else if (uCourseShapeType == 4)
-		d = UnitConeInterior_ParamIntersect(rObjOrigin, rObjDirection, uCourseShapeKparameter, normal);
+		d = UnitConeInterior_ParamIntersect(rObjOrigin, rObjDirection, uCourseShapeKparameter, normal, uv, vec2(32,16));
 	else if (uCourseShapeType == 5)
-		d = UnitHyperboloidInterior_ParamIntersect(rObjOrigin, rObjDirection, uCourseShapeKparameter, normal);
+		d = UnitHyperboloidInterior_ParamIntersect(rObjOrigin, rObjDirection, uCourseShapeKparameter, normal, uv, vec2(32,16));
 	else if (uCourseShapeType == 6)
-		d = UnitHyperbolicParaboloidInterior_ParamIntersect(rObjOrigin, rObjDirection, normal);
+		d = UnitHyperbolicParaboloidInterior_ParamIntersect(rObjOrigin, rObjDirection, normal, uv, vec2(20,20));
 	else if (uCourseShapeType == 7)
-		d = XZPlane_ParamIntersect(rObjOrigin, rObjDirection, normal);
+		d = XZPlane_ParamIntersect(rObjOrigin, rObjDirection, normal, uv, vec2(10,10));
 	else if (uCourseShapeType == 8)
-		d = UnitCapsuleInterior_ParamIntersect(rObjOrigin, rObjDirection, uCourseShapeKparameter, normal);
+		d = UnitCapsuleInterior_ParamIntersect(rObjOrigin, rObjDirection, uCourseShapeKparameter, normal, uv, vec2(32,16));
 	else if (uCourseShapeType == 9)
-		d = UnitRoundedBoxInterior_ParamIntersect(rObjOrigin, rObjDirection, uCourseShapeKparameter, normal);
+		d = UnitRoundedBoxInterior_ParamIntersect(rObjOrigin, rObjDirection, uCourseShapeKparameter, normal, uv, vec2(10,20));
 	else if (uCourseShapeType == 10)
-		d = UnitTorusInterior_ParamIntersect(rObjOrigin, rObjDirection, uCourseShapeKparameter, uTorusUpperBound, normal);
+		d = UnitTorusInterior_ParamIntersect(rObjOrigin, rObjDirection, uCourseShapeKparameter, uTorusUpperBound, normal, uv, vec2(32,16));
 	else if (uCourseShapeType == 11)
-		d = BilinearPatch_ParamIntersect(vec3(-1,1,1), vec3(1,-1,1), vec3(1,1,-1), vec3(-1,0,-1), rObjOrigin, rObjDirection, normal, u, v);
+		d = BilinearPatch_ParamIntersect(vec3(-1,1,1), vec3(1,-1,1), vec3(1,1,-1), vec3(-1,0,-1), rObjOrigin, rObjDirection, normal, uv, vec2(20,20));
 	if (d < t)
 	{
 		t = d;
 		hitNormal = transpose(mat3(uCourseShape_invMatrix)) * normal;	
 		hitEmission = unitSpheres[0].emission;
 		hitPos = rayOrigin + (t * rayDirection);
-		q = clamp( mod( dot( floor(hitPos.xz * 0.04), vec2(1.0) ), 2.0 ) , 0.0, 1.0 );
+		q = clamp( mod( dot( floor(uv), vec2(1, 1) ), 2.0 ) , 0.0, 1.0 );
 		hitColor = mix(vec3(0.5), unitSpheres[0].color, q);
 		hitType = unitSpheres[0].type;
 		hitObjectID = float(objectCount);
