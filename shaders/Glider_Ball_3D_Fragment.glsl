@@ -18,6 +18,7 @@ uniform vec3 uLight2Position;
 uniform vec3 uLight3Position;
 uniform vec3 uCourseMinBounds;
 uniform vec3 uCourseMaxBounds;
+uniform vec3 uCourseShapeScale;
 uniform float uCourseShapeKparameter;
 uniform float uTorusUpperBound;
 uniform int uCourseShapeType;
@@ -737,14 +738,11 @@ float UnitRoundedBoxInterior_ParamIntersect( vec3 ro, vec3 rd, float k, out vec3
 	{
 		n = -sign(rd) * step(tmax, tmax.yzx) * step(tmax, tmax.zxy);
 		if (n.z != 0.0)
-			uv = (vec2( hit.x, hit.y) * 0.5 + 0.5) * 
-				(0.04 / vec2(uCourseShape_invMatrix[0][0],uCourseShape_invMatrix[1][1]));
+			uv = (vec2( hit.x, hit.y) * 0.5 + 0.5) * 0.04 * vec2(uCourseShapeScale.x, uCourseShapeScale.y);
 		else if (n.y != 0.0) 
-			uv = (vec2( hit.x,  hit.z) * 0.5 + 0.5) * 
-				(0.04 / vec2(uCourseShape_invMatrix[0][0],uCourseShape_invMatrix[2][2]));
+			uv = (vec2( hit.x, hit.z) * 0.5 + 0.5) * 0.04 * vec2(uCourseShapeScale.x, uCourseShapeScale.z);
 		else // (n.x != 0.0)
-			uv = (vec2( hit.z, hit.y) * 0.5 + 0.5) * 
-				(0.04 / vec2(uCourseShape_invMatrix[2][2],uCourseShape_invMatrix[1][1]));
+			uv = (vec2( hit.z, hit.y) * 0.5 + 0.5) * 0.04 * vec2(uCourseShapeScale.z, uCourseShapeScale.y);
 		
 		return t1;
 	}
@@ -1015,7 +1013,7 @@ float SceneIntersect(out int finalIsRayExiting)
 	if (uCourseShapeType < 2)
 		d = UnitSphereInterior_ParamIntersect(rObjOrigin, rObjDirection, normal, uv, vec2(32,16));
 	else if (uCourseShapeType == 2)
-		d = UnitCylinderInterior_ParamIntersect(rObjOrigin, rObjDirection, normal, uv, vec2(32,16));
+		d = UnitCylinderInterior_ParamIntersect(rObjOrigin, rObjDirection, normal, uv, vec2(32,14));
 	else if (uCourseShapeType == 3)
 		d = UnitParaboloidInterior_ParamIntersect(rObjOrigin, rObjDirection, uCourseShapeKparameter, normal, uv, vec2(32,16));
 	else if (uCourseShapeType == 4)
@@ -1027,7 +1025,7 @@ float SceneIntersect(out int finalIsRayExiting)
 	else if (uCourseShapeType == 7)
 		d = XZPlane_ParamIntersect(rObjOrigin, rObjDirection, normal, uv, vec2(10,10));
 	else if (uCourseShapeType == 8)
-		d = UnitCapsuleInterior_ParamIntersect(rObjOrigin, rObjDirection, uCourseShapeKparameter, normal, uv, vec2(32,16));
+		d = UnitCapsuleInterior_ParamIntersect(rObjOrigin, rObjDirection, uCourseShapeKparameter, normal, uv, vec2(32,12));
 	else if (uCourseShapeType == 9)
 		d = UnitRoundedBoxInterior_ParamIntersect(rObjOrigin, rObjDirection, uCourseShapeKparameter, normal, uv, vec2(10,20));
 	else if (uCourseShapeType == 10)
@@ -1461,7 +1459,10 @@ vec3 CalculateRadiance( out vec3 objectNormal, out vec3 objectColor, out float o
 void SetupScene(void)
 //-----------------------------------------------------------------------
 {
-	float lightPower = 10.0;
+	//float lightPower = 10.0;
+	float lightPower = min(min(uCourseShapeScale.x, uCourseShapeScale.y), uCourseShapeScale.z);
+	lightPower = 0.00004 * (lightPower * lightPower);
+	lightPower = clamp(lightPower, 8.0, 100.0);
 	vec3 L1 = vec3(1.0, 1.0, 1.0) * lightPower;// White light
 	vec3 L2 = vec3(1.0, 0.8, 0.2) * lightPower;// Yellow light
 	vec3 L3 = vec3(0.1, 0.7, 1.0) * lightPower;// Blue light
