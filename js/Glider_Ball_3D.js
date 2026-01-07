@@ -321,6 +321,7 @@ function initSceneData()
 	pathTracingUniforms.uLight3Position = { value: light3Position };
 	pathTracingUniforms.uCourseMinBounds = { value: courseMinBounds };
 	pathTracingUniforms.uCourseMaxBounds = { value: courseMaxBounds };
+	pathTracingUniforms.uCourseShapeScale = { value: new THREE.Vector3() };
 	pathTracingUniforms.uCourseShapeType = { value: 0 };
 	pathTracingUniforms.uCourseShapeKparameter = { value: 1.0 };
 	pathTracingUniforms.uTorusUpperBound = { value: 0.0 };
@@ -433,9 +434,9 @@ function updateVariablesAndUniforms()
 			course_ScaleXController.show();
 			course_ScaleYController.show();
 			course_ScaleZController.show();
-			course_ScaleXController.setValue(500);
-			course_ScaleYController.setValue(500);
-			course_ScaleZController.setValue(500);
+			course_ScaleXController.setValue(1000);
+			course_ScaleYController.setValue(1000);
+			course_ScaleZController.setValue(600);
 			clipBoundaries_Folder.show();
 			course_ClipMinXController.min(-1); course_ClipMaxXController.max(1);
 			course_ClipMinYController.min(-1); course_ClipMaxYController.max(1);
@@ -443,10 +444,10 @@ function updateVariablesAndUniforms()
 			course_ClipMinXController.setValue(-1); course_ClipMaxXController.setValue(1);
 			course_ClipMinYController.setValue(-1); course_ClipMaxYController.setValue(1);
 			course_ClipMinZController.setValue(-1); course_ClipMaxZController.setValue(1);
-			courseShapeKparameter = 0.5;
-			course_ShapeKparameterController.show();
+			courseShapeKparameter = 0.1;
 			course_ShapeKparameterController.min(0.1); course_ShapeKparameterController.max(0.5);
 			course_ShapeKparameterController.setValue(courseShapeKparameter);
+			course_ShapeKparameterController.hide();
 			pathTracingUniforms.uCourseShapeKparameter.value = courseShapeKparameter;
 			pathTracingUniforms.uCourseShapeType.value = 3;
 		}
@@ -464,9 +465,9 @@ function updateVariablesAndUniforms()
 			course_ScaleXController.show();
 			course_ScaleYController.show();
 			course_ScaleZController.show();
-			course_ScaleXController.setValue(500);
-			course_ScaleYController.setValue(500);
-			course_ScaleZController.setValue(500);
+			course_ScaleXController.setValue(1000);
+			course_ScaleYController.setValue(1000);
+			course_ScaleZController.setValue(1000);
 			clipBoundaries_Folder.show();
 			course_ClipMinXController.min(-1); course_ClipMaxXController.max(1);
 			course_ClipMinYController.min(-1); course_ClipMaxYController.max(1);
@@ -474,9 +475,10 @@ function updateVariablesAndUniforms()
 			course_ClipMinXController.setValue(-1); course_ClipMaxXController.setValue(1);
 			course_ClipMinYController.setValue(-1); course_ClipMaxYController.setValue(1);
 			course_ClipMinZController.setValue(-1); course_ClipMaxZController.setValue(1);
-			courseShapeKparameter = 0.0;
+			courseShapeKparameter = 0.1;
 			course_ShapeKparameterController.show();
-			course_ShapeKparameterController.min(0.0); course_ShapeKparameterController.max(0.5);
+			course_ShapeKparameterController.min(0.1); course_ShapeKparameterController.max(0.5);
+			course_ShapeKparameterController.step(0.01);
 			course_ShapeKparameterController.setValue(courseShapeKparameter);
 			pathTracingUniforms.uCourseShapeKparameter.value = courseShapeKparameter;
 			pathTracingUniforms.uCourseShapeType.value = 4;
@@ -499,15 +501,16 @@ function updateVariablesAndUniforms()
 			course_ScaleYController.setValue(500);
 			course_ScaleZController.setValue(500);
 			clipBoundaries_Folder.show();
-			course_ClipMinXController.min(-0.9); course_ClipMaxXController.max(0.9);
-			course_ClipMinYController.min(-0.9); course_ClipMaxYController.max(0.9);
+			course_ClipMinXController.min(-1); course_ClipMaxXController.max(1);
+			course_ClipMinYController.min(-1); course_ClipMaxYController.max(1);
 			course_ClipMinZController.min(-1); course_ClipMaxZController.max(1);
-			course_ClipMinXController.setValue(-0.9); course_ClipMaxXController.setValue(0.9);
-			course_ClipMinYController.setValue(-0.9); course_ClipMaxYController.setValue(0.9);
+			course_ClipMinXController.setValue(-1); course_ClipMaxXController.setValue(1);
+			course_ClipMinYController.setValue(-1); course_ClipMaxYController.setValue(1);
 			course_ClipMinZController.setValue(-1); course_ClipMaxZController.setValue(1);
 			courseShapeKparameter = 0.94;
 			course_ShapeKparameterController.show();
 			course_ShapeKparameterController.min(0.0); course_ShapeKparameterController.max(0.97);
+			course_ShapeKparameterController.step(0.01);
 			course_ShapeKparameterController.setValue(courseShapeKparameter);
 			pathTracingUniforms.uCourseShapeKparameter.value = courseShapeKparameter;
 			pathTracingUniforms.uCourseShapeType.value = 5;
@@ -586,15 +589,14 @@ function updateVariablesAndUniforms()
 			clipBoundaries_Folder.show();
 			course_ClipMinXController.min(-1); course_ClipMaxXController.max(1);
 			course_ClipMinYController.min(-1); course_ClipMaxYController.max(1);
-			
 			course_ClipMinXController.setValue(-1); course_ClipMaxXController.setValue(1);
 			course_ClipMinYController.setValue(-1); course_ClipMaxYController.setValue(1);
-
 			courseShapeKparameter = 1;
 			course_ClipMinZController.min(-courseShapeKparameter - 1); course_ClipMaxZController.max(courseShapeKparameter + 1);
 			course_ClipMinZController.setValue(-courseShapeKparameter - 1); course_ClipMaxZController.setValue(courseShapeKparameter + 1);
 			course_ShapeKparameterController.show();
-			course_ShapeKparameterController.min(0.5); course_ShapeKparameterController.max(4);
+			course_ShapeKparameterController.min(2/3); course_ShapeKparameterController.max(4);
+			course_ShapeKparameterController.step(1/3);
 			course_ShapeKparameterController.setValue(courseShapeKparameter);
 			pathTracingUniforms.uCourseShapeKparameter.value = courseShapeKparameter;
 			pathTracingUniforms.uCourseShapeType.value = 8;
@@ -626,6 +628,7 @@ function updateVariablesAndUniforms()
 			courseShapeKparameter = 0.1;
 			course_ShapeKparameterController.show();
 			course_ShapeKparameterController.min(0.05); course_ShapeKparameterController.max(0.5);
+			course_ShapeKparameterController.step(0.01);
 			course_ShapeKparameterController.setValue(courseShapeKparameter);
 			pathTracingUniforms.uCourseShapeKparameter.value = courseShapeKparameter;
 			pathTracingUniforms.uCourseShapeType.value = 9;
@@ -655,6 +658,7 @@ function updateVariablesAndUniforms()
 			courseShapeKparameter = 0.5;
 			course_ShapeKparameterController.show();
 			course_ShapeKparameterController.min(0.2); course_ShapeKparameterController.max(0.99);
+			course_ShapeKparameterController.step(0.01);
 			course_ShapeKparameterController.setValue(courseShapeKparameter);
 			pathTracingUniforms.uCourseShapeKparameter.value = courseShapeKparameter;
 			pathTracingUniforms.uCourseShapeType.value = 10;
@@ -736,6 +740,8 @@ function updateVariablesAndUniforms()
 			torusUpperBound *= 4;
 			pathTracingUniforms.uTorusUpperBound.value = torusUpperBound;
 		}
+
+		pathTracingUniforms.uCourseShapeScale.value.copy(courseShape.scale);
 
 		courseShape.updateMatrixWorld();
 		courseShape_invMatrix.copy(courseShape.matrixWorld).invert();
