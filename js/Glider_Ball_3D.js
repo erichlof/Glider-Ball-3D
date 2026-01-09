@@ -180,8 +180,8 @@ function intersectCourse()
 		courseT = intersectUnitCone(rayObjectOrigin, rayObjectDirection, courseShapeKparameter, intersectionNormal);
 	else if (courseShapeType == 'Hyperboloid')
 		courseT = intersectUnitHyperboloid(rayObjectOrigin, rayObjectDirection, courseShapeKparameter, intersectionNormal);
-	else if (courseShapeType == 'HyperbolicParaboloid')
-		courseT = intersectUnitHyperbolicParaboloid(rayObjectOrigin, rayObjectDirection, intersectionNormal);
+	// else if (courseShapeType == 'HyperbolicParaboloid')
+	// 	courseT = intersectUnitHyperbolicParaboloid(rayObjectOrigin, rayObjectDirection, intersectionNormal);
 	else if (courseShapeType == 'Plane')
 		courseT = intersectXZPlane(rayObjectOrigin, rayObjectDirection, intersectionNormal);
 	else if (courseShapeType == 'Capsule')
@@ -278,8 +278,8 @@ function initSceneData()
 	function handleCourseClipXYZChange() { needChangeCourseClipXYZBounds = true; }
 	function handleCourseShapeKparamChange() { needChangeCourseShapeKparameter = true; }
 
-	course_TypeController = gui.add(course_TypeObject, 'Course_Type', ['Sphere', 'Ellipsoid', 'Cylinder', 'Paraboloid', 'Cone', 'Hyperboloid', 
-		'HyperbolicParaboloid', 'Plane', 'Capsule', 'RoundedBox', 'Torus', 'BilinearPatch']).onChange(handleCourseTypeChange);
+	course_TypeController = gui.add(course_TypeObject, 'Course_Type', ['Sphere', 'Ellipsoid', 'Cylinder', 'Paraboloid', 'Cone', 'Hyperboloid',//'HyperbolicParaboloid', 
+		'Plane', 'Capsule', 'RoundedBox', 'Torus', 'BilinearPatch']).onChange(handleCourseTypeChange);
 	
 	scale_Folder = gui.addFolder('Scale');
 	course_ScaleUniformController = scale_Folder.add(course_ScaleUniformObject, 'uniformScale', 200, 1500, 1).onChange(handleCourseScaleUniformChange);
@@ -499,7 +499,7 @@ function updateVariablesAndUniforms()
 			course_ScaleZController.show();
 			course_ScaleXController.setValue(500);
 			course_ScaleYController.setValue(500);
-			course_ScaleZController.setValue(500);
+			course_ScaleZController.setValue(800);
 			clipBoundaries_Folder.show();
 			course_ClipMinXController.min(-1); course_ClipMaxXController.max(1);
 			course_ClipMinYController.min(-1); course_ClipMaxYController.max(1);
@@ -515,7 +515,7 @@ function updateVariablesAndUniforms()
 			pathTracingUniforms.uCourseShapeKparameter.value = courseShapeKparameter;
 			pathTracingUniforms.uCourseShapeType.value = 5;
 		}
-		else if (courseShapeType == 'HyperbolicParaboloid')
+		/* else if (courseShapeType == 'HyperbolicParaboloid')
 		{
 			glider1StartingPosition.set(0.5, -10, 75);
 			glider2StartingPosition.set(-0.5, -10, -75);
@@ -534,15 +534,15 @@ function updateVariablesAndUniforms()
 			course_ScaleZController.setValue(500);
 			clipBoundaries_Folder.show();
 			course_ClipMinXController.min(-1); course_ClipMaxXController.max(1);
-			course_ClipMinYController.min(-1); course_ClipMaxYController.max(1.5);
+			course_ClipMinYController.min(-1); course_ClipMaxYController.max(1);
 			course_ClipMinZController.min(-1); course_ClipMaxZController.max(1);
 			course_ClipMinXController.setValue(-1); course_ClipMaxXController.setValue(1);
-			course_ClipMinYController.setValue(-1); course_ClipMaxYController.setValue(1.5);
+			course_ClipMinYController.setValue(-1); course_ClipMaxYController.setValue(1);
 			course_ClipMinZController.setValue(-1); course_ClipMaxZController.setValue(1);
 			course_ShapeKparameterController.hide();
 			pathTracingUniforms.uCourseShapeType.value = 6;
-		}
-		if (courseShapeType == 'Plane')
+		} */
+		else if (courseShapeType == 'Plane')
 		{
 			glider1StartingPosition.set(0.5, -10, 75);
 			glider2StartingPosition.set(-0.5, -10, -75);
@@ -1369,13 +1369,13 @@ function updateVariablesAndUniforms()
 		glider1BaseRight.crossVectors(glider1BaseUp, glider1BaseForward).normalize();
 		glider1BaseForward.crossVectors(glider1BaseRight, glider1BaseUp).normalize();
 	}
-	if (testT < 1)
+	if (testT <= 1)
 	{
 		glider1IsInAir = false;
 		glider1LocalVelocity.y = 0;
 		glider1Base.position.copy(intersectionPoint);
 	}
-	if (testT > 1.01) // " > 1.01" instead of " > 1" to account for floating point precision
+	if (testT > 1) // " > 1.01" instead of " > 1" to account for floating point precision
 	{
 		glider1IsInAir = true;
 	}
@@ -1788,13 +1788,13 @@ function updateVariablesAndUniforms()
 		glider2BaseRight.crossVectors(glider2BaseUp, glider2BaseForward).normalize();
 		glider2BaseForward.crossVectors(glider2BaseRight, glider2BaseUp).normalize();
 	}
-	if (testT < 1)
+	if (testT <= 1)
 	{
 		glider2IsInAir = false;
 		glider2LocalVelocity.y = 0;
 		glider2Base.position.copy(intersectionPoint);
 	}
-	if (testT > 1.01) // " > 1.01" instead of " > 1" to account for floating point precision
+	if (testT > 1) // " > 1.01" instead of " > 1" to account for floating point precision
 	{
 		glider2IsInAir = true;
 	}
@@ -2194,13 +2194,13 @@ function updateVariablesAndUniforms()
 		ballRight.crossVectors(ballUp, ballForward).normalize();
 		ballForward.crossVectors(ballRight, ballUp).normalize();	
 	}
-	if (testT < 1)
+	if (testT <= 1)
 	{
 		ballIsInAir = false;
 		ballLocalVelocity.y = 0;
 		ball.position.copy(intersectionPoint);
 	}
-	if (testT > 1.01) // " > 1.01" instead of " > 1" to account for floating point precision
+	if (testT > 1) // " > 1.01" instead of " > 1" to account for floating point precision
 	{
 		ballIsInAir = true;
 	}
@@ -2411,13 +2411,13 @@ function updateVariablesAndUniforms()
 		playerGoalRight.crossVectors(playerGoalUp, playerGoalForward).normalize();
 		playerGoalForward.crossVectors(playerGoalRight, playerGoalUp).normalize();	
 	}
-	if (testT < 1)
+	if (testT <= 1)
 	{
 		playerGoalIsInAir = false;
 		playerGoalLocalVelocity.y = 0;
 		playerGoal.position.copy(intersectionPoint);
 	}
-	if (testT > 1.01) // " > 1.01" instead of " > 1" to account for floating point precision
+	if (testT > 1) // " > 1.01" instead of " > 1" to account for floating point precision
 	{
 		playerGoalIsInAir = true;
 	}
@@ -2619,13 +2619,13 @@ function updateVariablesAndUniforms()
 		computerGoalRight.crossVectors(computerGoalUp, computerGoalForward).normalize();
 		computerGoalForward.crossVectors(computerGoalRight, computerGoalUp).normalize();	
 	}
-	if (testT < 1)
+	if (testT <= 1)
 	{
 		computerGoalIsInAir = false;
 		computerGoalLocalVelocity.y = 0;
 		computerGoal.position.copy(intersectionPoint);
 	}
-	if (testT > 1.01) // " > 1.01" instead of " > 1" to account for floating point precision
+	if (testT > 1) // " > 1.01" instead of " > 1" to account for floating point precision
 	{
 		computerGoalIsInAir = true;
 	}
@@ -2673,16 +2673,16 @@ function updateVariablesAndUniforms()
 	
 	demoInfoElement.innerHTML = "collisions: " + collisionCounter;
 
-	demoInfoElement.innerHTML += " glider1IsInAir: " + glider1IsInAir + " " + "cameraIsMoving: " + cameraIsMoving + "<br>" + 
+	/* demoInfoElement.innerHTML += " glider1IsInAir: " + glider1IsInAir + " " + "cameraIsMoving: " + cameraIsMoving + "<br>" + 
 	"glider1BaseRight: " + "(" + glider1BaseRight.x.toFixed(1) + " " + glider1BaseRight.y.toFixed(1) + " " + glider1BaseRight.z.toFixed(1) + ")" + " " + 
 	"glider1BaseUp: " + "(" + glider1BaseUp.x.toFixed(1) + " " + glider1BaseUp.y.toFixed(1) + " " + glider1BaseUp.z.toFixed(1) + ")" + " " + 
 	"glider1BaseForward: " + "(" + glider1BaseForward.x.toFixed(1) + " " + glider1BaseForward.y.toFixed(1) + " " + glider1BaseForward.z.toFixed(1) + ")" + "<br>" + 
 	
 	"glider1LocalVelocity: " + "(" + glider1LocalVelocity.x.toFixed(1) + " " + glider1LocalVelocity.y.toFixed(1) + " " + glider1LocalVelocity.z.toFixed(1) + ")" + "<br>" + 
 	"glider1WorldVelocity: " + "(" + glider1WorldVelocity.x.toFixed(1) + " " + glider1WorldVelocity.y.toFixed(1) + " " + glider1WorldVelocity.z.toFixed(1) + ")";
- 	
+ 	 */
 
-	/* demoInfoElement.innerHTML = "glider1IsInAir: " + glider1IsInAir + " " + "cameraIsMoving: " + cameraIsMoving + "<br>" + 
+	/* demoInfoElement.innerHTML += "glider1IsInAir: " + glider1IsInAir + " " + "cameraIsMoving: " + cameraIsMoving + "<br>" + 
 	"glider1ThrustersRight: " + "(" + glider1ThrustersRight.x.toFixed(1) + " " + glider1ThrustersRight.y.toFixed(1) + " " + glider1ThrustersRight.z.toFixed(1) + ")" + " " + 
 	"glider1ThrustersUp: " + "(" + glider1ThrustersUp.x.toFixed(1) + " " + glider1ThrustersUp.y.toFixed(1) + " " + glider1ThrustersUp.z.toFixed(1) + ")" + " " + 
 	"glider1ThrustersForward: " + "(" + glider1ThrustersForward.x.toFixed(1) + " " + glider1ThrustersForward.y.toFixed(1) + " " + glider1ThrustersForward.z.toFixed(1) + ")" + "<br>" + 
@@ -2691,7 +2691,7 @@ function updateVariablesAndUniforms()
 	"glider1WorldVelocity: " + "(" + glider1WorldVelocity.x.toFixed(1) + " " + glider1WorldVelocity.y.toFixed(1) + " " + glider1WorldVelocity.z.toFixed(1) + ")";
  	*/
 
-	/* demoInfoElement.innerHTML = "glider2IsInAir: " + glider2IsInAir + " " + "cameraIsMoving: " + cameraIsMoving + "<br>" + 
+	/* demoInfoElement.innerHTML += "glider2IsInAir: " + glider2IsInAir + " " + "cameraIsMoving: " + cameraIsMoving + "<br>" + 
 	"glider2BaseRight: " + "(" + glider2BaseRight.x.toFixed(1) + " " + glider2BaseRight.y.toFixed(1) + " " + glider2BaseRight.z.toFixed(1) + ")" + " " + 
 	"glider2BaseUp: " + "(" + glider2BaseUp.x.toFixed(1) + " " + glider2BaseUp.y.toFixed(1) + " " + glider2BaseUp.z.toFixed(1) + ")" + " " + 
 	"glider2BaseForward: " + "(" + glider2BaseForward.x.toFixed(1) + " " + glider2BaseForward.y.toFixed(1) + " " + glider2BaseForward.z.toFixed(1) + ")" + "<br>" + 
@@ -2700,7 +2700,7 @@ function updateVariablesAndUniforms()
 	"glider2WorldVelocity: " + "(" + glider2WorldVelocity.x.toFixed(1) + " " + glider2WorldVelocity.y.toFixed(1) + " " + glider2WorldVelocity.z.toFixed(1) + ")";
  	*/
 
-	/* demoInfoElement.innerHTML = "glider2IsInAir: " + glider2IsInAir + " " + "cameraIsMoving: " + cameraIsMoving + "<br>" + 
+	/* demoInfoElement.innerHTML += "glider2IsInAir: " + glider2IsInAir + " " + "cameraIsMoving: " + cameraIsMoving + "<br>" + 
 	"glider2ThrustersRight: " + "(" + glider2ThrustersRight.x.toFixed(1) + " " + glider2ThrustersRight.y.toFixed(1) + " " + glider2ThrustersRight.z.toFixed(1) + ")" + " " + 
 	"glider2ThrustersUp: " + "(" + glider2ThrustersUp.x.toFixed(1) + " " + glider2ThrustersUp.y.toFixed(1) + " " + glider2ThrustersUp.z.toFixed(1) + ")" + " " + 
 	"glider2ThrustersForward: " + "(" + glider2ThrustersForward.x.toFixed(1) + " " + glider2ThrustersForward.y.toFixed(1) + " " + glider2ThrustersForward.z.toFixed(1) + ")" + "<br>" + 
@@ -2716,7 +2716,7 @@ function updateVariablesAndUniforms()
 	
 	"ballLocalVelocity: " + "(" + ballLocalVelocity.x.toFixed(1) + " " + ballLocalVelocity.y.toFixed(1) + " " + ballLocalVelocity.z.toFixed(1) + ")" + "<br>" + 
 	"ballWorldVelocity: " + "(" + ballWorldVelocity.x.toFixed(1) + " " + ballWorldVelocity.y.toFixed(1) + " " + ballWorldVelocity.z.toFixed(1) + ")";
- 	*/
+ 	 */
 	
 	/* demoInfoElement.innerHTML += " playerGoalIsInAir: " + playerGoalIsInAir + " " + "cameraIsMoving: " + cameraIsMoving + "<br>" + 
 	"playerGoalRight: " + "(" + playerGoalRight.x.toFixed(1) + " " + playerGoalRight.y.toFixed(1) + " " + playerGoalRight.z.toFixed(1) + ")" + " " + 
