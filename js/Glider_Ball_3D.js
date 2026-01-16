@@ -10,6 +10,9 @@ let courseShape_invMatrix = new THREE.Matrix4();
 let courseMinBounds = new THREE.Vector3(-1, -1, -1);
 let courseMaxBounds = new THREE.Vector3( 1, 1, 1);
 let torusUpperBound = 0;
+let light1StartingPosition = new THREE.Vector3();
+let light2StartingPosition = new THREE.Vector3();
+let light3StartingPosition = new THREE.Vector3();
 let light1Position = new THREE.Vector3();
 let light2Position = new THREE.Vector3();
 let light3Position = new THREE.Vector3();
@@ -341,15 +344,19 @@ function updateVariablesAndUniforms()
 
 		if (courseShapeType == 'Sphere')
 		{
-			glider1StartingPosition.set(0.5, -10, 75);
-			glider2StartingPosition.set(-0.5, -10, -75);
-			ballStartingPosition.set(0, -10, 0);
-			playerGoalStartingPosition.set(75, -10, 0);
-			computerGoalStartingPosition.set(-75, -10, 0);
-			light1Position.set(-100, -150, 50);
-			light2Position.set(100, -100, -150);
-			light3Position.set(150, -120, 50);
+			glider1StartingPosition.set(0.5, -50, 150);
+			glider2StartingPosition.set(-0.5, -50, -150);
+			ballStartingPosition.set(0, -50, 0);
+			playerGoalStartingPosition.set(150, -50, 0);
+			computerGoalStartingPosition.set(-150, -50, 0);
+			// light1StartingPosition.set(0, 0, 0); light1StartingPosition.multiplyScalar(1 / (500 * 480));
+			// light2StartingPosition.set(-200, 200, -200); light2StartingPosition.multiplyScalar(1 / (500 * 480));
+			// light3StartingPosition.set(200, -200, 200); light3StartingPosition.multiplyScalar(1 / (500 * 480));
+			light1StartingPosition.set(0, 0, 0);
+			light2StartingPosition.set(-0.3, 0.3, -0.3);
+			light3StartingPosition.set(0.3, -0.3, 0.3);
 			courseShape.position.set(0, 0, 0);
+			course_ScaleUniformController.setValue(500);
 			course_ScaleXController.show();
 			course_ScaleYController.show();
 			course_ScaleZController.show();
@@ -368,14 +375,14 @@ function updateVariablesAndUniforms()
 		}
 		else if (courseShapeType == 'Ellipsoid')
 		{
-			glider1StartingPosition.set(0.5, -10, 75);
-			glider2StartingPosition.set(-0.5, -10, -75);
-			ballStartingPosition.set(0, -10, 0);
-			playerGoalStartingPosition.set(75, -10, 0);
-			computerGoalStartingPosition.set(-75, -10, 0);
-			light1Position.set(-100, -150, 50);
-			light2Position.set(100, -100, -150);
-			light3Position.set(150, -120, 50);
+			glider1StartingPosition.set(0.5, -50, 175);
+			glider2StartingPosition.set(-0.5, -50, -175);
+			ballStartingPosition.set(0, -50, 0);
+			playerGoalStartingPosition.set(175, -50, 0);
+			computerGoalStartingPosition.set(-175, -50, 0);
+			light1StartingPosition.set(0, 0, 0);
+			light2StartingPosition.set(-0.3, 0.3, -0.3);
+			light3StartingPosition.set(0.3, -0.3, 0.3);
 			courseShape.position.set(0, 0, 0);
 			course_ScaleXController.show();
 			course_ScaleYController.show();
@@ -400,10 +407,11 @@ function updateVariablesAndUniforms()
 			ballStartingPosition.set(0, -10, 0);
 			playerGoalStartingPosition.set(75, -10, 0);
 			computerGoalStartingPosition.set(-75, -10, 0);
-			light1Position.set(-100, -150, 50);
-			light2Position.set(100, -100, -150);
-			light3Position.set(150, -120, 50);
+			light1StartingPosition.set(0, 0, 0);
+			light2StartingPosition.set(-0.3, 0.3, -0.5);
+			light3StartingPosition.set(0.3, -0.3, 0.5);
 			courseShape.position.set(0, 0, 0);
+			course_ScaleUniformController.setValue(500);
 			course_ScaleXController.show();
 			course_ScaleYController.show();
 			course_ScaleZController.show();
@@ -427,9 +435,9 @@ function updateVariablesAndUniforms()
 			ballStartingPosition.set(0, -10, 0);
 			playerGoalStartingPosition.set(75, -10, 0);
 			computerGoalStartingPosition.set(-75, -10, 0);
-			light1Position.set(-100, -150, 50);
-			light2Position.set(100, -100, -150);
-			light3Position.set(150, -120, 50);
+			light1StartingPosition.set(0, 0, 0);
+			light2StartingPosition.set(-0.05, 0.05, -0.5);
+			light3StartingPosition.set(0.05, -0.05, 0.5);
 			courseShape.position.set(0, 0, 0);
 			course_ScaleXController.show();
 			course_ScaleYController.show();
@@ -458,10 +466,11 @@ function updateVariablesAndUniforms()
 			ballStartingPosition.set(0, -10, 0);
 			playerGoalStartingPosition.set(75, -10, 0);
 			computerGoalStartingPosition.set(-75, -10, 0);
-			light1Position.set(-100, -150, 50);
-			light2Position.set(100, -100, -150);
-			light3Position.set(150, -120, 50);
+			light1StartingPosition.set(0, 0, 0);
+			light2StartingPosition.set(-0.05, 0.05, -0.5);
+			light3StartingPosition.set(0.05, -0.05, 0.5);
 			courseShape.position.set(0, 0, 0);
+			course_ScaleUniformController.setValue(1000);
 			course_ScaleXController.show();
 			course_ScaleYController.show();
 			course_ScaleZController.show();
@@ -490,9 +499,9 @@ function updateVariablesAndUniforms()
 			ballStartingPosition.set(0, -10, 0);
 			playerGoalStartingPosition.set(75, -10, 0);
 			computerGoalStartingPosition.set(-75, -10, 0);
-			light1Position.set(-100, -150, 50);
-			light2Position.set(100, -100, -150);
-			light3Position.set(150, -120, 50);
+			light1StartingPosition.set(0, 0, 0);
+			light2StartingPosition.set(-0.05, 0.05, -0.8);
+			light3StartingPosition.set(0.05, -0.05, 0.8);
 			courseShape.position.set(0, 0, 0);
 			course_ScaleXController.show();
 			course_ScaleYController.show();
@@ -522,9 +531,9 @@ function updateVariablesAndUniforms()
 			ballStartingPosition.set(0, -10, 0);
 			playerGoalStartingPosition.set(75, -10, 0);
 			computerGoalStartingPosition.set(-75, -10, 0);
-			light1Position.set(-100, -150, 50);
-			light2Position.set(100, -100, -150);
-			light3Position.set(150, -120, 50);
+			light1StartingPosition.set(0, -0.3, 0);
+			light2StartingPosition.set(-0.3, -0.3, -0.3);
+			light3StartingPosition.set(0.3, -0.3, 0.3);
 			courseShape.position.set(0, -200, 0);
 			course_ScaleXController.show();
 			course_ScaleYController.show();
@@ -549,23 +558,24 @@ function updateVariablesAndUniforms()
 			ballStartingPosition.set(0, -10, 0);
 			playerGoalStartingPosition.set(75, -10, 0);
 			computerGoalStartingPosition.set(-75, -10, 0);
-			light1Position.set(-100, -150, 50);
-			light2Position.set(100, -100, -150);
-			light3Position.set(150, -120, 50);
+			light1StartingPosition.set(0, 0.3, 0);
+			light2StartingPosition.set(-0.3, 0.3, -0.3);
+			light3StartingPosition.set(0.3, 0.3, 0.3);
 			courseShape.position.set(0, -200, 0);
+			course_ScaleUniformController.setValue(1000);
 			course_ScaleXController.show();
-			course_ScaleYController.show();
+			course_ScaleYController.hide();
 			course_ScaleZController.show();
-			course_ScaleXController.setValue(500);
-			course_ScaleYController.setValue(500);
-			course_ScaleZController.setValue(500);
-			clipBoundaries_Folder.show();
+			course_ScaleXController.setValue(1000);
+			//course_ScaleYController.setValue(1000);
+			course_ScaleZController.setValue(1000);
 			course_ClipMinXController.min(-1); course_ClipMaxXController.max(1);
 			course_ClipMinYController.min(-1); course_ClipMaxYController.max(1);
 			course_ClipMinZController.min(-1); course_ClipMaxZController.max(1);
 			course_ClipMinXController.setValue(-1); course_ClipMaxXController.setValue(1);
 			course_ClipMinYController.setValue(-1); course_ClipMaxYController.setValue(1);
 			course_ClipMinZController.setValue(-1); course_ClipMaxZController.setValue(1);
+			clipBoundaries_Folder.hide();
 			course_ShapeKparameterController.hide();
 			pathTracingUniforms.uCourseShapeType.value = 7;
 		}
@@ -576,10 +586,11 @@ function updateVariablesAndUniforms()
 			ballStartingPosition.set(0, -10, 0);
 			playerGoalStartingPosition.set(75, -10, 0);
 			computerGoalStartingPosition.set(-75, -10, 0);
-			light1Position.set(-100, -150, 50);
-			light2Position.set(100, -100, -150);
-			light3Position.set(150, -120, 50);
+			light1StartingPosition.set(0, 0, 0);
+			light2StartingPosition.set(-0.3, 0.3, -1);
+			light3StartingPosition.set(0.3, -0.3, 1);
 			courseShape.position.set(0, 0, 0);
+			course_ScaleUniformController.setValue(500);
 			course_ScaleXController.show();
 			course_ScaleYController.show();
 			course_ScaleZController.show();
@@ -595,8 +606,8 @@ function updateVariablesAndUniforms()
 			course_ClipMinZController.min(-courseShapeKparameter - 1); course_ClipMaxZController.max(courseShapeKparameter + 1);
 			course_ClipMinZController.setValue(-courseShapeKparameter - 1); course_ClipMaxZController.setValue(courseShapeKparameter + 1);
 			course_ShapeKparameterController.show();
-			course_ShapeKparameterController.min(2/3); course_ShapeKparameterController.max(4);
-			course_ShapeKparameterController.step(1/3);
+			course_ShapeKparameterController.min(2/3); course_ShapeKparameterController.max(3);
+			course_ShapeKparameterController.step(1/6);
 			course_ShapeKparameterController.setValue(courseShapeKparameter);
 			pathTracingUniforms.uCourseShapeKparameter.value = courseShapeKparameter;
 			pathTracingUniforms.uCourseShapeType.value = 8;
@@ -608,10 +619,11 @@ function updateVariablesAndUniforms()
 			ballStartingPosition.set(0, -10, 0);
 			playerGoalStartingPosition.set(75, -10, 0);
 			computerGoalStartingPosition.set(-75, -10, 0);
-			light1Position.set(-100, -150, 50);
-			light2Position.set(100, -100, -150);
-			light3Position.set(150, -120, 50);
+			light1StartingPosition.set(0, 0, 0);
+			light2StartingPosition.set(-0.4, 0.4, -0.4);
+			light3StartingPosition.set(0.4, -0.4, 0.4);
 			courseShape.position.set(0, 0, 0);
+			course_ScaleUniformController.setValue(500);
 			course_ScaleXController.show();
 			course_ScaleYController.show();
 			course_ScaleZController.show();
@@ -642,6 +654,7 @@ function updateVariablesAndUniforms()
 			computerGoalStartingPosition.set(-75 - course_ScaleXController.getValue(), -10, 0);
 			// (lights position placement is handled in needChangeCourseScale code further down)
 			courseShape.position.set(0, 0, 0);
+			course_ScaleUniformController.setValue(500);
 			course_ScaleXController.show();
 			course_ScaleYController.show();
 			course_ScaleZController.show();
@@ -670,9 +683,9 @@ function updateVariablesAndUniforms()
 			ballStartingPosition.set(0, -10, 0);
 			playerGoalStartingPosition.set(75, -10, 0);
 			computerGoalStartingPosition.set(-75, -10, 0);
-			light1Position.set(-100, -150, 50);
-			light2Position.set(100, -100, -150);
-			light3Position.set(150, -120, 50);
+			light1StartingPosition.set(0, 0.2, 0);
+			light2StartingPosition.set(-0.5, 0.2, -0.5);
+			light3StartingPosition.set(0.5, 0.2, 0.5);
 			courseShape.position.set(0, -700, 0);
 			course_ScaleUniformController.setValue(500);
 			course_ScaleXController.setValue(500);
@@ -720,6 +733,28 @@ function updateVariablesAndUniforms()
 		courseShape.scale.set(course_ScaleXController.getValue(),
 			course_ScaleYController.getValue(),
 			course_ScaleZController.getValue());
+
+		if (courseShapeType == 'Plane')
+			courseShape.scale.y = 1000;
+
+		// light1Position.copy(light1StartingPosition); 
+		// light1Position.multiply(courseShape.scale).multiply(courseShape.scale).multiplyScalar(0.4);
+		// light2Position.copy(light2StartingPosition); 
+		// light2Position.multiply(courseShape.scale).multiply(courseShape.scale).multiplyScalar(0.4);
+		// light3Position.copy(light3StartingPosition);
+		// light3Position.multiply(courseShape.scale).multiply(courseShape.scale).multiplyScalar(0.4);
+
+		light1Position.copy(light1StartingPosition).multiply(courseShape.scale); 
+		light2Position.copy(light2StartingPosition).multiply(courseShape.scale); 
+		light3Position.copy(light3StartingPosition).multiply(courseShape.scale);
+
+		if (courseShapeType == 'Capsule')
+		{
+			light1Position.z *= courseShapeKparameter;
+			light2Position.z *= courseShapeKparameter;
+			light3Position.z *= courseShapeKparameter;
+		}
+		
 
 		if (courseShapeType == 'Torus')
 		{
@@ -779,6 +814,13 @@ function updateVariablesAndUniforms()
 			course_ClipMaxZController.max(courseShapeKparameter + 1);
 			course_ClipMinZController.setValue(-courseShapeKparameter - 1); 
 			course_ClipMaxZController.setValue(courseShapeKparameter + 1);
+
+			light1Position.z = light1StartingPosition.z * courseShape.scale.z;// * courseShape.scale.z * 0.1;
+			light1Position.z *= courseShapeKparameter;
+			light2Position.z = light2StartingPosition.z * courseShape.scale.z;// * courseShape.scale.z * 0.1;
+			light2Position.z *= courseShapeKparameter;
+			light3Position.z = light3StartingPosition.z * courseShape.scale.z;// * courseShape.scale.z * 0.1;
+			light3Position.z *= courseShapeKparameter;
 		}
 		
 		pathTracingUniforms.uCourseShapeKparameter.value = courseShapeKparameter;
