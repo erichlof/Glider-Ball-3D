@@ -1477,16 +1477,17 @@ void SetupScene(void)
 //-----------------------------------------------------------------------
 {
 	//float lightPower = 10.0;
-	float lightPower = min(min(uCourseShapeScale.x, uCourseShapeScale.y), uCourseShapeScale.z);
-	lightPower = 0.00004 * (lightPower * lightPower);
-	lightPower = clamp(lightPower, 8.0, 100.0);
+	//float lightPower = min(min(uCourseShapeScale.x, uCourseShapeScale.y), uCourseShapeScale.z);
+	float lightPower = (uCourseShapeScale.x + uCourseShapeScale.y + uCourseShapeScale.z) * 0.3333;
+	lightPower = 0.00005 * (lightPower * lightPower);
+	lightPower = clamp(lightPower, 4.0, 100.0);
 	vec3 L1 = vec3(1.0, 1.0, 1.0) * lightPower;// White light
 	vec3 L2 = vec3(1.0, 0.8, 0.2) * lightPower;// Yellow light
 	vec3 L3 = vec3(0.1, 0.7, 1.0) * lightPower;// Blue light
 		
-	spheres[0] = Sphere(30.0, uLight1Position, L1, vec3(0), LIGHT);//spherical white Light1 
-	spheres[1] = Sphere(20.0, uLight2Position, L2, vec3(0), LIGHT);//spherical yellow Light2
-	spheres[2] = Sphere(10.0, uLight3Position, L3, vec3(0), LIGHT);//spherical blue Light3
+	spheres[0] = Sphere(40.0, uLight1Position, L1, vec3(0), LIGHT);//spherical white Light1 
+	spheres[1] = Sphere(30.0, uLight2Position, L2, vec3(0), LIGHT);//spherical yellow Light2
+	spheres[2] = Sphere(20.0, uLight3Position, L3, vec3(0), LIGHT);//spherical blue Light3
 	
 	unitSpheres[0] = UnitSphere(vec3(0), vec3(1.0, 1.0, 1.0), DIFF);//checkered Course
 
