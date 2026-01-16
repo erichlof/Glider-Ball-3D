@@ -16,6 +16,10 @@ let light3StartingPosition = new THREE.Vector3();
 let light1Position = new THREE.Vector3();
 let light2Position = new THREE.Vector3();
 let light3Position = new THREE.Vector3();
+let ONETHIRD_PI = Math.PI / 3;
+let torusLight1PositionVec = new THREE.Vector3(Math.cos(ONETHIRD_PI * 1), Math.sin(ONETHIRD_PI * 1), 0);
+let torusLight2PositionVec = new THREE.Vector3(Math.cos(ONETHIRD_PI * 3), Math.sin(ONETHIRD_PI * 3), 0);
+let torusLight3PositionVec = new THREE.Vector3(Math.cos(ONETHIRD_PI * 5), Math.sin(ONETHIRD_PI * 5), 0);
 
 let glider1Base = new THREE.Object3D();
 let glider1CollisionVolume = new THREE.Object3D();
@@ -349,9 +353,6 @@ function updateVariablesAndUniforms()
 			ballStartingPosition.set(0, -50, 0);
 			playerGoalStartingPosition.set(150, -50, 0);
 			computerGoalStartingPosition.set(-150, -50, 0);
-			// light1StartingPosition.set(0, 0, 0); light1StartingPosition.multiplyScalar(1 / (500 * 480));
-			// light2StartingPosition.set(-200, 200, -200); light2StartingPosition.multiplyScalar(1 / (500 * 480));
-			// light3StartingPosition.set(200, -200, 200); light3StartingPosition.multiplyScalar(1 / (500 * 480));
 			light1StartingPosition.set(0, 0, 0);
 			light2StartingPosition.set(-0.3, 0.3, -0.3);
 			light3StartingPosition.set(0.3, -0.3, 0.3);
@@ -487,7 +488,6 @@ function updateVariablesAndUniforms()
 			courseShapeKparameter = 0.1;
 			course_ShapeKparameterController.show();
 			course_ShapeKparameterController.min(0.1); course_ShapeKparameterController.max(0.5);
-			course_ShapeKparameterController.step(0.01);
 			course_ShapeKparameterController.setValue(courseShapeKparameter);
 			pathTracingUniforms.uCourseShapeKparameter.value = courseShapeKparameter;
 			pathTracingUniforms.uCourseShapeType.value = 4;
@@ -519,7 +519,6 @@ function updateVariablesAndUniforms()
 			courseShapeKparameter = 0.94;
 			course_ShapeKparameterController.show();
 			course_ShapeKparameterController.min(0.0); course_ShapeKparameterController.max(0.97);
-			course_ShapeKparameterController.step(0.01);
 			course_ShapeKparameterController.setValue(courseShapeKparameter);
 			pathTracingUniforms.uCourseShapeKparameter.value = courseShapeKparameter;
 			pathTracingUniforms.uCourseShapeType.value = 5;
@@ -558,9 +557,12 @@ function updateVariablesAndUniforms()
 			ballStartingPosition.set(0, -10, 0);
 			playerGoalStartingPosition.set(75, -10, 0);
 			computerGoalStartingPosition.set(-75, -10, 0);
-			light1StartingPosition.set(0, 0.3, 0);
-			light2StartingPosition.set(-0.3, 0.3, -0.3);
-			light3StartingPosition.set(0.3, 0.3, 0.3);
+			// light1StartingPosition.set(0, 0.3, 0);
+			// light2StartingPosition.set(-0.3, 0.3, -0.3);
+			// light3StartingPosition.set(0.3, 0.3, 0.3);
+			light1StartingPosition.set(Math.cos(ONETHIRD_PI * 0) * 0.5, 0.3, Math.sin(ONETHIRD_PI * 0) * 0.5);
+			light2StartingPosition.set(Math.cos(ONETHIRD_PI * 2) * 0.5, 0.3, Math.sin(ONETHIRD_PI * 2) * 0.5);
+			light3StartingPosition.set(Math.cos(ONETHIRD_PI * 4) * 0.5, 0.3, Math.sin(ONETHIRD_PI * 4) * 0.5);
 			courseShape.position.set(0, -200, 0);
 			course_ScaleUniformController.setValue(1000);
 			course_ScaleXController.show();
@@ -577,7 +579,7 @@ function updateVariablesAndUniforms()
 			course_ClipMinZController.setValue(-1); course_ClipMaxZController.setValue(1);
 			clipBoundaries_Folder.hide();
 			course_ShapeKparameterController.hide();
-			pathTracingUniforms.uCourseShapeType.value = 7;
+			pathTracingUniforms.uCourseShapeType.value = 6;
 		}
 		else if (courseShapeType == 'Capsule')
 		{
@@ -606,11 +608,10 @@ function updateVariablesAndUniforms()
 			course_ClipMinZController.min(-courseShapeKparameter - 1); course_ClipMaxZController.max(courseShapeKparameter + 1);
 			course_ClipMinZController.setValue(-courseShapeKparameter - 1); course_ClipMaxZController.setValue(courseShapeKparameter + 1);
 			course_ShapeKparameterController.show();
-			course_ShapeKparameterController.min(2/3); course_ShapeKparameterController.max(3);
-			course_ShapeKparameterController.step(1/6);
+			course_ShapeKparameterController.min(0.5); course_ShapeKparameterController.max(3);
 			course_ShapeKparameterController.setValue(courseShapeKparameter);
 			pathTracingUniforms.uCourseShapeKparameter.value = courseShapeKparameter;
-			pathTracingUniforms.uCourseShapeType.value = 8;
+			pathTracingUniforms.uCourseShapeType.value = 7;
 		}
 		else if (courseShapeType == 'RoundedBox')
 		{
@@ -640,10 +641,9 @@ function updateVariablesAndUniforms()
 			courseShapeKparameter = 0.1;
 			course_ShapeKparameterController.show();
 			course_ShapeKparameterController.min(0.05); course_ShapeKparameterController.max(0.5);
-			course_ShapeKparameterController.step(0.01);
 			course_ShapeKparameterController.setValue(courseShapeKparameter);
 			pathTracingUniforms.uCourseShapeKparameter.value = courseShapeKparameter;
-			pathTracingUniforms.uCourseShapeType.value = 9;
+			pathTracingUniforms.uCourseShapeType.value = 8;
 		}
 		else if (courseShapeType == 'Torus')
 		{
@@ -671,10 +671,9 @@ function updateVariablesAndUniforms()
 			courseShapeKparameter = 0.5;
 			course_ShapeKparameterController.show();
 			course_ShapeKparameterController.min(0.2); course_ShapeKparameterController.max(0.99);
-			course_ShapeKparameterController.step(0.01);
 			course_ShapeKparameterController.setValue(courseShapeKparameter);
 			pathTracingUniforms.uCourseShapeKparameter.value = courseShapeKparameter;
-			pathTracingUniforms.uCourseShapeType.value = 10;
+			pathTracingUniforms.uCourseShapeType.value = 9;
 		}
 		else if (courseShapeType == 'BilinearPatch')
 		{
@@ -683,14 +682,17 @@ function updateVariablesAndUniforms()
 			ballStartingPosition.set(0, -10, 0);
 			playerGoalStartingPosition.set(75, -10, 0);
 			computerGoalStartingPosition.set(-75, -10, 0);
-			light1StartingPosition.set(0, 0.2, 0);
-			light2StartingPosition.set(-0.5, 0.2, -0.5);
-			light3StartingPosition.set(0.5, 0.2, 0.5);
+			// light1StartingPosition.set(0, 0.2, 0);
+			// light2StartingPosition.set(-0.5, 0.2, -0.5);
+			// light3StartingPosition.set(0.5, 0.2, 0.5);
+			light1StartingPosition.set( Math.cos(ONETHIRD_PI * 0) * 1.0, 0.3,  Math.sin(ONETHIRD_PI * 0) * 1.0);
+			light2StartingPosition.set( Math.cos(ONETHIRD_PI * 4) * 1.0, 0.3,  Math.sin(ONETHIRD_PI * 4) * 1.0);
+			light3StartingPosition.set( Math.cos(ONETHIRD_PI * 2) * 1.0, 0.3,  Math.sin(ONETHIRD_PI * 2) * 1.0);
 			courseShape.position.set(0, -700, 0);
-			course_ScaleUniformController.setValue(500);
-			course_ScaleXController.setValue(500);
-			course_ScaleYController.setValue(500);
-			course_ScaleZController.setValue(500);
+			course_ScaleUniformController.setValue(800);
+			course_ScaleXController.setValue(800);
+			course_ScaleYController.setValue(800);
+			course_ScaleZController.setValue(800);
 			course_ScaleXController.hide();
 			course_ScaleYController.hide();
 			course_ScaleZController.hide();
@@ -702,7 +704,7 @@ function updateVariablesAndUniforms()
 			course_ClipMinZController.setValue(-0.97); course_ClipMaxZController.setValue(0.97);
 			clipBoundaries_Folder.hide();
 			course_ShapeKparameterController.hide();
-			pathTracingUniforms.uCourseShapeType.value = 11;
+			pathTracingUniforms.uCourseShapeType.value = 10;
 		}
 
 		cameraIsMoving = true;
@@ -737,13 +739,7 @@ function updateVariablesAndUniforms()
 		if (courseShapeType == 'Plane')
 			courseShape.scale.y = 1000;
 
-		// light1Position.copy(light1StartingPosition); 
-		// light1Position.multiply(courseShape.scale).multiply(courseShape.scale).multiplyScalar(0.4);
-		// light2Position.copy(light2StartingPosition); 
-		// light2Position.multiply(courseShape.scale).multiply(courseShape.scale).multiplyScalar(0.4);
-		// light3Position.copy(light3StartingPosition);
-		// light3Position.multiply(courseShape.scale).multiply(courseShape.scale).multiplyScalar(0.4);
-
+		
 		light1Position.copy(light1StartingPosition).multiply(courseShape.scale); 
 		light2Position.copy(light2StartingPosition).multiply(courseShape.scale); 
 		light3Position.copy(light3StartingPosition).multiply(courseShape.scale);
@@ -764,9 +760,13 @@ function updateVariablesAndUniforms()
 			playerGoalStartingPosition.set(75 + course_ScaleXController.getValue(), -10, 0);
 			computerGoalStartingPosition.set(-75 - course_ScaleXController.getValue(), -10, 0);
 
-			light1Position.set(-10 - course_ScaleXController.getValue(), -15, 5);
-			light2Position.set(10 + course_ScaleXController.getValue(), -10, -15);
-			light3Position.set(5, course_ScaleYController.getValue(), 5);
+			// light1Position.set(-10 - course_ScaleXController.getValue(), -15, 5);
+			// light2Position.set(10 + course_ScaleXController.getValue(), -10, -15);
+			// light3Position.set(5, course_ScaleYController.getValue(), 5);
+
+			light1Position.copy(torusLight1PositionVec).multiply(courseShape.scale);
+			light2Position.copy(torusLight2PositionVec).multiply(courseShape.scale);
+			light3Position.copy(torusLight3PositionVec).multiply(courseShape.scale);
 
 			torusUpperBound = courseShape.scale.x;
 			if (courseShape.scale.y > torusUpperBound) torusUpperBound = courseShape.scale.y;
