@@ -40,13 +40,11 @@ float hitObjectID = -INFINITY;
 int hitType = -100;
 
 struct Sphere { float radius; vec3 position; vec3 emission; vec3 color; int type; };
-struct UnitSphere { vec3 emission; vec3 color; int type; };
 struct UnitBox { vec3 emission; vec3 color; int type; };
 struct UnitParaboloid { vec3 emission; vec3 color; int type; };
 
 
 Sphere spheres[N_SPHERES];
-UnitSphere unitSpheres[N_UNIT_SPHERES];
 UnitBox unitBoxes[N_UNIT_BOXES];
 UnitParaboloid unitParaboloids[N_UNIT_PARABOLOIDS];
 
@@ -392,7 +390,7 @@ float UnitCapsuleInterior_ParamIntersect( vec3 ro, vec3 rd, float k, out vec3 n,
 	return INFINITY;
 }
 
-float UnitRoundedBoxInterior_ParamIntersect( vec3 ro, vec3 rd, float k, out vec3 n, out vec2 uv, vec2 uvScale )
+float UnitRoundedBoxInterior_ParamIntersect( vec3 ro, vec3 rd, float k, out vec3 n, out vec2 uv )
 {
 	vec3 hit, initialRayO;
 	float phi, theta;
@@ -1024,40 +1022,42 @@ float SceneIntersect(out int finalIsRayExiting)
 	}
 	objectCount++;
 
+	vec3 uvFactor = uCourseShapeScale / 500.0;
+
 	// transform ray into courseShape's object space
 	rObjOrigin = vec3( uCourseShape_invMatrix * vec4(rayOrigin, 1.0) );
 	rObjDirection = vec3( uCourseShape_invMatrix * vec4(rayDirection, 0.0) );
 	if (uCourseShapeType < 2)
-		d = UnitSphereInterior_ParamIntersect(rObjOrigin, rObjDirection, normal, uv, vec2(16,16));
+		d = UnitSphereInterior_ParamIntersect(rObjOrigin, rObjDirection, normal, uv, floor(vec2(12.0 * uvFactor.x, 12.0 * uvFactor.z)));
 	else if (uCourseShapeType == 2)
-		d = UnitCylinderInterior_ParamIntersect(rObjOrigin, rObjDirection, normal, uv, vec2(32,14));
+		d = UnitCylinderInterior_ParamIntersect(rObjOrigin, rObjDirection, normal, uv, floor(vec2(32.0  * uvFactor.x, 14.0  * uvFactor.z)));
 	else if (uCourseShapeType == 3)
-		d = UnitParaboloidInterior_ParamIntersect(rObjOrigin, rObjDirection, uCourseShapeKparameter, normal, uv, vec2(32,16));
+		d = UnitParaboloidInterior_ParamIntersect(rObjOrigin, rObjDirection, uCourseShapeKparameter, normal, uv, floor(vec2(32.0  * uvFactor.x, 16.0  * uvFactor.z)));
 	else if (uCourseShapeType == 4)
-		d = UnitConeInterior_ParamIntersect(rObjOrigin, rObjDirection, uCourseShapeKparameter, normal, uv, vec2(32,16));
+		d = UnitConeInterior_ParamIntersect(rObjOrigin, rObjDirection, uCourseShapeKparameter, normal, uv, floor(vec2(32.0  * uvFactor.x, 16.0  * uvFactor.z)));
 	else if (uCourseShapeType == 5)
-		d = UnitHyperboloidInterior_ParamIntersect(rObjOrigin, rObjDirection, uCourseShapeKparameter, normal, uv, vec2(32,16));
+		d = UnitHyperboloidInterior_ParamIntersect(rObjOrigin, rObjDirection, uCourseShapeKparameter, normal, uv, floor(vec2(20.0  * uvFactor.x, 10.0  * uvFactor.z)));
 	// else if (uCourseShapeType == 6)
 	// 	d = UnitHyperbolicParaboloidInterior_ParamIntersect(rObjOrigin, rObjDirection, normal, uv, vec2(20,20));
+	else if (uCourseShapeType == 6)
+		d = XZPlane_ParamIntersect(rObjOrigin, rObjDirection, normal, uv, floor(vec2(8.0 * uvFactor.x, 8.0 * uvFactor.z)));
 	else if (uCourseShapeType == 7)
-		d = XZPlane_ParamIntersect(rObjOrigin, rObjDirection, normal, uv, vec2(10,10));
+		d = UnitCapsuleInterior_ParamIntersect(rObjOrigin, rObjDirection, uCourseShapeKparameter, normal, uv, floor(vec2(40.0 * uvFactor.x, 12.0 * uvFactor.z)));
 	else if (uCourseShapeType == 8)
-		d = UnitCapsuleInterior_ParamIntersect(rObjOrigin, rObjDirection, uCourseShapeKparameter, normal, uv, vec2(40,12));
+		d = UnitRoundedBoxInterior_ParamIntersect(rObjOrigin, rObjDirection, uCourseShapeKparameter, normal, uv);
 	else if (uCourseShapeType == 9)
-		d = UnitRoundedBoxInterior_ParamIntersect(rObjOrigin, rObjDirection, uCourseShapeKparameter, normal, uv, vec2(10,20));
+		d = UnitTorusInterior_ParamIntersect(rObjOrigin, rObjDirection, uCourseShapeKparameter, uTorusUpperBound, normal, uv, floor(vec2(32.0  * uvFactor.x, 16.0  * uvFactor.y)));
 	else if (uCourseShapeType == 10)
-		d = UnitTorusInterior_ParamIntersect(rObjOrigin, rObjDirection, uCourseShapeKparameter, uTorusUpperBound, normal, uv, vec2(32,16));
-	else if (uCourseShapeType == 11)
-		d = BilinearPatch_ParamIntersect(vec3(-1,1,1), vec3(1,-1,1), vec3(1,1,-1), vec3(-1,0,-1), rObjOrigin, rObjDirection, normal, uv, vec2(20,20));
+		d = BilinearPatch_ParamIntersect(vec3(-1,1,1), vec3(1,-1,1), vec3(1,1,-1), vec3(-1,0,-1), rObjOrigin, rObjDirection, normal, uv, floor(vec2(12.0 * uvFactor.x, 12.0 * uvFactor.z)));
 	if (d < t)
 	{
 		t = d;
 		hitNormal = transpose(mat3(uCourseShape_invMatrix)) * normal;	
-		hitEmission = unitSpheres[0].emission;
+		hitEmission = vec3(0);
 		hitPos = rayOrigin + (t * rayDirection);
 		q = clamp( mod( dot( floor(uv), vec2(1, 1) ), 2.0 ) , 0.0, 1.0 );
-		hitColor = mix(vec3(0.5), unitSpheres[0].color, q);
-		hitType = unitSpheres[0].type;
+		hitColor = mix(vec3(0.5), vec3(1), q);
+		hitType = DIFF;
 		hitObjectID = float(objectCount);
 	}
 	objectCount++;
@@ -1476,8 +1476,6 @@ vec3 CalculateRadiance( out vec3 objectNormal, out vec3 objectColor, out float o
 void SetupScene(void)
 //-----------------------------------------------------------------------
 {
-	//float lightPower = 10.0;
-	//float lightPower = min(min(uCourseShapeScale.x, uCourseShapeScale.y), uCourseShapeScale.z);
 	float lightPower = (uCourseShapeScale.x + uCourseShapeScale.y + uCourseShapeScale.z) * 0.3333;
 	lightPower = 0.00005 * (lightPower * lightPower);
 	lightPower = clamp(lightPower, 4.0, 100.0);
@@ -1488,8 +1486,6 @@ void SetupScene(void)
 	spheres[0] = Sphere(40.0, uLight1Position, L1, vec3(0), LIGHT);//spherical white Light1 
 	spheres[1] = Sphere(30.0, uLight2Position, L2, vec3(0), LIGHT);//spherical yellow Light2
 	spheres[2] = Sphere(20.0, uLight3Position, L3, vec3(0), LIGHT);//spherical blue Light3
-	
-	unitSpheres[0] = UnitSphere(vec3(0), vec3(1.0, 1.0, 1.0), DIFF);//checkered Course
 
 	unitBoxes[0] = UnitBox(vec3(0), vec3(0.01, 1.0, 0.4), DIFF);//Ball
 	unitBoxes[1] = UnitBox(vec3(0), vec3(0.01, 0.2, 1.0), SPEC);//player's Goal
