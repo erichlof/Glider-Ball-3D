@@ -72,6 +72,7 @@ float XZPlane_ParamIntersect( vec3 ro, vec3 rd, out vec3 n, out vec2 uv, vec2 uv
 	t = -(dot(ro, n)) / dot(rd, n);
 
 	hit = ro + (rd * t);
+	// simple XZ-plane mapping
 	uv = vec2(hit.x, hit.z);
 	uv *= uvScale;
 	if ( t > 0.0 && all(greaterThanEqual(hit, uCourseMinBounds)) && all(lessThanEqual(hit, uCourseMaxBounds)) )
@@ -289,7 +290,7 @@ float UnitHyperboloidInterior_ParamIntersect( vec3 ro, vec3 rd, float k, out vec
 	return t;
 }
 
-/* float UnitHyperbolicParaboloidInterior_ParamIntersect( vec3 ro, vec3 rd, out vec3 n, out vec2 uv, vec2 uvScale )
+float UnitHyperbolicParaboloidInterior_ParamIntersect( vec3 ro, vec3 rd, out vec3 n, out vec2 uv, vec2 uvScale )
 {
 	vec3 hit;
 	float t0, t1;
@@ -319,7 +320,7 @@ float UnitHyperboloidInterior_ParamIntersect( vec3 ro, vec3 rd, float k, out vec
 	}
 
 	return t;
-} */
+}
 
 float UnitCapsuleInterior_ParamIntersect( vec3 ro, vec3 rd, float k, out vec3 n, out vec2 uv, vec2 uvScale )
 {
@@ -1037,17 +1038,17 @@ float SceneIntersect(out int finalIsRayExiting)
 		d = UnitConeInterior_ParamIntersect(rObjOrigin, rObjDirection, uCourseShapeKparameter, normal, uv, floor(vec2(32.0  * uvFactor.x, 16.0  * uvFactor.z)));
 	else if (uCourseShapeType == 5)
 		d = UnitHyperboloidInterior_ParamIntersect(rObjOrigin, rObjDirection, uCourseShapeKparameter, normal, uv, floor(vec2(20.0  * uvFactor.x, 10.0  * uvFactor.z)));
-	// else if (uCourseShapeType == 6)
-	// 	d = UnitHyperbolicParaboloidInterior_ParamIntersect(rObjOrigin, rObjDirection, normal, uv, vec2(20,20));
 	else if (uCourseShapeType == 6)
-		d = XZPlane_ParamIntersect(rObjOrigin, rObjDirection, normal, uv, floor(vec2(8.0 * uvFactor.x, 8.0 * uvFactor.z)));
+		d = UnitHyperbolicParaboloidInterior_ParamIntersect(rObjOrigin, rObjDirection, normal, uv, floor(vec2(8.0 * uvFactor.x, 8.0 * uvFactor.z)));
 	else if (uCourseShapeType == 7)
-		d = UnitCapsuleInterior_ParamIntersect(rObjOrigin, rObjDirection, uCourseShapeKparameter, normal, uv, floor(vec2(40.0 * uvFactor.x, 12.0 * uvFactor.z)));
+		d = XZPlane_ParamIntersect(rObjOrigin, rObjDirection, normal, uv, floor(vec2(8.0 * uvFactor.x, 8.0 * uvFactor.z)));
 	else if (uCourseShapeType == 8)
-		d = UnitRoundedBoxInterior_ParamIntersect(rObjOrigin, rObjDirection, uCourseShapeKparameter, normal, uv);
+		d = UnitCapsuleInterior_ParamIntersect(rObjOrigin, rObjDirection, uCourseShapeKparameter, normal, uv, floor(vec2(40.0 * uvFactor.x, 12.0 * uvFactor.z)));
 	else if (uCourseShapeType == 9)
-		d = UnitTorusInterior_ParamIntersect(rObjOrigin, rObjDirection, uCourseShapeKparameter, uTorusUpperBound, normal, uv, floor(vec2(32.0  * uvFactor.x, 16.0  * uvFactor.y)));
+		d = UnitRoundedBoxInterior_ParamIntersect(rObjOrigin, rObjDirection, uCourseShapeKparameter, normal, uv);
 	else if (uCourseShapeType == 10)
+		d = UnitTorusInterior_ParamIntersect(rObjOrigin, rObjDirection, uCourseShapeKparameter, uTorusUpperBound, normal, uv, floor(vec2(32.0  * uvFactor.x, 16.0  * uvFactor.y)));
+	else if (uCourseShapeType == 11)
 		d = BilinearPatch_ParamIntersect(vec3(-1,1,1), vec3(1,-1,1), vec3(1,1,-1), vec3(-1,0,-1), rObjOrigin, rObjDirection, normal, uv, floor(vec2(12.0 * uvFactor.x, 12.0 * uvFactor.z)));
 	if (d < t)
 	{
@@ -1166,8 +1167,8 @@ float SceneIntersect(out int finalIsRayExiting)
 		hitObjectID = float(objectCount);
 	}
 	objectCount++;
-/* 
-	// transform ray into Glider2's collision volume object space
+
+	/* // transform ray into Glider2's collision volume object space
 	rObjOrigin = vec3( uGlider2CollisionVolumeInvMatrix * vec4(rayOrigin, 1.0) );
 	rObjDirection = vec3( uGlider2CollisionVolumeInvMatrix * vec4(rayDirection, 0.0) );
 	d = UnitSphereIntersect(rObjOrigin, rObjDirection, normal);
