@@ -284,7 +284,7 @@ function intersectUnitHyperboloid(rayO, rayD, K, normal)
 	}
 }
 
-/* function intersectUnitHyperbolicParaboloid(rayO, rayD, normal)
+function intersectUnitHyperbolicParaboloid(rayO, rayD, normal)
 {
 	// Unit Hyperbolic Paraboloid (saddle shape) implicit equation
 	// X^2 - Z^2 - Y = 0
@@ -300,7 +300,7 @@ function intersectUnitHyperboloid(rayO, rayD, K, normal)
 			normal.x *= 2; normal.y = -1; normal.z *= -2;
 			return t0;
 		}
-		
+
 		if (t1 > 0)
 		{	
 			normal.getPointAlongRay(rayO, rayD, t1);
@@ -308,7 +308,7 @@ function intersectUnitHyperboloid(rayO, rayD, K, normal)
 			return t1;
 		}
 	}
-} */
+}
 
 function intersectUnitCapsule(rayO, rayD, K, normal)
 {
