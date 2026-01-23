@@ -188,8 +188,8 @@ function intersectCourse()
 		courseT = intersectUnitCone(rayObjectOrigin, rayObjectDirection, courseShapeKparameter, intersectionNormal);
 	else if (courseShapeType == 'Hyperboloid')
 		courseT = intersectUnitHyperboloid(rayObjectOrigin, rayObjectDirection, courseShapeKparameter, intersectionNormal);
-	// else if (courseShapeType == 'HyperbolicParaboloid')
-	// 	courseT = intersectUnitHyperbolicParaboloid(rayObjectOrigin, rayObjectDirection, intersectionNormal);
+	else if (courseShapeType == 'HyperbolicParaboloid')
+		courseT = intersectUnitHyperbolicParaboloid(rayObjectOrigin, rayObjectDirection, intersectionNormal);
 	else if (courseShapeType == 'Plane')
 		courseT = intersectXZPlane(rayObjectOrigin, rayObjectDirection, intersectionNormal);
 	else if (courseShapeType == 'Capsule')
@@ -236,8 +236,8 @@ function initSceneData()
 	courseShape.position.set(0, 0, 0);
 	courseShape.scale.set(500, 500, 500); // Sphere-shaped
 	// must call this each time we change an object's transform
-	courseShape.updateMatrixWorld();
-	courseShape_invMatrix.copy(courseShape.matrixWorld).invert();
+	// courseShape.updateMatrixWorld();
+	// courseShape_invMatrix.copy(courseShape.matrixWorld).invert();
 
 	// GLIDER 1 (player)
 	glider1Base.visible = false;
@@ -286,7 +286,7 @@ function initSceneData()
 	function handleCourseClipXYZChange() { needChangeCourseClipXYZBounds = true; }
 	function handleCourseShapeKparamChange() { needChangeCourseShapeKparameter = true; }
 
-	course_TypeController = gui.add(course_TypeObject, 'Course_Type', ['Sphere', 'Ellipsoid', 'Cylinder', 'Paraboloid', 'Cone', 'Hyperboloid',//'HyperbolicParaboloid', 
+	course_TypeController = gui.add(course_TypeObject, 'Course_Type', ['Sphere', 'Ellipsoid', 'Cylinder', 'Paraboloid', 'Cone', 'Hyperboloid', 'HyperbolicParaboloid', 
 		'Plane', 'Capsule', 'RoundedBox', 'Torus', 'BilinearPatch']).onChange(handleCourseTypeChange);
 	
 	scale_Folder = gui.addFolder('Scale');
@@ -525,16 +525,19 @@ function updateVariablesAndUniforms()
 			pathTracingUniforms.uCourseShapeKparameter.value = courseShapeKparameter;
 			pathTracingUniforms.uCourseShapeType.value = 5;
 		}
-		/* else if (courseShapeType == 'HyperbolicParaboloid')
+		else if (courseShapeType == 'HyperbolicParaboloid')
 		{
 			glider1StartingPosition.set(0.5, -10, 75);
 			glider2StartingPosition.set(-0.5, -10, -75);
-			ballStartingPosition.set(0, -10, 0);
+			ballStartingPosition.set(0, 10, 0);
 			playerGoalStartingPosition.set(75, -10, 0);
 			computerGoalStartingPosition.set(-75, -10, 0);
-			light1StartingPosition.set(0, -0.3, 0);
-			light2StartingPosition.set(-0.3, -0.3, -0.3);
-			light3StartingPosition.set(0.3, -0.3, 0.3);
+			light1StartingPosition.set(0, 1, 0);
+			light2StartingPosition.set(0, 1, -1.5);
+			light3StartingPosition.set(0, 1, 1.5);
+			// light1StartingPosition.set( Math.cos(ONETHIRD_PI * 0) * 1.0, 0.3,  Math.sin(ONETHIRD_PI * 0) * 1.0);
+			// light2StartingPosition.set( Math.cos(ONETHIRD_PI * 4) * 1.0, 0.3,  Math.sin(ONETHIRD_PI * 4) * 1.0);
+			// light3StartingPosition.set( Math.cos(ONETHIRD_PI * 2) * 1.0, 0.3,  Math.sin(ONETHIRD_PI * 2) * 1.0);
 			courseShape.position.set(0, -200, 0);
 			course_ScaleXController.show();
 			course_ScaleYController.show();
@@ -544,14 +547,14 @@ function updateVariablesAndUniforms()
 			course_ScaleZController.setValue(500);
 			clipBoundaries_Folder.show();
 			course_ClipMinXController.min(-1); course_ClipMaxXController.max(1);
-			course_ClipMinYController.min(-1); course_ClipMaxYController.max(1);
+			course_ClipMinYController.min(-1); course_ClipMaxYController.max(2);
 			course_ClipMinZController.min(-1); course_ClipMaxZController.max(1);
 			course_ClipMinXController.setValue(-1); course_ClipMaxXController.setValue(1);
-			course_ClipMinYController.setValue(-1); course_ClipMaxYController.setValue(1);
+			course_ClipMinYController.setValue(-1); course_ClipMaxYController.setValue(2);
 			course_ClipMinZController.setValue(-1); course_ClipMaxZController.setValue(1);
 			course_ShapeKparameterController.hide();
 			pathTracingUniforms.uCourseShapeType.value = 6;
-		} */
+		}
 		else if (courseShapeType == 'Plane')
 		{
 			glider1StartingPosition.set(0.5, -10, 75);
@@ -581,7 +584,7 @@ function updateVariablesAndUniforms()
 			course_ClipMinZController.setValue(-1); course_ClipMaxZController.setValue(1);
 			clipBoundaries_Folder.hide();
 			course_ShapeKparameterController.hide();
-			pathTracingUniforms.uCourseShapeType.value = 6;
+			pathTracingUniforms.uCourseShapeType.value = 7;
 		}
 		else if (courseShapeType == 'Capsule')
 		{
@@ -613,7 +616,7 @@ function updateVariablesAndUniforms()
 			course_ShapeKparameterController.min(0.5); course_ShapeKparameterController.max(3);
 			course_ShapeKparameterController.setValue(courseShapeKparameter);
 			pathTracingUniforms.uCourseShapeKparameter.value = courseShapeKparameter;
-			pathTracingUniforms.uCourseShapeType.value = 7;
+			pathTracingUniforms.uCourseShapeType.value = 8;
 		}
 		else if (courseShapeType == 'RoundedBox')
 		{
@@ -645,7 +648,7 @@ function updateVariablesAndUniforms()
 			course_ShapeKparameterController.min(0.05); course_ShapeKparameterController.max(0.5);
 			course_ShapeKparameterController.setValue(courseShapeKparameter);
 			pathTracingUniforms.uCourseShapeKparameter.value = courseShapeKparameter;
-			pathTracingUniforms.uCourseShapeType.value = 8;
+			pathTracingUniforms.uCourseShapeType.value = 9;
 		}
 		else if (courseShapeType == 'Torus')
 		{
@@ -675,7 +678,7 @@ function updateVariablesAndUniforms()
 			course_ShapeKparameterController.min(0.2); course_ShapeKparameterController.max(0.99);
 			course_ShapeKparameterController.setValue(courseShapeKparameter);
 			pathTracingUniforms.uCourseShapeKparameter.value = courseShapeKparameter;
-			pathTracingUniforms.uCourseShapeType.value = 9;
+			pathTracingUniforms.uCourseShapeType.value = 10;
 		}
 		else if (courseShapeType == 'BilinearPatch')
 		{
@@ -701,12 +704,12 @@ function updateVariablesAndUniforms()
 			course_ClipMinXController.min(-1); course_ClipMaxXController.max(1);
 			course_ClipMinYController.min(-1); course_ClipMaxYController.max(2);
 			course_ClipMinZController.min(-1); course_ClipMaxZController.max(1);
-			course_ClipMinXController.setValue(-0.97); course_ClipMaxXController.setValue(0.97);
+			course_ClipMinXController.setValue(-1); course_ClipMaxXController.setValue(1);
 			course_ClipMinYController.setValue(-1); course_ClipMaxYController.setValue(2);
-			course_ClipMinZController.setValue(-0.97); course_ClipMaxZController.setValue(0.97);
+			course_ClipMinZController.setValue(-1); course_ClipMaxZController.setValue(1);
 			clipBoundaries_Folder.hide();
 			course_ShapeKparameterController.hide();
-			pathTracingUniforms.uCourseShapeType.value = 10;
+			pathTracingUniforms.uCourseShapeType.value = 11;
 		}
 
 		cameraIsMoving = true;
@@ -723,9 +726,9 @@ function updateVariablesAndUniforms()
 		course_ScaleYController.setValue(courseUniformScale);
 		course_ScaleZController.setValue(courseUniformScale);
 
-		courseShape.updateMatrixWorld();
-		courseShape_invMatrix.copy(courseShape.matrixWorld).invert();
-		pathTracingUniforms.uCourseShape_invMatrix.value.copy(courseShape_invMatrix);
+		// courseShape.updateMatrixWorld();
+		// courseShape_invMatrix.copy(courseShape.matrixWorld).invert();
+		// pathTracingUniforms.uCourseShape_invMatrix.value.copy(courseShape_invMatrix);
 
 		cameraIsMoving = true;
 		needChangeCourseScaleUniform = false;
@@ -1041,6 +1044,7 @@ function updateVariablesAndUniforms()
 		cameraIsMoving = true;
 
 
+
 	
 
 	// UPDATE GLIDER 1 ////////////////////////////////////////////////////////////////////////////////
@@ -1230,54 +1234,84 @@ function updateVariablesAndUniforms()
 	if (glider1Base.position.x > courseShape.position.x + (courseShape.scale.x * courseMaxBounds.x))
 	{
 		glider1Base.position.x = courseShape.position.x + (courseShape.scale.x * courseMaxBounds.x);
-		if (glider1WorldVelocity.x > 0)
-			glider1WorldVelocity.x *= -1;
+		collisionNormal.set(-1,0,0);
+		tempVec.crossVectors(glider1BaseUp, collisionNormal).normalize();
+		collisionNormal.crossVectors(tempVec, glider1BaseUp);
+		tempVec.set(-1,0,0);
+		if (collisionNormal.dot(tempVec) < 0)
+			collisionNormal.negate();
 		impulseGlider1.copy(glider1WorldVelocity);
+		impulseGlider1.reflect(collisionNormal);
 		glider1LocalVelocity.x = impulseGlider1.dot(glider1ThrustersRight);
 		glider1LocalVelocity.z = impulseGlider1.dot(glider1ThrustersForward);
 	}
 	if (glider1Base.position.x < courseShape.position.x + (courseShape.scale.x * courseMinBounds.x))
 	{
 		glider1Base.position.x = courseShape.position.x + (courseShape.scale.x * courseMinBounds.x);
-		if (glider1WorldVelocity.x < 0)
-			glider1WorldVelocity.x *= -1;
+		collisionNormal.set(1,0,0);
+		tempVec.crossVectors(glider1BaseUp, collisionNormal).normalize();
+		collisionNormal.crossVectors(tempVec, glider1BaseUp);
+		tempVec.set(1,0,0);
+		if (collisionNormal.dot(tempVec) < 0)
+			collisionNormal.negate();
 		impulseGlider1.copy(glider1WorldVelocity);
+		impulseGlider1.reflect(collisionNormal);
 		glider1LocalVelocity.x = impulseGlider1.dot(glider1ThrustersRight);
 		glider1LocalVelocity.z = impulseGlider1.dot(glider1ThrustersForward);
 	}
 	if (glider1Base.position.y > courseShape.position.y + (courseShape.scale.y * courseMaxBounds.y))
 	{
 		glider1Base.position.y = courseShape.position.y + (courseShape.scale.y * courseMaxBounds.y);
-		if (glider1WorldVelocity.y > 0)
-		 	glider1WorldVelocity.y *= -1;
+		collisionNormal.set(0,-1,0);
+		tempVec.crossVectors(glider1BaseUp, collisionNormal).normalize();
+		collisionNormal.crossVectors(tempVec, glider1BaseUp);
+		tempVec.set(0,-1,0);
+		if (collisionNormal.dot(tempVec) < 0)
+			collisionNormal.negate();
 		impulseGlider1.copy(glider1WorldVelocity);
+		impulseGlider1.reflect(collisionNormal);
 		glider1LocalVelocity.x = impulseGlider1.dot(glider1ThrustersRight);
 		glider1LocalVelocity.z = impulseGlider1.dot(glider1ThrustersForward);
 	}
 	if (glider1Base.position.y < courseShape.position.y + (courseShape.scale.y * courseMinBounds.y))
 	{
 		glider1Base.position.y = courseShape.position.y + (courseShape.scale.y * courseMinBounds.y);
-		if (glider1WorldVelocity.y < 0)
-		 	glider1WorldVelocity.y *= -1;
+		collisionNormal.set(0,1,0);
+		tempVec.crossVectors(glider1BaseUp, collisionNormal).normalize();
+		collisionNormal.crossVectors(tempVec, glider1BaseUp);
+		tempVec.set(0,1,0);
+		if (collisionNormal.dot(tempVec) < 0)
+			collisionNormal.negate();
 		impulseGlider1.copy(glider1WorldVelocity);
+		impulseGlider1.reflect(collisionNormal);
 		glider1LocalVelocity.x = impulseGlider1.dot(glider1ThrustersRight);
 		glider1LocalVelocity.z = impulseGlider1.dot(glider1ThrustersForward);
 	}
 	if (glider1Base.position.z > courseShape.position.z + (courseShape.scale.z * courseMaxBounds.z))
 	{
 		glider1Base.position.z = courseShape.position.z + (courseShape.scale.z * courseMaxBounds.z);
-		if (glider1WorldVelocity.z > 0)
-			glider1WorldVelocity.z *= -1;
+		collisionNormal.set(0,0,-1);
+		tempVec.crossVectors(glider1BaseUp, collisionNormal).normalize();
+		collisionNormal.crossVectors(tempVec, glider1BaseUp);
+		tempVec.set(0,0,-1);
+		if (collisionNormal.dot(tempVec) < 0)
+			collisionNormal.negate();
 		impulseGlider1.copy(glider1WorldVelocity);
+		impulseGlider1.reflect(collisionNormal);
 		glider1LocalVelocity.x = impulseGlider1.dot(glider1ThrustersRight);
 		glider1LocalVelocity.z = impulseGlider1.dot(glider1ThrustersForward);
 	}
 	if (glider1Base.position.z < courseShape.position.z + (courseShape.scale.z * courseMinBounds.z))
 	{
 		glider1Base.position.z = courseShape.position.z + (courseShape.scale.z * courseMinBounds.z);
-		if (glider1WorldVelocity.z < 0)
-			glider1WorldVelocity.z *= -1;
+		collisionNormal.set(0,0,1);
+		tempVec.crossVectors(glider1BaseUp, collisionNormal).normalize();
+		collisionNormal.crossVectors(tempVec, glider1BaseUp);
+		tempVec.set(0,0,1);
+		if (collisionNormal.dot(tempVec) < 0)
+			collisionNormal.negate();
 		impulseGlider1.copy(glider1WorldVelocity);
+		impulseGlider1.reflect(collisionNormal);
 		glider1LocalVelocity.x = impulseGlider1.dot(glider1ThrustersRight);
 		glider1LocalVelocity.z = impulseGlider1.dot(glider1ThrustersForward);
 	}
@@ -1325,7 +1359,7 @@ function updateVariablesAndUniforms()
 	}
 	else if (testT == Infinity)
 	{// bail out and snap the glider1 back to its starting position
-		console.log("Glider1 bailed out");
+		//console.log("Glider1 bailed out");
 		glider1IsInAir = true;
 		glider1LocalVelocity.set(0, 0, 0);
 		glider1Base.position.copy(glider1StartingPosition);
@@ -1423,6 +1457,8 @@ function updateVariablesAndUniforms()
 	glider1Thrusters.updateMatrixWorld();
 	
 		
+
+
 
 
 	// UPDATE GLIDER 2 ////////////////////////////////////////////////////////////////////////////////
@@ -1601,54 +1637,84 @@ function updateVariablesAndUniforms()
 	if (glider2Base.position.x > courseShape.position.x + (courseShape.scale.x * courseMaxBounds.x))
 	{
 		glider2Base.position.x = courseShape.position.x + (courseShape.scale.x * courseMaxBounds.x);
-		if (glider2WorldVelocity.x > 0)
-			glider2WorldVelocity.x *= -1;
+		collisionNormal.set(-1,0,0);
+		tempVec.crossVectors(glider2BaseUp, collisionNormal).normalize();
+		collisionNormal.crossVectors(tempVec, glider2BaseUp);
+		tempVec.set(-1,0,0);
+		if (collisionNormal.dot(tempVec) < 0)
+			collisionNormal.negate();
 		impulseGlider2.copy(glider2WorldVelocity);
+		impulseGlider2.reflect(collisionNormal);
 		glider2LocalVelocity.x = impulseGlider2.dot(glider2ThrustersRight);
 		glider2LocalVelocity.z = impulseGlider2.dot(glider2ThrustersForward);
 	}
 	if (glider2Base.position.x < courseShape.position.x + (courseShape.scale.x * courseMinBounds.x))
 	{
 		glider2Base.position.x = courseShape.position.x + (courseShape.scale.x * courseMinBounds.x);
-		if (glider2WorldVelocity.x < 0)
-			glider2WorldVelocity.x *= -1;
+		collisionNormal.set(1,0,0);
+		tempVec.crossVectors(glider2BaseUp, collisionNormal).normalize();
+		collisionNormal.crossVectors(tempVec, glider2BaseUp);
+		tempVec.set(1,0,0);
+		if (collisionNormal.dot(tempVec) < 0)
+			collisionNormal.negate();
 		impulseGlider2.copy(glider2WorldVelocity);
+		impulseGlider2.reflect(collisionNormal);
 		glider2LocalVelocity.x = impulseGlider2.dot(glider2ThrustersRight);
 		glider2LocalVelocity.z = impulseGlider2.dot(glider2ThrustersForward);
 	}
 	if (glider2Base.position.y > courseShape.position.y + (courseShape.scale.y * courseMaxBounds.y))
 	{
 		glider2Base.position.y = courseShape.position.y + (courseShape.scale.y * courseMaxBounds.y);
-		if (glider2WorldVelocity.y > 0)
-		 	glider2WorldVelocity.y *= -1;
+		collisionNormal.set(0,-1,0);
+		tempVec.crossVectors(glider2BaseUp, collisionNormal).normalize();
+		collisionNormal.crossVectors(tempVec, glider2BaseUp);
+		tempVec.set(0,-1,0);
+		if (collisionNormal.dot(tempVec) < 0)
+			collisionNormal.negate();
 		impulseGlider2.copy(glider2WorldVelocity);
+		impulseGlider2.reflect(collisionNormal);
 		glider2LocalVelocity.x = impulseGlider2.dot(glider2ThrustersRight);
 		glider2LocalVelocity.z = impulseGlider2.dot(glider2ThrustersForward);
 	}
 	if (glider2Base.position.y < courseShape.position.y + (courseShape.scale.y * courseMinBounds.y))
 	{
 		glider2Base.position.y = courseShape.position.y + (courseShape.scale.y * courseMinBounds.y);
-		if (glider2WorldVelocity.y < 0)
-		 	glider2WorldVelocity.y *= -1;
+		collisionNormal.set(0,1,0);
+		tempVec.crossVectors(glider2BaseUp, collisionNormal).normalize();
+		collisionNormal.crossVectors(tempVec, glider2BaseUp);
+		tempVec.set(0,1,0);
+		if (collisionNormal.dot(tempVec) < 0)
+			collisionNormal.negate();
 		impulseGlider2.copy(glider2WorldVelocity);
+		impulseGlider2.reflect(collisionNormal);
 		glider2LocalVelocity.x = impulseGlider2.dot(glider2ThrustersRight);
 		glider2LocalVelocity.z = impulseGlider2.dot(glider2ThrustersForward);
 	}
 	if (glider2Base.position.z > courseShape.position.z + (courseShape.scale.z * courseMaxBounds.z))
 	{
 		glider2Base.position.z = courseShape.position.z + (courseShape.scale.z * courseMaxBounds.z);
-		if (glider2WorldVelocity.z > 0)
-			glider2WorldVelocity.z *= -1;
+		collisionNormal.set(0,0,-1);
+		tempVec.crossVectors(glider2BaseUp, collisionNormal).normalize();
+		collisionNormal.crossVectors(tempVec, glider2BaseUp);
+		tempVec.set(0,0,-1);
+		if (collisionNormal.dot(tempVec) < 0)
+			collisionNormal.negate();
 		impulseGlider2.copy(glider2WorldVelocity);
+		impulseGlider2.reflect(collisionNormal);
 		glider2LocalVelocity.x = impulseGlider2.dot(glider2ThrustersRight);
 		glider2LocalVelocity.z = impulseGlider2.dot(glider2ThrustersForward);
 	}
 	if (glider2Base.position.z < courseShape.position.z + (courseShape.scale.z * courseMinBounds.z))
 	{
 		glider2Base.position.z = courseShape.position.z + (courseShape.scale.z * courseMinBounds.z);
-		if (glider2WorldVelocity.z < 0)
-			glider2WorldVelocity.z *= -1;
+		collisionNormal.set(0,0,1);
+		tempVec.crossVectors(glider2BaseUp, collisionNormal).normalize();
+		collisionNormal.crossVectors(tempVec, glider2BaseUp);
+		tempVec.set(0,0,1);
+		if (collisionNormal.dot(tempVec) < 0)
+			collisionNormal.negate();
 		impulseGlider2.copy(glider2WorldVelocity);
+		impulseGlider2.reflect(collisionNormal);
 		glider2LocalVelocity.x = impulseGlider2.dot(glider2ThrustersRight);
 		glider2LocalVelocity.z = impulseGlider2.dot(glider2ThrustersForward);
 	}
@@ -1695,7 +1761,7 @@ function updateVariablesAndUniforms()
 	}
 	else if (testT == Infinity)
 	{// bail out and snap the glider2 back to its starting position
-		console.log("Glider2 bailed out");
+		//console.log("Glider2 bailed out");
 		glider2IsInAir = true;
 		glider2LocalVelocity.set(0, 0, 0);
 		glider2Base.position.copy(glider2StartingPosition);
@@ -1792,6 +1858,7 @@ function updateVariablesAndUniforms()
 	glider2Thrusters.updateMatrixWorld();
 		
 	
+
 
 
 	// UPDATE BALL ///////////////////////////////////////////////////////////////////////////////////
@@ -2042,7 +2109,7 @@ function updateVariablesAndUniforms()
 	}
 	if (ball.position.z < courseShape.position.z + (courseShape.scale.z * courseMinBounds.z))
 	{
-		ball.position.z = courseShape.position.z + (courseShape.scale.z * courseMinBounds.z)
+		ball.position.z = courseShape.position.z + (courseShape.scale.z * courseMinBounds.z);
 		collisionNormal.set(0,0,1);
 		tempVec.crossVectors(ballUp, collisionNormal).normalize();
 		collisionNormal.crossVectors(tempVec, ballUp);
@@ -2097,7 +2164,7 @@ function updateVariablesAndUniforms()
 	}
 	else if (testT == Infinity)
 	{// bail out and snap the ball back to its starting position
-		console.log("Ball bailed out");
+		//console.log("Ball bailed out");
 		ballIsInAir = true;
 		ballLocalVelocity.set(0, 0, 0);
 		ball.position.copy(ballStartingPosition);
@@ -2193,6 +2260,7 @@ function updateVariablesAndUniforms()
 
 
 
+
 	// UPDATE PLAYER's GOAL ///////////////////////////////////////////////////////////////////////////////////
 
 	// if in air, apply gravity (actually anti-gravity: pulls playerGoal down to the large course surface in all directions)
@@ -2210,15 +2278,11 @@ function updateVariablesAndUniforms()
 		
 
 	playerGoalWorldVelocity.set(0, 0, 0);
-	if (!playerGoalIsInAir)
-	{
-		playerGoalWorldVelocity.addScaledVector(playerGoalRight, playerGoalLocalVelocity.x);
-		playerGoalWorldVelocity.addScaledVector(playerGoalForward, playerGoalLocalVelocity.z);
-	}
+	playerGoalWorldVelocity.addScaledVector(playerGoalRight, playerGoalLocalVelocity.x);
 	playerGoalWorldVelocity.addScaledVector(playerGoalUp, playerGoalLocalVelocity.y);
+	playerGoalWorldVelocity.addScaledVector(playerGoalForward, playerGoalLocalVelocity.z);
 	
 	playerGoal.position.addScaledVector(playerGoalWorldVelocity, frameTime);
-
 
 
 	// CHECK FOR PLAYER GOAL vs MIN/MAX BOUNDARY WALLS
@@ -2226,74 +2290,86 @@ function updateVariablesAndUniforms()
 	if (playerGoal.position.x > courseShape.position.x + (courseShape.scale.x * courseMaxBounds.x))
 	{
 		playerGoal.position.x = courseShape.position.x + (courseShape.scale.x * courseMaxBounds.x);
-		if (playerGoalWorldVelocity.x > 0)
-			playerGoalWorldVelocity.x *= -1;
-		playerGoalLocalVelocity.x = playerGoalWorldVelocity.dot(playerGoalRight);
-		playerGoalLocalVelocity.z = playerGoalWorldVelocity.dot(playerGoalForward);
-		impulsePlayerGoal.set(playerGoalLocalVelocity.x, 0, playerGoalLocalVelocity.z).normalize();
-		impulsePlayerGoal.multiplyScalar(goalSpeed);
-		playerGoalLocalVelocity.x = impulsePlayerGoal.x;
-		playerGoalLocalVelocity.z = impulsePlayerGoal.z;
+		collisionNormal.set(-1,0,0);
+		tempVec.crossVectors(playerGoalUp, collisionNormal).normalize();
+		collisionNormal.crossVectors(tempVec, playerGoalUp);
+		tempVec.set(-1,0,0);
+		if (collisionNormal.dot(tempVec) < 0)
+			collisionNormal.negate();
+		impulsePlayerGoal.copy(playerGoalWorldVelocity);
+		impulsePlayerGoal.reflect(collisionNormal);
+		playerGoalLocalVelocity.x = impulsePlayerGoal.dot(playerGoalRight);
+		playerGoalLocalVelocity.z = impulsePlayerGoal.dot(playerGoalForward);
 	}
 	if (playerGoal.position.x < courseShape.position.x + (courseShape.scale.x * courseMinBounds.x))
 	{
 		playerGoal.position.x = courseShape.position.x + (courseShape.scale.x * courseMinBounds.x);
-		if (playerGoalWorldVelocity.x < 0)
-			playerGoalWorldVelocity.x *= -1;
-		playerGoalLocalVelocity.x = playerGoalWorldVelocity.dot(playerGoalRight);
-		playerGoalLocalVelocity.z = playerGoalWorldVelocity.dot(playerGoalForward);
-		impulsePlayerGoal.set(playerGoalLocalVelocity.x, 0, playerGoalLocalVelocity.z).normalize();
-		impulsePlayerGoal.multiplyScalar(goalSpeed);
-		playerGoalLocalVelocity.x = impulsePlayerGoal.x;
-		playerGoalLocalVelocity.z = impulsePlayerGoal.z;
+		collisionNormal.set(1,0,0);
+		tempVec.crossVectors(playerGoalUp, collisionNormal).normalize();
+		collisionNormal.crossVectors(tempVec, playerGoalUp);
+		tempVec.set(1,0,0);
+		if (collisionNormal.dot(tempVec) < 0)
+			collisionNormal.negate();
+		impulsePlayerGoal.copy(playerGoalWorldVelocity);
+		impulsePlayerGoal.reflect(collisionNormal);
+		playerGoalLocalVelocity.x = impulsePlayerGoal.dot(playerGoalRight);
+		playerGoalLocalVelocity.z = impulsePlayerGoal.dot(playerGoalForward);
 	}
 	if (playerGoal.position.y > courseShape.position.y + (courseShape.scale.y * courseMaxBounds.y))
 	{
 		playerGoal.position.y = courseShape.position.y + (courseShape.scale.y * courseMaxBounds.y);
-		if (playerGoalWorldVelocity.y > 0)
-		 	playerGoalWorldVelocity.y *= -1;
-		playerGoalLocalVelocity.x = playerGoalWorldVelocity.dot(playerGoalRight);
-		playerGoalLocalVelocity.z = playerGoalWorldVelocity.dot(playerGoalForward);
-		impulsePlayerGoal.set(playerGoalLocalVelocity.x, 0, playerGoalLocalVelocity.z).normalize();
-		impulsePlayerGoal.multiplyScalar(goalSpeed);
-		playerGoalLocalVelocity.x = impulsePlayerGoal.x;
-		playerGoalLocalVelocity.z = impulsePlayerGoal.z;
+		collisionNormal.set(0,-1,0);
+		tempVec.crossVectors(playerGoalUp, collisionNormal).normalize();
+		collisionNormal.crossVectors(tempVec, playerGoalUp);
+		tempVec.set(0,-1,0);
+		if (collisionNormal.dot(tempVec) < 0)
+			collisionNormal.negate();
+		impulsePlayerGoal.copy(playerGoalWorldVelocity);
+		impulsePlayerGoal.reflect(collisionNormal);
+		playerGoalLocalVelocity.x = impulsePlayerGoal.dot(playerGoalRight);
+		playerGoalLocalVelocity.z = impulsePlayerGoal.dot(playerGoalForward);
 	}
 	if (playerGoal.position.y < courseShape.position.y + (courseShape.scale.y * courseMinBounds.y))
 	{
 		playerGoal.position.y = courseShape.position.y + (courseShape.scale.y * courseMinBounds.y);
-		if (playerGoalWorldVelocity.y < 0)
-		 	playerGoalWorldVelocity.y *= -1;
-		playerGoalLocalVelocity.x = playerGoalWorldVelocity.dot(playerGoalRight);
-		playerGoalLocalVelocity.z = playerGoalWorldVelocity.dot(playerGoalForward);
-		impulsePlayerGoal.set(playerGoalLocalVelocity.x, 0, playerGoalLocalVelocity.z).normalize();
-		impulsePlayerGoal.multiplyScalar(goalSpeed);
-		playerGoalLocalVelocity.x = impulsePlayerGoal.x;
-		playerGoalLocalVelocity.z = impulsePlayerGoal.z;
+		collisionNormal.set(0,1,0);
+		tempVec.crossVectors(playerGoalUp, collisionNormal).normalize();
+		collisionNormal.crossVectors(tempVec, playerGoalUp);
+		tempVec.set(0,1,0);
+		if (collisionNormal.dot(tempVec) < 0)
+			collisionNormal.negate();
+		impulsePlayerGoal.copy(playerGoalWorldVelocity);
+		impulsePlayerGoal.reflect(collisionNormal);
+		playerGoalLocalVelocity.x = impulsePlayerGoal.dot(playerGoalRight);
+		playerGoalLocalVelocity.z = impulsePlayerGoal.dot(playerGoalForward);
 	}
 	if (playerGoal.position.z > courseShape.position.z + (courseShape.scale.z * courseMaxBounds.z))
 	{
 		playerGoal.position.z = courseShape.position.z + (courseShape.scale.z * courseMaxBounds.z);
-		if (playerGoalWorldVelocity.z > 0)
-			playerGoalWorldVelocity.z *= -1;
-		playerGoalLocalVelocity.x = playerGoalWorldVelocity.dot(playerGoalRight);
-		playerGoalLocalVelocity.z = playerGoalWorldVelocity.dot(playerGoalForward);
-		impulsePlayerGoal.set(playerGoalLocalVelocity.x, 0, playerGoalLocalVelocity.z).normalize();
-		impulsePlayerGoal.multiplyScalar(goalSpeed);
-		playerGoalLocalVelocity.x = impulsePlayerGoal.x;
-		playerGoalLocalVelocity.z = impulsePlayerGoal.z;
+		collisionNormal.set(0,0,-1);
+		tempVec.crossVectors(playerGoalUp, collisionNormal).normalize();
+		collisionNormal.crossVectors(tempVec, playerGoalUp);
+		tempVec.set(0,0,-1);
+		if (collisionNormal.dot(tempVec) < 0)
+			collisionNormal.negate();
+		impulsePlayerGoal.copy(playerGoalWorldVelocity);
+		impulsePlayerGoal.reflect(collisionNormal);
+		playerGoalLocalVelocity.x = impulsePlayerGoal.dot(playerGoalRight);
+		playerGoalLocalVelocity.z = impulsePlayerGoal.dot(playerGoalForward);
 	}
 	if (playerGoal.position.z < courseShape.position.z + (courseShape.scale.z * courseMinBounds.z))
 	{
 		playerGoal.position.z = courseShape.position.z + (courseShape.scale.z * courseMinBounds.z);
-		if (playerGoalWorldVelocity.z < 0)
-			playerGoalWorldVelocity.z *= -1;
-		playerGoalLocalVelocity.x = playerGoalWorldVelocity.dot(playerGoalRight);
-		playerGoalLocalVelocity.z = playerGoalWorldVelocity.dot(playerGoalForward);
-		impulsePlayerGoal.set(playerGoalLocalVelocity.x, 0, playerGoalLocalVelocity.z).normalize();
-		impulsePlayerGoal.multiplyScalar(goalSpeed);
-		playerGoalLocalVelocity.x = impulsePlayerGoal.x;
-		playerGoalLocalVelocity.z = impulsePlayerGoal.z;
+		collisionNormal.set(0,0,1);
+		tempVec.crossVectors(playerGoalUp, collisionNormal).normalize();
+		collisionNormal.crossVectors(tempVec, playerGoalUp);
+		tempVec.set(0,0,1);
+		if (collisionNormal.dot(tempVec) < 0)
+			collisionNormal.negate();
+		impulsePlayerGoal.copy(playerGoalWorldVelocity);
+		impulsePlayerGoal.reflect(collisionNormal);
+		playerGoalLocalVelocity.x = impulsePlayerGoal.dot(playerGoalRight);
+		playerGoalLocalVelocity.z = impulsePlayerGoal.dot(playerGoalForward);
 	}
 
 
@@ -2337,7 +2413,7 @@ function updateVariablesAndUniforms()
 	}
 	else if (testT == Infinity)
 	{// bail out and snap the playerGoal back to its starting position
-		console.log("PlayerGoal bailed out");
+		//console.log("PlayerGoal bailed out");
 		playerGoalIsInAir = true;
 		playerGoalLocalVelocity.set(0, 0, 0);
 		playerGoal.position.copy(playerGoalStartingPosition);
@@ -2425,6 +2501,7 @@ function updateVariablesAndUniforms()
 
 
 
+
 	// UPDATE COMPUTER's GOAL ///////////////////////////////////////////////////////////////////////////////////
 
 	// if in air, apply gravity (actually anti-gravity: pulls computerGoal down to the large course surface in all directions)
@@ -2442,15 +2519,11 @@ function updateVariablesAndUniforms()
 		
 
 	computerGoalWorldVelocity.set(0, 0, 0);
-	if (!computerGoalIsInAir)
-	{
-		computerGoalWorldVelocity.addScaledVector(computerGoalRight, computerGoalLocalVelocity.x);
-		computerGoalWorldVelocity.addScaledVector(computerGoalForward, computerGoalLocalVelocity.z);
-	}
+	computerGoalWorldVelocity.addScaledVector(computerGoalRight, computerGoalLocalVelocity.x);
 	computerGoalWorldVelocity.addScaledVector(computerGoalUp, computerGoalLocalVelocity.y);
+	computerGoalWorldVelocity.addScaledVector(computerGoalForward, computerGoalLocalVelocity.z);
 	
 	computerGoal.position.addScaledVector(computerGoalWorldVelocity, frameTime);
-
 
 
 	// CHECK FOR COMPUTER GOAL vs MIN/MAX BOUNDARY WALLS
@@ -2458,74 +2531,86 @@ function updateVariablesAndUniforms()
 	if (computerGoal.position.x > courseShape.position.x + (courseShape.scale.x * courseMaxBounds.x))
 	{
 		computerGoal.position.x = courseShape.position.x + (courseShape.scale.x * courseMaxBounds.x);
-		if (computerGoalWorldVelocity.x > 0)
-			computerGoalWorldVelocity.x *= -1;
-		computerGoalLocalVelocity.x = computerGoalWorldVelocity.dot(computerGoalRight);
-		computerGoalLocalVelocity.z = computerGoalWorldVelocity.dot(computerGoalForward);
-		impulseComputerGoal.set(computerGoalLocalVelocity.x, 0, computerGoalLocalVelocity.z).normalize();
-		impulseComputerGoal.multiplyScalar(goalSpeed);
-		computerGoalLocalVelocity.x = impulseComputerGoal.x;
-		computerGoalLocalVelocity.z = impulseComputerGoal.z;
+		collisionNormal.set(-1,0,0);
+		tempVec.crossVectors(computerGoalUp, collisionNormal).normalize();
+		collisionNormal.crossVectors(tempVec, computerGoalUp);
+		tempVec.set(-1,0,0);
+		if (collisionNormal.dot(tempVec) < 0)
+			collisionNormal.negate();
+		impulseComputerGoal.copy(computerGoalWorldVelocity);
+		impulseComputerGoal.reflect(collisionNormal);
+		computerGoalLocalVelocity.x = impulseComputerGoal.dot(computerGoalRight);
+		computerGoalLocalVelocity.z = impulseComputerGoal.dot(computerGoalForward);
 	}
 	if (computerGoal.position.x < courseShape.position.x + (courseShape.scale.x * courseMinBounds.x))
 	{
 		computerGoal.position.x = courseShape.position.x + (courseShape.scale.x * courseMinBounds.x);
-		if (computerGoalWorldVelocity.x < 0)
-			computerGoalWorldVelocity.x *= -1;
-		computerGoalLocalVelocity.x = computerGoalWorldVelocity.dot(computerGoalRight);
-		computerGoalLocalVelocity.z = computerGoalWorldVelocity.dot(computerGoalForward);
-		impulseComputerGoal.set(computerGoalLocalVelocity.x, 0, computerGoalLocalVelocity.z).normalize();
-		impulseComputerGoal.multiplyScalar(goalSpeed);
-		computerGoalLocalVelocity.x = impulseComputerGoal.x;
-		computerGoalLocalVelocity.z = impulseComputerGoal.z;
+		collisionNormal.set(1,0,0);
+		tempVec.crossVectors(computerGoalUp, collisionNormal).normalize();
+		collisionNormal.crossVectors(tempVec, computerGoalUp);
+		tempVec.set(1,0,0);
+		if (collisionNormal.dot(tempVec) < 0)
+			collisionNormal.negate();
+		impulseComputerGoal.copy(computerGoalWorldVelocity);
+		impulseComputerGoal.reflect(collisionNormal);
+		computerGoalLocalVelocity.x = impulseComputerGoal.dot(computerGoalRight);
+		computerGoalLocalVelocity.z = impulseComputerGoal.dot(computerGoalForward);
 	}
 	if (computerGoal.position.y > courseShape.position.y + (courseShape.scale.y * courseMaxBounds.y))
 	{
 		computerGoal.position.y = courseShape.position.y + (courseShape.scale.y * courseMaxBounds.y);
-		if (computerGoalWorldVelocity.y > 0)
-		 	computerGoalWorldVelocity.y *= -1;
-		computerGoalLocalVelocity.x = computerGoalWorldVelocity.dot(computerGoalRight);
-		computerGoalLocalVelocity.z = computerGoalWorldVelocity.dot(computerGoalForward);
-		impulseComputerGoal.set(computerGoalLocalVelocity.x, 0, computerGoalLocalVelocity.z).normalize();
-		impulseComputerGoal.multiplyScalar(goalSpeed);
-		computerGoalLocalVelocity.x = impulseComputerGoal.x;
-		computerGoalLocalVelocity.z = impulseComputerGoal.z;
+		collisionNormal.set(0,-1,0);
+		tempVec.crossVectors(computerGoalUp, collisionNormal).normalize();
+		collisionNormal.crossVectors(tempVec, computerGoalUp);
+		tempVec.set(0,-1,0);
+		if (collisionNormal.dot(tempVec) < 0)
+			collisionNormal.negate();
+		impulseComputerGoal.copy(computerGoalWorldVelocity);
+		impulseComputerGoal.reflect(collisionNormal);
+		computerGoalLocalVelocity.x = impulseComputerGoal.dot(computerGoalRight);
+		computerGoalLocalVelocity.z = impulseComputerGoal.dot(computerGoalForward);
 	}
 	if (computerGoal.position.y < courseShape.position.y + (courseShape.scale.y * courseMinBounds.y))
 	{
 		computerGoal.position.y = courseShape.position.y + (courseShape.scale.y * courseMinBounds.y);
-		if (computerGoalWorldVelocity.y < 0)
-		 	computerGoalWorldVelocity.y *= -1;
-		computerGoalLocalVelocity.x = computerGoalWorldVelocity.dot(computerGoalRight);
-		computerGoalLocalVelocity.z = computerGoalWorldVelocity.dot(computerGoalForward);
-		impulseComputerGoal.set(computerGoalLocalVelocity.x, 0, computerGoalLocalVelocity.z).normalize();
-		impulseComputerGoal.multiplyScalar(goalSpeed);
-		computerGoalLocalVelocity.x = impulseComputerGoal.x;
-		computerGoalLocalVelocity.z = impulseComputerGoal.z;
+		collisionNormal.set(0,1,0);
+		tempVec.crossVectors(computerGoalUp, collisionNormal).normalize();
+		collisionNormal.crossVectors(tempVec, computerGoalUp);
+		tempVec.set(0,1,0);
+		if (collisionNormal.dot(tempVec) < 0)
+			collisionNormal.negate();
+		impulseComputerGoal.copy(computerGoalWorldVelocity);
+		impulseComputerGoal.reflect(collisionNormal);
+		computerGoalLocalVelocity.x = impulseComputerGoal.dot(computerGoalRight);
+		computerGoalLocalVelocity.z = impulseComputerGoal.dot(computerGoalForward);
 	}
 	if (computerGoal.position.z > courseShape.position.z + (courseShape.scale.z * courseMaxBounds.z))
 	{
 		computerGoal.position.z = courseShape.position.z + (courseShape.scale.z * courseMaxBounds.z);
-		if (computerGoalWorldVelocity.z > 0)
-			computerGoalWorldVelocity.z *= -1;
-		computerGoalLocalVelocity.x = computerGoalWorldVelocity.dot(computerGoalRight);
-		computerGoalLocalVelocity.z = computerGoalWorldVelocity.dot(computerGoalForward);
-		impulseComputerGoal.set(computerGoalLocalVelocity.x, 0, computerGoalLocalVelocity.z).normalize();
-		impulseComputerGoal.multiplyScalar(goalSpeed);
-		computerGoalLocalVelocity.x = impulseComputerGoal.x;
-		computerGoalLocalVelocity.z = impulseComputerGoal.z;
+		collisionNormal.set(0,0,-1);
+		tempVec.crossVectors(computerGoalUp, collisionNormal).normalize();
+		collisionNormal.crossVectors(tempVec, computerGoalUp);
+		tempVec.set(0,0,-1);
+		if (collisionNormal.dot(tempVec) < 0)
+			collisionNormal.negate();
+		impulseComputerGoal.copy(computerGoalWorldVelocity);
+		impulseComputerGoal.reflect(collisionNormal);
+		computerGoalLocalVelocity.x = impulseComputerGoal.dot(computerGoalRight);
+		computerGoalLocalVelocity.z = impulseComputerGoal.dot(computerGoalForward);
 	}
 	if (computerGoal.position.z < courseShape.position.z + (courseShape.scale.z * courseMinBounds.z))
 	{
 		computerGoal.position.z = courseShape.position.z + (courseShape.scale.z * courseMinBounds.z);
-		if (computerGoalWorldVelocity.z < 0)
-			computerGoalWorldVelocity.z *= -1;
-		computerGoalLocalVelocity.x = computerGoalWorldVelocity.dot(computerGoalRight);
-		computerGoalLocalVelocity.z = computerGoalWorldVelocity.dot(computerGoalForward);
-		impulseComputerGoal.set(computerGoalLocalVelocity.x, 0, computerGoalLocalVelocity.z).normalize();
-		impulseComputerGoal.multiplyScalar(goalSpeed);
-		computerGoalLocalVelocity.x = impulseComputerGoal.x;
-		computerGoalLocalVelocity.z = impulseComputerGoal.z;
+		collisionNormal.set(0,0,1);
+		tempVec.crossVectors(computerGoalUp, collisionNormal).normalize();
+		collisionNormal.crossVectors(tempVec, computerGoalUp);
+		tempVec.set(0,0,1);
+		if (collisionNormal.dot(tempVec) < 0)
+			collisionNormal.negate();
+		impulseComputerGoal.copy(computerGoalWorldVelocity);
+		impulseComputerGoal.reflect(collisionNormal);
+		computerGoalLocalVelocity.x = impulseComputerGoal.dot(computerGoalRight);
+		computerGoalLocalVelocity.z = impulseComputerGoal.dot(computerGoalForward);
 	}
 
 
@@ -2569,7 +2654,7 @@ function updateVariablesAndUniforms()
 	}
 	else if (testT == Infinity)
 	{// bail out and snap the computerGoal back to its starting position
-		console.log("ComputerGoal bailed out");
+		//console.log("ComputerGoal bailed out");
 		computerGoalIsInAir = true;
 		computerGoalLocalVelocity.set(0, 0, 0);
 		computerGoal.position.copy(computerGoalStartingPosition);
@@ -2579,7 +2664,6 @@ function updateVariablesAndUniforms()
 	}
 
 
-	
 	// CHECK FOR COMPUTER GOAL vs. LARGE COURSE INTERACTIONS
 	// handling these interactions is what makes the computerGoal glide smoothly on the surface of the large course
 	
@@ -2655,18 +2739,21 @@ function updateVariablesAndUniforms()
 	//computerGoal.rotateX(Math.PI * 0.5);
 	computerGoal.updateMatrixWorld();
 
+
+
 	/* 
 	// for Glider1 collision volume rendering
 	glider1CollisionVolume.position.copy(glider1Base.position);
 	glider1CollisionVolume.updateMatrixWorld();
 	glider1_invMatrix.copy(glider1CollisionVolume.matrixWorld).invert(); // only needed if this object moves
-	pathTracingUniforms.uGlider1CollisionVolumeInvMatrix.value.copy(glider1_invMatrix); */
-	/* 
+	pathTracingUniforms.uGlider1CollisionVolumeInvMatrix.value.copy(glider1_invMatrix);
+	
 	// for Glider2 collision volume rendering
 	glider2CollisionVolume.position.copy(glider2Base.position);
 	glider2CollisionVolume.updateMatrixWorld();
 	glider2_invMatrix.copy(glider2CollisionVolume.matrixWorld).invert(); // only needed if this object moves
-	pathTracingUniforms.uGlider2CollisionVolumeInvMatrix.value.copy(glider2_invMatrix); */
+	pathTracingUniforms.uGlider2CollisionVolumeInvMatrix.value.copy(glider2_invMatrix); 
+	*/
 
 	// for ball collision volume rendering
 	ballCollisionVolume.position.copy(ball.position);
@@ -2725,14 +2812,14 @@ function updateVariablesAndUniforms()
 	"ballWorldVelocity: " + "(" + ballWorldVelocity.x.toFixed(1) + " " + ballWorldVelocity.y.toFixed(1) + " " + ballWorldVelocity.z.toFixed(1) + ")";
  	 */
 	
-	/* demoInfoElement.innerHTML += " playerGoalIsInAir: " + playerGoalIsInAir + " " + "cameraIsMoving: " + cameraIsMoving + "<br>" + 
+	demoInfoElement.innerHTML += " playerGoalIsInAir: " + playerGoalIsInAir + " " + "cameraIsMoving: " + cameraIsMoving + "<br>" + 
 	"playerGoalRight: " + "(" + playerGoalRight.x.toFixed(1) + " " + playerGoalRight.y.toFixed(1) + " " + playerGoalRight.z.toFixed(1) + ")" + " " + 
 	"playerGoalUp: " + "(" + playerGoalUp.x.toFixed(1) + " " + playerGoalUp.y.toFixed(1) + " " + playerGoalUp.z.toFixed(1) + ")" + " " + 
 	"playerGoalForward: " + "(" + playerGoalForward.x.toFixed(1) + " " + playerGoalForward.y.toFixed(1) + " " + playerGoalForward.z.toFixed(1) + ")" + "<br>" + 
 	
 	"playerGoalLocalVelocity: " + "(" + playerGoalLocalVelocity.x.toFixed(1) + " " + playerGoalLocalVelocity.y.toFixed(1) + " " + playerGoalLocalVelocity.z.toFixed(1) + ")" + "<br>" + 
 	"playerGoalWorldVelocity: " + "(" + playerGoalWorldVelocity.x.toFixed(1) + " " + playerGoalWorldVelocity.y.toFixed(1) + " " + playerGoalWorldVelocity.z.toFixed(1) + ")"; 
-	 */
+	
 
 	/* demoInfoElement.innerHTML += " computerGoalIsInAir: " + computerGoalIsInAir + " " + "cameraIsMoving: " + cameraIsMoving + "<br>" + 
 	"computerGoalRight: " + "(" + computerGoalRight.x.toFixed(1) + " " + computerGoalRight.y.toFixed(1) + " " + computerGoalRight.z.toFixed(1) + ")" + " " + 
