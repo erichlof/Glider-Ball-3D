@@ -2812,14 +2812,14 @@ function updateVariablesAndUniforms()
 	"ballWorldVelocity: " + "(" + ballWorldVelocity.x.toFixed(1) + " " + ballWorldVelocity.y.toFixed(1) + " " + ballWorldVelocity.z.toFixed(1) + ")";
  	 */
 	
-	demoInfoElement.innerHTML += " playerGoalIsInAir: " + playerGoalIsInAir + " " + "cameraIsMoving: " + cameraIsMoving + "<br>" + 
+	/* demoInfoElement.innerHTML += " playerGoalIsInAir: " + playerGoalIsInAir + " " + "cameraIsMoving: " + cameraIsMoving + "<br>" + 
 	"playerGoalRight: " + "(" + playerGoalRight.x.toFixed(1) + " " + playerGoalRight.y.toFixed(1) + " " + playerGoalRight.z.toFixed(1) + ")" + " " + 
 	"playerGoalUp: " + "(" + playerGoalUp.x.toFixed(1) + " " + playerGoalUp.y.toFixed(1) + " " + playerGoalUp.z.toFixed(1) + ")" + " " + 
 	"playerGoalForward: " + "(" + playerGoalForward.x.toFixed(1) + " " + playerGoalForward.y.toFixed(1) + " " + playerGoalForward.z.toFixed(1) + ")" + "<br>" + 
 	
 	"playerGoalLocalVelocity: " + "(" + playerGoalLocalVelocity.x.toFixed(1) + " " + playerGoalLocalVelocity.y.toFixed(1) + " " + playerGoalLocalVelocity.z.toFixed(1) + ")" + "<br>" + 
 	"playerGoalWorldVelocity: " + "(" + playerGoalWorldVelocity.x.toFixed(1) + " " + playerGoalWorldVelocity.y.toFixed(1) + " " + playerGoalWorldVelocity.z.toFixed(1) + ")"; 
-	
+	 */
 
 	/* demoInfoElement.innerHTML += " computerGoalIsInAir: " + computerGoalIsInAir + " " + "cameraIsMoving: " + cameraIsMoving + "<br>" + 
 	"computerGoalRight: " + "(" + computerGoalRight.x.toFixed(1) + " " + computerGoalRight.y.toFixed(1) + " " + computerGoalRight.z.toFixed(1) + ")" + " " + 
