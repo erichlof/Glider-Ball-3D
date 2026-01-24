@@ -287,24 +287,26 @@ function intersectUnitHyperboloid(rayO, rayD, K, normal)
 function intersectUnitHyperbolicParaboloid(rayO, rayD, normal)
 {
 	// Unit Hyperbolic Paraboloid (saddle shape) implicit equation
-	// X^2 - Z^2 - Y = 0
+	// X^2 - Z^2 + Y = 0
 	a = (rayD.x * rayD.x) - (rayD.z * rayD.z);
-	b = 2 * ((rayD.x * rayO.x) - (rayD.z * rayO.z)) - rayD.y;
-	c = (rayO.x * rayO.x) - (rayO.z * rayO.z) - rayO.y;
+	b = 2 * ((rayD.x * rayO.x) - (rayD.z * rayO.z)) + rayD.y;
+	c = (rayO.x * rayO.x) - (rayO.z * rayO.z) + rayO.y;
 
 	if (solveQuadratic(a, b, c) == true)
 	{
 		if (t0 > 0)
 		{	
 			normal.getPointAlongRay(rayO, rayD, t0);
-			normal.x *= 2; normal.y = -1; normal.z *= -2;
+			normal.x *= 2; normal.y = 1; normal.z *= -2;
+			normal.negate();
 			return t0;
 		}
 
 		if (t1 > 0)
 		{	
 			normal.getPointAlongRay(rayO, rayD, t1);
-			normal.x *= 2; normal.y = -1; normal.z *= -2;
+			normal.x *= 2; normal.y = 1; normal.z *= -2;
+			normal.negate();
 			return t1;
 		}
 	}
