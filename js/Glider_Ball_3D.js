@@ -527,31 +527,31 @@ function updateVariablesAndUniforms()
 		}
 		else if (courseShapeType == 'HyperbolicParaboloid')
 		{
-			glider1StartingPosition.set(0.5, -10, 75);
-			glider2StartingPosition.set(-0.5, -10, -75);
-			ballStartingPosition.set(0, 10, 0);
+			glider1StartingPosition.set(0.5, 300, 500);
+			glider2StartingPosition.set(-0.5, 300, -500);
+			ballStartingPosition.set(0.5, 10, 0);
 			playerGoalStartingPosition.set(75, -10, 0);
 			computerGoalStartingPosition.set(-75, -10, 0);
-			light1StartingPosition.set(0, 1, 0);
-			light2StartingPosition.set(0, 1, -1.5);
-			light3StartingPosition.set(0, 1, 1.5);
-			// light1StartingPosition.set( Math.cos(ONETHIRD_PI * 0) * 1.0, 0.3,  Math.sin(ONETHIRD_PI * 0) * 1.0);
-			// light2StartingPosition.set( Math.cos(ONETHIRD_PI * 4) * 1.0, 0.3,  Math.sin(ONETHIRD_PI * 4) * 1.0);
-			// light3StartingPosition.set( Math.cos(ONETHIRD_PI * 2) * 1.0, 0.3,  Math.sin(ONETHIRD_PI * 2) * 1.0);
-			courseShape.position.set(0, -200, 0);
+			// light1StartingPosition.set(0, 0, 0);
+			// light2StartingPosition.set(0, 0, -1);
+			// light3StartingPosition.set(0, 0, 1);
+			light1StartingPosition.set( Math.cos(ONETHIRD_PI * 0), 0,  Math.sin(ONETHIRD_PI * 0));
+			light2StartingPosition.set( Math.cos(ONETHIRD_PI * 4) * 1.5, 0,  Math.sin(ONETHIRD_PI * 4) * 0.5);
+			light3StartingPosition.set( Math.cos(ONETHIRD_PI * 2) * 2, 0,  Math.sin(ONETHIRD_PI * 2) * 0.5);
+			courseShape.position.set(0, -300, 0);
 			course_ScaleXController.show();
 			course_ScaleYController.show();
 			course_ScaleZController.show();
-			course_ScaleXController.setValue(500);
-			course_ScaleYController.setValue(500);
-			course_ScaleZController.setValue(500);
-			clipBoundaries_Folder.show();
+			course_ScaleXController.setValue(1200);
+			course_ScaleYController.setValue(800);
+			course_ScaleZController.setValue(1200);
 			course_ClipMinXController.min(-1); course_ClipMaxXController.max(1);
-			course_ClipMinYController.min(-1); course_ClipMaxYController.max(2);
+			course_ClipMinYController.min(-1); course_ClipMaxYController.max(1);
 			course_ClipMinZController.min(-1); course_ClipMaxZController.max(1);
 			course_ClipMinXController.setValue(-1); course_ClipMaxXController.setValue(1);
-			course_ClipMinYController.setValue(-1); course_ClipMaxYController.setValue(2);
+			course_ClipMinYController.setValue(-1); course_ClipMaxYController.setValue(1);
 			course_ClipMinZController.setValue(-1); course_ClipMaxZController.setValue(1);
+			clipBoundaries_Folder.hide();
 			course_ShapeKparameterController.hide();
 			pathTracingUniforms.uCourseShapeType.value = 6;
 		}
@@ -690,9 +690,9 @@ function updateVariablesAndUniforms()
 			// light1StartingPosition.set(0, 0.2, 0);
 			// light2StartingPosition.set(-0.5, 0.2, -0.5);
 			// light3StartingPosition.set(0.5, 0.2, 0.5);
-			light1StartingPosition.set( Math.cos(ONETHIRD_PI * 0) * 1.0, 0.3,  Math.sin(ONETHIRD_PI * 0) * 1.0);
-			light2StartingPosition.set( Math.cos(ONETHIRD_PI * 4) * 1.0, 0.3,  Math.sin(ONETHIRD_PI * 4) * 1.0);
-			light3StartingPosition.set( Math.cos(ONETHIRD_PI * 2) * 1.0, 0.3,  Math.sin(ONETHIRD_PI * 2) * 1.0);
+			light1StartingPosition.set( Math.cos(ONETHIRD_PI * 0), 0.3,  Math.sin(ONETHIRD_PI * 0));
+			light2StartingPosition.set( Math.cos(ONETHIRD_PI * 4), 0.3,  Math.sin(ONETHIRD_PI * 4));
+			light3StartingPosition.set( Math.cos(ONETHIRD_PI * 2), 0.3,  Math.sin(ONETHIRD_PI * 2));
 			courseShape.position.set(0, -700, 0);
 			course_ScaleUniformController.setValue(800);
 			course_ScaleXController.setValue(800);
