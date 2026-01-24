@@ -295,15 +295,17 @@ float UnitHyperbolicParaboloidInterior_ParamIntersect( vec3 ro, vec3 rd, out vec
 	vec3 hit;
 	float t0, t1;
 	float t = INFINITY;
+	// Unit Hyperbolic Paraboloid (saddle shape) implicit equation
+	// X^2 - Z^2 + Y = 0
 	float a = (rd.x * rd.x) - (rd.z * rd.z);
-	float b = 2.0 * ((rd.x * ro.x) - (rd.z * ro.z)) - rd.y;
-	float c = (ro.x * ro.x) - (ro.z * ro.z) - ro.y;
+	float b = 2.0 * ((rd.x * ro.x) - (rd.z * ro.z)) + rd.y;
+	float c = (ro.x * ro.x) - (ro.z * ro.z) + ro.y;
 	solveQuadratic(a, b, c, t0, t1);
 
 	hit = ro + (rd * t1);
 	if ( t1 > 1.0 && all(greaterThanEqual(hit, uCourseMinBounds)) && all(lessThanEqual(hit, uCourseMaxBounds)) )
 	{
-		n = vec3(2.0 * hit.x, -1.0, 2.0 * -hit.z);
+		n = vec3(2.0 * hit.x, 1.0, 2.0 * -hit.z);
 		// simple XZ-plane mapping
 		uv = vec2(hit.x, hit.z);
 		uv *= uvScale;
@@ -313,7 +315,7 @@ float UnitHyperbolicParaboloidInterior_ParamIntersect( vec3 ro, vec3 rd, out vec
 	hit = ro + (rd * t0);
 	if ( t0 > 1.0 && all(greaterThanEqual(hit, uCourseMinBounds)) && all(lessThanEqual(hit, uCourseMaxBounds)) )
 	{
-		n = vec3(2.0 * hit.x, -1.0, 2.0 * -hit.z);
+		n = vec3(2.0 * hit.x, 1.0, 2.0 * -hit.z);
 		uv = vec2(hit.x, hit.z);
 		uv *= uvScale;
 		t = t0;
