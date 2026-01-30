@@ -922,6 +922,31 @@ function intersectUnitTorus(rayO, rayD, torus_r, upper_bound, normal)
 		return roots[0];
 }
 
+
+function raycastUnitBox(rayO, rayD)
+{
+	inverseDir.set(1 / rayD.x, 1 / rayD.y, 1 / rayD.z);
+	near.set(-1,-1,-1).sub(rayO);
+	near.multiply(inverseDir);
+	far.set(1, 1, 1).sub(rayO);
+	far.multiply(inverseDir);
+	tmin.copy(near).min(far);
+	tmax.copy(near).max(far);
+	t0 = Math.max(Math.max(tmin.x, tmin.y), tmin.z);
+	t1 = Math.min(Math.min(tmax.x, tmax.y), tmax.z);
+	if (t0 > t1)
+		return Infinity;
+
+	if (t0 > 0) // if we are outside the box
+		return t0;
+
+	if (t1 > 0) // if we are inside the box
+		return t1;
+
+	return Infinity;
+}
+
+/*
 let q00 = new THREE.Vector3();
 let q10 = new THREE.Vector3();
 let q11 = new THREE.Vector3();
@@ -1003,35 +1028,49 @@ function intersectBilinearPatch( p0, p1, p2, p3, rayO, rayD, normal )
 	VecA.lerpVectors(e10, tempVec, v); VecB.lerpVectors(e00, e11, u);
 	normal.crossVectors(VecA, VecB).negate(); //geometric normal
 
-	if (t < Infinity)
-		return t;
+	return t;
 }
 
+let testNormal = new THREE.Vector3();
+let finalT = 0;
 
-
-
-function raycastUnitBox(rayO, rayD)
+function intersectBilinearPatchGroup( p0, p1, p2, p3, p4, p5, p6, p7, p8, rayO, rayD, normal )
 {
-	inverseDir.set(1 / rayD.x, 1 / rayD.y, 1 / rayD.z);
-	near.set(-1,-1,-1).sub(rayO);
-	near.multiply(inverseDir);
-	far.set(1, 1, 1).sub(rayO);
-	far.multiply(inverseDir);
-	tmin.copy(near).min(far);
-	tmax.copy(near).max(far);
-	t0 = Math.max(Math.max(tmin.x, tmin.y), tmin.z);
-	t1 = Math.min(Math.min(tmax.x, tmax.y), tmax.z);
-	if (t0 > t1)
-		return Infinity;
+	finalT = Infinity;
+	// left front quad
+	d = intersectBilinearPatch( p0, p1, p2, p3, rayO, rayD, testNormal );
+	if (d < finalT)
+	{
+		finalT = d;
+		normal.copy(testNormal);
+	}
+	// right front quad
+	d = intersectBilinearPatch( p1, p4, p5, p2, rayO, rayD, testNormal );
+	if (d < finalT)
+	{
+		finalT = d;
+		normal.copy(testNormal);
+	}
+	// right back quad
+	d = intersectBilinearPatch( p2, p5, p6, p7, rayO, rayD, testNormal );
+	if (d < finalT)
+	{
+		finalT = d;
+		normal.copy(testNormal);
+	}
+	// left back quad
+	d = intersectBilinearPatch( p3, p2, p7, p8, rayO, rayD, testNormal );
+	if (d < finalT)
+	{
+		finalT = d;
+		normal.copy(testNormal);
+	}
 
-	if (t0 > 0) // if we are outside the box
-		return t0;
+	if (finalT < Infinity)
+		return finalT;
+} 
+*/
 
-	if (t1 > 0) // if we are inside the box
-		return t1;
-
-	return Infinity;
-}
 
 
 /* 
