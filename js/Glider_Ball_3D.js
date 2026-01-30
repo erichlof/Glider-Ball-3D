@@ -165,14 +165,30 @@ let course_ClipMinZObject, course_ClipMinZController;
 let course_ClipMaxZObject, course_ClipMaxZController;
 let needChangeCourseClipXYZBounds = false;
 let level_RestartObject;
-
-let p0 = new THREE.Vector3(-1, 1, 1);
-let p1 = new THREE.Vector3( 1,-1, 1);
-let p2 = new THREE.Vector3( 1, 1,-1);
-let p3 = new THREE.Vector3(-1, 0,-1);
+/* 
+// left front quad
+let p0 = new THREE.Vector3(-1, 1, 1);// lf
+let p1 = new THREE.Vector3( 1, 1, 1);// rf
+let p2 = new THREE.Vector3( 1,-1,-1);// rb
+let p3 = new THREE.Vector3(-1, 1,-1);// lb
+// right front quad
+//  p1 = new THREE.Vector3( 1,-1, 1);// lf
+let p4 = new THREE.Vector3( 2, 1, 1);// rf
+let p5 = new THREE.Vector3( 2, 1,-1);// rb
+//  p2 = new THREE.Vector3( 1, 1,-1);// lb
+// right back quad
+//  p2 = new THREE.Vector3( 1, 1,-1);// lf
+//  p5 = new THREE.Vector3( 2, 0,-1);// rf
+let p6 = new THREE.Vector3( 2, 1,-2);// rb
+let p7 = new THREE.Vector3( 1, 1,-2);// lb
+// left back quad
+//  p3 = new THREE.Vector3(-1, 0,-1);// lf
+//  p2 = new THREE.Vector3( 1, 1,-1);// rf
+//  p7 = new THREE.Vector3( 1, 1,-2);// rb
+let p8 = new THREE.Vector3(-1, 1,-2);// lb 
+*/
 
 let demoInfoElement = document.getElementById('demoInfo');
-
 
 let courseT = 0;
 function intersectCourse()
@@ -198,8 +214,8 @@ function intersectCourse()
 		courseT = intersectUnitRoundedBox(rayObjectOrigin, rayObjectDirection, courseShapeKparameter, intersectionNormal);
 	else if (courseShapeType == 'Torus')
 		courseT = intersectUnitTorus(rayObjectOrigin, rayObjectDirection, courseShapeKparameter, torusUpperBound, intersectionNormal);
-	else if (courseShapeType == 'BilinearPatch')
-		courseT = intersectBilinearPatch(p0, p1, p2, p3, rayObjectOrigin, rayObjectDirection, intersectionNormal);
+	// else if (courseShapeType == 'BilinearPatch')
+	// 	courseT = intersectBilinearPatchGroup(p0, p1, p2, p3, p4, p5, p6, p7, p8, rayObjectOrigin, rayObjectDirection, intersectionNormal);
 	
 	return courseT;
 }
@@ -228,8 +244,8 @@ function initSceneData()
 	EPS_intersect = 0.01;
 
 	// set camera's field of view
-	worldCamera.fov = 80;
-
+	worldCamera.fov = 90;
+	inputRotationVertical = 0.2;
 
 	// COURSE 
 	courseShape.visible = false; // don't need Three.js to render this - we will ray trace it ourselves
@@ -287,7 +303,7 @@ function initSceneData()
 	function handleCourseShapeKparamChange() { needChangeCourseShapeKparameter = true; }
 
 	course_TypeController = gui.add(course_TypeObject, 'Course_Type', ['Sphere', 'Ellipsoid', 'Cylinder', 'Paraboloid', 'Cone', 'Hyperboloid', 'HyperbolicParaboloid', 
-		'Plane', 'Capsule', 'RoundedBox', 'Torus', 'BilinearPatch']).onChange(handleCourseTypeChange);
+		'Plane', 'Capsule', 'RoundedBox', 'Torus']).onChange(handleCourseTypeChange);
 	
 	scale_Folder = gui.addFolder('Scale');
 	course_ScaleUniformController = scale_Folder.add(course_ScaleUniformObject, 'uniformScale', 200, 1500, 1).onChange(handleCourseScaleUniformChange);
@@ -680,19 +696,19 @@ function updateVariablesAndUniforms()
 			pathTracingUniforms.uCourseShapeKparameter.value = courseShapeKparameter;
 			pathTracingUniforms.uCourseShapeType.value = 10;
 		}
-		else if (courseShapeType == 'BilinearPatch')
+		/* else if (courseShapeType == 'BilinearPatch')
 		{
 			glider1StartingPosition.set(0.5, -10, 75);
 			glider2StartingPosition.set(-0.5, -10, -75);
 			ballStartingPosition.set(0, -10, 0);
 			playerGoalStartingPosition.set(75, -10, 0);
 			computerGoalStartingPosition.set(-75, -10, 0);
-			// light1StartingPosition.set(0, 0.2, 0);
-			// light2StartingPosition.set(-0.5, 0.2, -0.5);
-			// light3StartingPosition.set(0.5, 0.2, 0.5);
-			light1StartingPosition.set( Math.cos(ONETHIRD_PI * 0), 0.3,  Math.sin(ONETHIRD_PI * 0));
-			light2StartingPosition.set( Math.cos(ONETHIRD_PI * 4), 0.3,  Math.sin(ONETHIRD_PI * 4));
-			light3StartingPosition.set( Math.cos(ONETHIRD_PI * 2), 0.3,  Math.sin(ONETHIRD_PI * 2));
+			light1StartingPosition.set(1, 1, -1);
+			light2StartingPosition.set(-0.5, 0.2, -2);
+			light3StartingPosition.set(2, 0.2, 0);
+			//light1StartingPosition.set( Math.cos(ONETHIRD_PI * 0), 0.3,  Math.sin(ONETHIRD_PI * 0));
+			//light2StartingPosition.set( Math.cos(ONETHIRD_PI * 4), 0.3,  Math.sin(ONETHIRD_PI * 4));
+			//light3StartingPosition.set( Math.cos(ONETHIRD_PI * 2), 0.3,  Math.sin(ONETHIRD_PI * 2));
 			courseShape.position.set(0, -700, 0);
 			course_ScaleUniformController.setValue(800);
 			course_ScaleXController.setValue(800);
@@ -701,16 +717,16 @@ function updateVariablesAndUniforms()
 			course_ScaleXController.hide();
 			course_ScaleYController.hide();
 			course_ScaleZController.hide();
-			course_ClipMinXController.min(-1); course_ClipMaxXController.max(1);
+			course_ClipMinXController.min(-1); course_ClipMaxXController.max(2);
 			course_ClipMinYController.min(-1); course_ClipMaxYController.max(2);
-			course_ClipMinZController.min(-1); course_ClipMaxZController.max(1);
-			course_ClipMinXController.setValue(-1); course_ClipMaxXController.setValue(1);
+			course_ClipMinZController.min(-2); course_ClipMaxZController.max(1);
+			course_ClipMinXController.setValue(-1); course_ClipMaxXController.setValue(2);
 			course_ClipMinYController.setValue(-1); course_ClipMaxYController.setValue(2);
-			course_ClipMinZController.setValue(-1); course_ClipMaxZController.setValue(1);
+			course_ClipMinZController.setValue(-2); course_ClipMaxZController.setValue(1);
 			clipBoundaries_Folder.hide();
 			course_ShapeKparameterController.hide();
 			pathTracingUniforms.uCourseShapeType.value = 11;
-		}
+		} */
 
 		cameraIsMoving = true;
 		needChangeCourseType = false;
@@ -890,7 +906,7 @@ function updateVariablesAndUniforms()
 		levelBeginFlag = false;
 	} // end if (levelBeginFlag)
 
-
+	
 
 	// START OF GAME LOOP
 
@@ -906,7 +922,51 @@ function updateVariablesAndUniforms()
 	// get user input and apply it to Glider1's Local velocity
 	if (!isPaused)
 	{
-		if ((keyPressed('Space') || button5Pressed) && canPress_Space)
+		// keep camera from rotating too far down underneath player's Glider
+		inputRotationVertical = Math.max(0.2, inputRotationVertical);
+		
+
+		if (gamepadIndex != null)
+		{
+			// get gamepad input, if one is connected
+			gamepads = navigator.getGamepads();
+			gp = gamepads[gamepadIndex];
+			// reset gamepad buttons state
+			gamepad_Button0Pressed = gamepad_DirectionUpPressed = gamepad_DirectionDownPressed = 
+				gamepad_DirectionLeftPressed = gamepad_DirectionRightPressed = false;
+
+			if (gp) 
+			{
+				// Read button input
+				if (gp.buttons[0].pressed || gp.buttons[1].pressed || gp.buttons[6].pressed || gp.buttons[7].pressed) 
+				{
+					//console.log(gp);
+					gamepad_Button0Pressed = true;
+				}
+				
+				// Read axis input (joysticks/D-pad buttons)
+				if (gp.axes[0] < -0.5 || gp.buttons[14].pressed)
+				{	
+					gamepad_DirectionLeftPressed = true;
+				}
+				if (gp.axes[0] > 0.5 || gp.buttons[15].pressed)
+				{	
+					gamepad_DirectionRightPressed = true;
+				}
+				if (gp.axes[1] < -0.5 || gp.buttons[12].pressed)
+				{	
+					gamepad_DirectionUpPressed = true;
+				}
+				if (gp.axes[1] > 0.5 || gp.buttons[13].pressed)
+				{	
+					gamepad_DirectionDownPressed = true;
+				}
+
+				inputRotationVertical = Math.max(0.15, inputRotationVertical);
+			}
+		} // end if (gamepadIndex != null)
+
+		if ((keyPressed('Space') || button5Pressed || gamepad_Button0Pressed) && canPress_Space)
 		{
 			jumpWasTriggered = true;
 			canPress_Space = false;
@@ -951,23 +1011,23 @@ function updateVariablesAndUniforms()
 		
 		//if (!glider1IsInAir)
 		{
-			if ((keyPressed('KeyW') || button3Pressed) && !(keyPressed('KeyS') || button4Pressed))
+			if ((keyPressed('KeyW') || button3Pressed || gamepad_DirectionUpPressed) && !(keyPressed('KeyS') || button4Pressed))
 			{
 				glider1LocalVelocity.z -= (300 * frameTime); 
 				glider1IsAcceleratingForward = true;
 				
 			}
-			if ((keyPressed('KeyS') || button4Pressed) && !(keyPressed('KeyW') || button3Pressed))
+			if ((keyPressed('KeyS') || button4Pressed || gamepad_DirectionDownPressed) && !(keyPressed('KeyW') || button3Pressed))
 			{
 				glider1LocalVelocity.z += (300 * frameTime); 
 				glider1IsAcceleratingForward = true;
 			}
-			if ((keyPressed('KeyA') || button1Pressed) && !(keyPressed('KeyD') || button2Pressed))
+			if ((keyPressed('KeyA') || button1Pressed || gamepad_DirectionLeftPressed) && !(keyPressed('KeyD') || button2Pressed))
 			{
 				glider1LocalVelocity.x -= (300 * frameTime);
 				glider1IsAcceleratingRight = true;
 			}
-			if ((keyPressed('KeyD') || button2Pressed) && !(keyPressed('KeyA') || button1Pressed))
+			if ((keyPressed('KeyD') || button2Pressed || gamepad_DirectionRightPressed) && !(keyPressed('KeyA') || button1Pressed))
 			{ 
 				glider1LocalVelocity.x += (300 * frameTime);
 				glider1IsAcceleratingRight = true;
@@ -2765,7 +2825,7 @@ function updateVariablesAndUniforms()
 	
 	// DEBUG INFO
 	
-	demoInfoElement.innerHTML = "collisions: " + collisionCounter;
+	demoInfoElement.innerHTML = "collisions: " + collisionCounter + "<br>" + "FOV: " + worldCamera.fov;
 
 	/* demoInfoElement.innerHTML += " glider1IsInAir: " + glider1IsInAir + " " + "cameraIsMoving: " + cameraIsMoving + "<br>" + 
 	"glider1BaseRight: " + "(" + glider1BaseRight.x.toFixed(1) + " " + glider1BaseRight.y.toFixed(1) + " " + glider1BaseRight.z.toFixed(1) + ")" + " " + 
@@ -2776,7 +2836,7 @@ function updateVariablesAndUniforms()
 	"glider1WorldVelocity: " + "(" + glider1WorldVelocity.x.toFixed(1) + " " + glider1WorldVelocity.y.toFixed(1) + " " + glider1WorldVelocity.z.toFixed(1) + ")";
  	 */
 
-	/* demoInfoElement.innerHTML += "glider1IsInAir: " + glider1IsInAir + " " + "cameraIsMoving: " + cameraIsMoving + "<br>" + 
+	/* demoInfoElement.innerHTML += " glider1IsInAir: " + glider1IsInAir + " " + "cameraIsMoving: " + cameraIsMoving + "<br>" + 
 	"glider1ThrustersRight: " + "(" + glider1ThrustersRight.x.toFixed(1) + " " + glider1ThrustersRight.y.toFixed(1) + " " + glider1ThrustersRight.z.toFixed(1) + ")" + " " + 
 	"glider1ThrustersUp: " + "(" + glider1ThrustersUp.x.toFixed(1) + " " + glider1ThrustersUp.y.toFixed(1) + " " + glider1ThrustersUp.z.toFixed(1) + ")" + " " + 
 	"glider1ThrustersForward: " + "(" + glider1ThrustersForward.x.toFixed(1) + " " + glider1ThrustersForward.y.toFixed(1) + " " + glider1ThrustersForward.z.toFixed(1) + ")" + "<br>" + 
@@ -2785,7 +2845,7 @@ function updateVariablesAndUniforms()
 	"glider1WorldVelocity: " + "(" + glider1WorldVelocity.x.toFixed(1) + " " + glider1WorldVelocity.y.toFixed(1) + " " + glider1WorldVelocity.z.toFixed(1) + ")";
  	*/
 
-	/* demoInfoElement.innerHTML += "glider2IsInAir: " + glider2IsInAir + " " + "cameraIsMoving: " + cameraIsMoving + "<br>" + 
+	/* demoInfoElement.innerHTML += " glider2IsInAir: " + glider2IsInAir + " " + "cameraIsMoving: " + cameraIsMoving + "<br>" + 
 	"glider2BaseRight: " + "(" + glider2BaseRight.x.toFixed(1) + " " + glider2BaseRight.y.toFixed(1) + " " + glider2BaseRight.z.toFixed(1) + ")" + " " + 
 	"glider2BaseUp: " + "(" + glider2BaseUp.x.toFixed(1) + " " + glider2BaseUp.y.toFixed(1) + " " + glider2BaseUp.z.toFixed(1) + ")" + " " + 
 	"glider2BaseForward: " + "(" + glider2BaseForward.x.toFixed(1) + " " + glider2BaseForward.y.toFixed(1) + " " + glider2BaseForward.z.toFixed(1) + ")" + "<br>" + 
@@ -2794,7 +2854,7 @@ function updateVariablesAndUniforms()
 	"glider2WorldVelocity: " + "(" + glider2WorldVelocity.x.toFixed(1) + " " + glider2WorldVelocity.y.toFixed(1) + " " + glider2WorldVelocity.z.toFixed(1) + ")";
  	*/
 
-	/* demoInfoElement.innerHTML += "glider2IsInAir: " + glider2IsInAir + " " + "cameraIsMoving: " + cameraIsMoving + "<br>" + 
+	/* demoInfoElement.innerHTML += " glider2IsInAir: " + glider2IsInAir + " " + "cameraIsMoving: " + cameraIsMoving + "<br>" + 
 	"glider2ThrustersRight: " + "(" + glider2ThrustersRight.x.toFixed(1) + " " + glider2ThrustersRight.y.toFixed(1) + " " + glider2ThrustersRight.z.toFixed(1) + ")" + " " + 
 	"glider2ThrustersUp: " + "(" + glider2ThrustersUp.x.toFixed(1) + " " + glider2ThrustersUp.y.toFixed(1) + " " + glider2ThrustersUp.z.toFixed(1) + ")" + " " + 
 	"glider2ThrustersForward: " + "(" + glider2ThrustersForward.x.toFixed(1) + " " + glider2ThrustersForward.y.toFixed(1) + " " + glider2ThrustersForward.z.toFixed(1) + ")" + "<br>" + 
