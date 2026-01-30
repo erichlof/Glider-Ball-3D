@@ -108,6 +108,24 @@ let mouseControl = true;
 let pointerlockChange;
 let fileLoader = new THREE.FileLoader();
 
+let gamepads = null;
+let gp = null;
+let gamepadIndex = null;
+let gamepad_Button0Pressed = false;
+let gamepad_DirectionUpPressed = false;
+let gamepad_DirectionDownPressed = false;
+let gamepad_DirectionLeftPressed = false;
+let gamepad_DirectionRightPressed = false;
+window.addEventListener('gamepadconnected', (event) => {
+	gamepadIndex = event.gamepad.index;
+	console.log("Gamepad connected at index", gamepadIndex); 
+});
+window.addEventListener('gamepaddisconnected', (event) => {
+	console.log("Gamepad disconnected from index", event.gamepad.index);
+	gamepadIndex = null;
+});
+
+
 // The following list of keys is not exhaustive, but it should be more than enough to build interactive demos and games
 let KeyboardState = {
 	KeyA: false, KeyB: false, KeyC: false, KeyD: false, KeyE: false, KeyF: false, KeyG: false, KeyH: false, KeyI: false, KeyJ: false, KeyK: false, KeyL: false, KeyM: false,
@@ -825,6 +843,45 @@ function animate()
 		oldPinchWidthY = newPinchWidthY;
 
 	} // end if ( !mouseControl )
+
+	// if on gamepad (gp), get input from that gamepad device
+	if ( gp )
+	{
+		if (Math.abs(gp.axes[2]) > 0.1)
+			newDeltaX += gp.axes[2] * cameraRotationSpeed;
+		else newDeltaX = 0;
+
+		if (newDeltaX)
+		{
+			cameraIsMoving = true;
+			// the ' || 0 ' prevents NaNs from creeping into inputRotationHorizontal calc below
+			inputMovementHorizontal = ((oldDeltaX - newDeltaX) * 0.01) || 0;
+			// gamepad stick X movement (left and right) affects camera rotation around the Y axis	
+			inputRotationHorizontal += inputMovementHorizontal;
+		}
+
+		if (Math.abs(gp.axes[3]) > 0.2)
+			newDeltaY += gp.axes[3] * cameraRotationSpeed;
+		else newDeltaY = 0;
+
+		if (newDeltaY)
+		{
+			cameraIsMoving = true;
+			// the ' || 0 ' prevents NaNs from creeping into inputRotationVertical calc below
+			inputMovementVertical = ((oldDeltaY - newDeltaY) * 0.01) || 0;
+			// gamepad stick Y movement (up and down) affects camera rotation around the X axis	
+			inputRotationVertical += inputMovementVertical;
+		}
+
+		// clamp the camera's vertical movement (around the x-axis) to the scene's 'ceiling' and 'floor',
+		// so you can't accidentally flip the camera upside down
+		inputRotationVertical = Math.max(-PI_2, Math.min(PI_2, inputRotationVertical));
+
+		// save state for next frame
+		oldDeltaX = newDeltaX;
+		oldDeltaY = newDeltaY;
+		
+	} // end if ( gp )
 
 
 	cameraControlsYawObject.rotateY(inputMovementHorizontal);
