@@ -1361,7 +1361,6 @@ vec3 CalculateRadiance( out vec3 objectNormal, out vec3 objectColor, out float o
 		}
 			
 
-
 		    
                 if (hitType == DIFF) // Ideal DIFFUSE reflection
 		{
@@ -1451,61 +1450,15 @@ vec3 CalculateRadiance( out vec3 objectNormal, out vec3 objectColor, out float o
 
 			// if (diffuseCount == 1)
 			// 	bounceIsSpecular = TRUE; // turn on refracting caustics
+			
 			// trick to make caustics brighter :)
-			if (sampleLight == TRUE && bounces == 1)
-				mask *= 5.0;
+			// if (sampleLight == TRUE && bounces == 1)
+			// 	mask *= 5.0;
 
 			continue;
 			
 		} // end if (hitType == REFR)
 		
-		if (hitType == COAT)  // Diffuse object underneath with ClearCoat on top
-		{
-			nc = 1.0; // IOR of Air
-			nt = 1.4; // IOR of Clear Coat
-			Re = calcFresnelReflectance(rayDirection, nl, nc, nt, ratioIoR);
-			Tr = 1.0 - Re;
-			
-			if (diffuseCount == 0 && hitObjectID != previousObjectID)
-			{
-				reflectionMask = mask * Re;
-				reflectionRayDirection = reflect(rayDirection, nl); // reflect ray from surface
-				reflectionRayOrigin = x + nl * uEPS_intersect;
-				willNeedReflectionRay = TRUE;
-			}
-
-			diffuseCount++;
-
-			mask *= Tr;
-			mask *= hitColor;
-
-			bounceIsSpecular = FALSE;
-
-			/* if (diffuseCount == 1 && rand() < 0.5)
-			{
-				mask *= 2.0;
-				// choose random Diffuse sample vector
-				rayDirection = randomCosWeightedDirectionInHemisphere(nl);
-				rayOrigin = x + nl * uEPS_intersect;
-				continue;
-			} */
-			
-			if (newRandom < 0.3333)
-				rayDirection = sampleSphereLight(x, nl, spheres[0], weight);
-			else if (newRandom < 0.6666)
-				rayDirection = sampleSphereLight(x, nl, spheres[1], weight);
-			else
-				rayDirection = sampleSphereLight(x, nl, spheres[2], weight);
-			
-			//mask *= diffuseCount == 1 ? 2.0 : 1.0;
-			mask *= weight * N_LIGHTS;
-
-			rayOrigin = x + nl * uEPS_intersect;
-
-			sampleLight = TRUE;
-			continue;
-			
-		} //end if (hitType == COAT)
 
 		
 	} // end for (int bounces = 0; bounces < 6; bounces++)
@@ -1533,8 +1486,8 @@ void SetupScene(void)
 	spheres[2] = Sphere(20.0, uLight3Position, L3, vec3(0), LIGHT);//spherical blue Light3
 
 	unitBoxes[0] = UnitBox(vec3(0), vec3(0.01, 1.0, 0.4), DIFF);//Ball
-	unitBoxes[1] = UnitBox(vec3(0), vec3(0.01, 0.2, 1.0), SPEC);//player's Goal
-	unitBoxes[2] = UnitBox(vec3(0), vec3(1.0, 0.01, 0.2), SPEC);//computer's Goal
+	unitBoxes[1] = UnitBox(vec3(0), vec3(0.01, 0.2, 1.0)*2.0, SPEC);//player's Goal
+	unitBoxes[2] = UnitBox(vec3(0), vec3(1.0, 0.01, 0.2)*2.0, SPEC);//computer's Goal
 
 	unitParaboloids[0] = UnitParaboloid(vec3(0), vec3(0.01, 0.2, 1.0), SPEC);//player's Glider1
 	unitParaboloids[1] = UnitParaboloid(vec3(0), vec3(1.0, 0.01, 0.4), SPEC);//computer's Glider2
