@@ -98,6 +98,7 @@ let playerGoalRaySegmentLength = 0;
 let playerGoalRight = new THREE.Vector3();
 let playerGoalUp = new THREE.Vector3();
 let playerGoalForward = new THREE.Vector3();
+let playerGoalStartingLocalVelocity = new THREE.Vector3();
 let playerGoalLocalVelocity = new THREE.Vector3();
 let playerGoalWorldVelocity = new THREE.Vector3();
 let playerGoalStartingPosition = new THREE.Vector3();
@@ -115,6 +116,7 @@ let computerGoalRaySegmentLength = 0;
 let computerGoalRight = new THREE.Vector3();
 let computerGoalUp = new THREE.Vector3();
 let computerGoalForward = new THREE.Vector3();
+let computerGoalStartingLocalVelocity = new THREE.Vector3();
 let computerGoalLocalVelocity = new THREE.Vector3();
 let computerGoalWorldVelocity = new THREE.Vector3();
 let computerGoalStartingPosition = new THREE.Vector3();
@@ -369,7 +371,9 @@ function updateVariablesAndUniforms()
 			glider2StartingPosition.set(-0.5, -50, -150);
 			ballStartingPosition.set(0, -50, 0);
 			playerGoalStartingPosition.set(150, -50, 0);
+			playerGoalStartingLocalVelocity.set(1, 0, 0).normalize().multiplyScalar(goalSpeed);
 			computerGoalStartingPosition.set(-150, -50, 0);
+			computerGoalStartingLocalVelocity.set(1, 0, 0).normalize().multiplyScalar(goalSpeed);
 			light1StartingPosition.set(0, 0, 0);
 			light2StartingPosition.set(-0.3, 0.3, -0.3);
 			light3StartingPosition.set(0.3, -0.3, 0.3);
@@ -397,7 +401,9 @@ function updateVariablesAndUniforms()
 			glider2StartingPosition.set(-0.5, -50, -175);
 			ballStartingPosition.set(0, -50, 0);
 			playerGoalStartingPosition.set(175, -50, 0);
+			playerGoalStartingLocalVelocity.set(1, 0, 0).normalize().multiplyScalar(goalSpeed);
 			computerGoalStartingPosition.set(-175, -50, 0);
+			computerGoalStartingLocalVelocity.set(-1, 0, 0).normalize().multiplyScalar(goalSpeed);
 			light1StartingPosition.set(0, 0, 0);
 			light2StartingPosition.set(-0.3, 0.3, -0.3);
 			light3StartingPosition.set(0.3, -0.3, 0.3);
@@ -420,22 +426,23 @@ function updateVariablesAndUniforms()
 		}
 		else if (courseShapeType == 'Cylinder')
 		{
-			glider1StartingPosition.set(0.5, -10, 75);
-			glider2StartingPosition.set(-0.5, -10, -75);
+			glider1StartingPosition.set(0.5, -10, 400);
+			glider2StartingPosition.set(-0.5, -10, -400);
 			ballStartingPosition.set(0, -10, 0);
 			playerGoalStartingPosition.set(75, -10, 0);
+			playerGoalStartingLocalVelocity.set(1, 0, 0).normalize().multiplyScalar(goalSpeed);
 			computerGoalStartingPosition.set(-75, -10, 0);
+			computerGoalStartingLocalVelocity.set(1, 0, 0).normalize().multiplyScalar(goalSpeed);
 			light1StartingPosition.set(0, 0, 0);
 			light2StartingPosition.set(-0.3, 0.3, -0.5);
 			light3StartingPosition.set(0.3, -0.3, 0.5);
 			courseShape.position.set(0, 0, 0);
-			course_ScaleUniformController.setValue(500);
 			course_ScaleXController.show();
 			course_ScaleYController.show();
 			course_ScaleZController.show();
 			course_ScaleXController.setValue(500);
 			course_ScaleYController.setValue(500);
-			course_ScaleZController.setValue(500);
+			course_ScaleZController.setValue(700);
 			clipBoundaries_Folder.show();
 			course_ClipMinXController.min(-1); course_ClipMaxXController.max(1);
 			course_ClipMinYController.min(-1); course_ClipMaxYController.max(1);
@@ -448,11 +455,13 @@ function updateVariablesAndUniforms()
 		}
 		else if (courseShapeType == 'Paraboloid')
 		{
-			glider1StartingPosition.set(0.5, -10, 75);
-			glider2StartingPosition.set(-0.5, -10, -75);
+			glider1StartingPosition.set(0.5, -10, 200);
+			glider2StartingPosition.set(-0.5, -10, -200);
 			ballStartingPosition.set(0, -10, 0);
 			playerGoalStartingPosition.set(75, -10, 0);
+			playerGoalStartingLocalVelocity.set(1, 0, 1).normalize().multiplyScalar(goalSpeed);
 			computerGoalStartingPosition.set(-75, -10, 0);
+			computerGoalStartingLocalVelocity.set(1, 0, -1).normalize().multiplyScalar(goalSpeed);
 			light1StartingPosition.set(0, 0, 0);
 			light2StartingPosition.set(-0.05, 0.05, -0.5);
 			light3StartingPosition.set(0.05, -0.05, 0.5);
@@ -480,11 +489,13 @@ function updateVariablesAndUniforms()
 		}
 		else if (courseShapeType == 'Cone')
 		{
-			glider1StartingPosition.set(0.5, -10, 75);
-			glider2StartingPosition.set(-0.5, -10, -75);
+			glider1StartingPosition.set(0.5, -10, 500);
+			glider2StartingPosition.set(-0.5, -10, -500);
 			ballStartingPosition.set(0, -10, 0);
 			playerGoalStartingPosition.set(75, -10, 0);
+			playerGoalStartingLocalVelocity.set(1, 0, 1).normalize().multiplyScalar(goalSpeed);
 			computerGoalStartingPosition.set(-75, -10, 0);
+			computerGoalStartingLocalVelocity.set(-1, 0, 1).normalize().multiplyScalar(goalSpeed);
 			light1StartingPosition.set(0, 0, 0);
 			light2StartingPosition.set(-0.05, 0.05, -0.5);
 			light3StartingPosition.set(0.05, -0.05, 0.5);
@@ -512,11 +523,13 @@ function updateVariablesAndUniforms()
 		}
 		else if (courseShapeType == 'Hyperboloid')
 		{
-			glider1StartingPosition.set(0.5, -10, 75);
-			glider2StartingPosition.set(-0.5, -10, -75);
+			glider1StartingPosition.set(0.5, -10, 300);
+			glider2StartingPosition.set(-0.5, -10, -300);
 			ballStartingPosition.set(0, -10, 0);
-			playerGoalStartingPosition.set(75, -10, 0);
-			computerGoalStartingPosition.set(-75, -10, 0);
+			playerGoalStartingPosition.set(75, -10, 50);
+			playerGoalStartingLocalVelocity.set(1, 0, 1).normalize().multiplyScalar(goalSpeed);
+			computerGoalStartingPosition.set(-75, -10, -50);
+			computerGoalStartingLocalVelocity.set(-1, 0, -1).normalize().multiplyScalar(goalSpeed);
 			light1StartingPosition.set(0, 0, 0);
 			light2StartingPosition.set(-0.05, 0.05, -0.8);
 			light3StartingPosition.set(0.05, -0.05, 0.8);
@@ -526,7 +539,7 @@ function updateVariablesAndUniforms()
 			course_ScaleZController.show();
 			course_ScaleXController.setValue(500);
 			course_ScaleYController.setValue(500);
-			course_ScaleZController.setValue(800);
+			course_ScaleZController.setValue(1000);
 			clipBoundaries_Folder.show();
 			course_ClipMinXController.min(-1); course_ClipMaxXController.max(1);
 			course_ClipMinYController.min(-1); course_ClipMaxYController.max(1);
@@ -546,8 +559,10 @@ function updateVariablesAndUniforms()
 			glider1StartingPosition.set(0.5, 300, 500);
 			glider2StartingPosition.set(-0.5, 300, -500);
 			ballStartingPosition.set(0.5, 10, 0);
-			playerGoalStartingPosition.set(75, -10, 0);
-			computerGoalStartingPosition.set(-75, -10, 0);
+			playerGoalStartingPosition.set(200, -10, 0);
+			playerGoalStartingLocalVelocity.set(1, 0, 0.9).normalize().multiplyScalar(goalSpeed);
+			computerGoalStartingPosition.set(-200, -10, 0);
+			computerGoalStartingLocalVelocity.set(-1, 0, -0.9).normalize().multiplyScalar(goalSpeed);
 			// light1StartingPosition.set(0, 0, 0);
 			// light2StartingPosition.set(0, 0, -1);
 			// light3StartingPosition.set(0, 0, 1);
@@ -573,11 +588,13 @@ function updateVariablesAndUniforms()
 		}
 		else if (courseShapeType == 'Plane')
 		{
-			glider1StartingPosition.set(0.5, -10, 75);
-			glider2StartingPosition.set(-0.5, -10, -75);
+			glider1StartingPosition.set(0.5, -10, 400);
+			glider2StartingPosition.set(-0.5, -10, -400);
 			ballStartingPosition.set(0, -10, 0);
 			playerGoalStartingPosition.set(75, -10, 0);
+			playerGoalStartingLocalVelocity.set(1, 0, 1).normalize().multiplyScalar(goalSpeed);
 			computerGoalStartingPosition.set(-75, -10, 0);
+			computerGoalStartingLocalVelocity.set(-1, 0, -1).normalize().multiplyScalar(goalSpeed);
 			// light1StartingPosition.set(0, 0.3, 0);
 			// light2StartingPosition.set(-0.3, 0.3, -0.3);
 			// light3StartingPosition.set(0.3, 0.3, 0.3);
@@ -604,11 +621,13 @@ function updateVariablesAndUniforms()
 		}
 		else if (courseShapeType == 'Capsule')
 		{
-			glider1StartingPosition.set(0.5, -10, 75);
-			glider2StartingPosition.set(-0.5, -10, -75);
+			glider1StartingPosition.set(0.5, -10, 300);
+			glider2StartingPosition.set(-0.5, -10, -300);
 			ballStartingPosition.set(0, -10, 0);
 			playerGoalStartingPosition.set(75, -10, 0);
+			playerGoalStartingLocalVelocity.set(1, 0, 1).normalize().multiplyScalar(goalSpeed);
 			computerGoalStartingPosition.set(-75, -10, 0);
+			computerGoalStartingLocalVelocity.set(-1, 0, -1).normalize().multiplyScalar(goalSpeed);
 			light1StartingPosition.set(0, 0, 0);
 			light2StartingPosition.set(-0.3, 0.3, -1);
 			light3StartingPosition.set(0.3, -0.3, 1);
@@ -636,11 +655,13 @@ function updateVariablesAndUniforms()
 		}
 		else if (courseShapeType == 'RoundedBox')
 		{
-			glider1StartingPosition.set(0.5, -10, 75);
-			glider2StartingPosition.set(-0.5, -10, -75);
+			glider1StartingPosition.set(0.5, -10, 300);
+			glider2StartingPosition.set(-0.5, -10, -300);
 			ballStartingPosition.set(0, -10, 0);
-			playerGoalStartingPosition.set(75, -10, 0);
-			computerGoalStartingPosition.set(-75, -10, 0);
+			playerGoalStartingPosition.set(200, -10, 0);
+			playerGoalStartingLocalVelocity.set(1, 0, 0).normalize().multiplyScalar(goalSpeed);
+			computerGoalStartingPosition.set(-200, -10, 0);
+			computerGoalStartingLocalVelocity.set(-1, 0, 0).normalize().multiplyScalar(goalSpeed);
 			light1StartingPosition.set(0, 0, 0);
 			light2StartingPosition.set(-0.4, 0.4, -0.4);
 			light3StartingPosition.set(0.4, -0.4, 0.4);
@@ -668,12 +689,8 @@ function updateVariablesAndUniforms()
 		}
 		else if (courseShapeType == 'Torus')
 		{
-			glider1StartingPosition.set(0 + course_ScaleXController.getValue(), -10, 75);
-			glider2StartingPosition.set(0 - course_ScaleXController.getValue(), -10, -75);
-			ballStartingPosition.set(0 + course_ScaleXController.getValue(), -10, 0);
-			playerGoalStartingPosition.set(75 + course_ScaleXController.getValue(), -10, 0);
-			computerGoalStartingPosition.set(-75 - course_ScaleXController.getValue(), -10, 0);
-			// (lights position placement is handled in needChangeCourseScale code further down)
+			
+			// (game objects and lights position placements are handled in needChangeCourseScale code further down)
 			courseShape.position.set(0, 0, 0);
 			course_ScaleUniformController.setValue(500);
 			course_ScaleXController.show();
@@ -702,7 +719,9 @@ function updateVariablesAndUniforms()
 			glider2StartingPosition.set(-0.5, -10, -75);
 			ballStartingPosition.set(0, -10, 0);
 			playerGoalStartingPosition.set(75, -10, 0);
+			playerGoalLocalVelocity.set(1, 0, 0).normalize().multiplyScalar(goalSpeed);
 			computerGoalStartingPosition.set(-75, -10, 0);
+			computerGoalLocalVelocity.set(1, 0, 0).normalize().multiplyScalar(goalSpeed);
 			light1StartingPosition.set(1, 1, -1);
 			light2StartingPosition.set(-0.5, 0.2, -2);
 			light3StartingPosition.set(2, 0.2, 0);
@@ -778,8 +797,10 @@ function updateVariablesAndUniforms()
 			glider1StartingPosition.set(0 + course_ScaleXController.getValue(), -10, 75);
 			glider2StartingPosition.set(0 - course_ScaleXController.getValue(), -10, -75);
 			ballStartingPosition.set(0 + course_ScaleXController.getValue(), -10, 0);
-			playerGoalStartingPosition.set(75 + course_ScaleXController.getValue(), -10, 0);
-			computerGoalStartingPosition.set(-75 - course_ScaleXController.getValue(), -10, 0);
+			playerGoalStartingPosition.set(75 + course_ScaleXController.getValue(), 100, 0);
+			playerGoalStartingLocalVelocity.set(1, 0, 0).normalize().multiplyScalar(goalSpeed);
+			computerGoalStartingPosition.set(-75 - course_ScaleXController.getValue(), -100, 0);
+			computerGoalStartingLocalVelocity.set(1, 0, 0).normalize().multiplyScalar(goalSpeed);
 
 			// light1Position.set(-10 - course_ScaleXController.getValue(), -15, 5);
 			// light2Position.set(10 + course_ScaleXController.getValue(), -10, -15);
@@ -891,7 +912,7 @@ function updateVariablesAndUniforms()
 		playerGoalRight.set(1, 0, 0);
 		playerGoalUp.set(0, 1, 0);
 		playerGoalForward.set(0, 0, 1);
-		playerGoalLocalVelocity.set(1, 0, 0).normalize().multiplyScalar(goalSpeed);
+		playerGoalLocalVelocity.copy(playerGoalStartingLocalVelocity);
 		playerGoalIsInAir = true;
 
 		// COMPUTER's GOAL
@@ -900,7 +921,7 @@ function updateVariablesAndUniforms()
 		computerGoalRight.set(1, 0, 0);
 		computerGoalUp.set(0, 1, 0);
 		computerGoalForward.set(0, 0, 1);
-		computerGoalLocalVelocity.set(1, 0, 0).normalize().multiplyScalar(goalSpeed);
+		computerGoalLocalVelocity.copy(computerGoalStartingLocalVelocity);
 		computerGoalIsInAir = true;
 
 		levelBeginFlag = false;
@@ -1888,8 +1909,7 @@ function updateVariablesAndUniforms()
 	glider2Thrusters.scale.copy(glider2Base.scale);
 
 	glider2Thrusters.rotateY(Math.PI);
-	glider2Thrusters.rotateY(inputRotationHorizontal);
-	//glider2Thrusters.rotateY(ballYRotateAngle);
+	//glider2Thrusters.rotateY(inputRotationHorizontal);
 	glider2Thrusters.updateMatrixWorld();
 	glider2Thrusters.matrixWorld.extractBasis(glider2ThrustersRight, glider2ThrustersUp, glider2ThrustersForward);
 	glider2ThrustersRight.normalize(); glider2ThrustersUp.normalize(); glider2ThrustersForward.normalize();
