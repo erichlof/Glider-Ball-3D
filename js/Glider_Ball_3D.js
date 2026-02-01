@@ -274,11 +274,11 @@ function initSceneData()
 
 	// PLAYER's GOAL
 	playerGoal.visible = false;
-	playerGoal.scale.set(3, 20, 110);
+	playerGoal.scale.set(4, 35, 200);
 
 	// COMPUTER's GOAL
 	computerGoal.visible = false;
-	computerGoal.scale.set(3, 20, 110);
+	computerGoal.scale.set(4, 35, 200);
 	
 
 	
@@ -370,10 +370,14 @@ function updateVariablesAndUniforms()
 			glider1StartingPosition.set(0.5, -50, 150);
 			glider2StartingPosition.set(-0.5, -50, -150);
 			ballStartingPosition.set(0, -50, 0);
-			playerGoalStartingPosition.set(150, -50, 0);
+			playerGoal.scale.y = 35; playerGoal.updateMatrixWorld();
+			playerGoalStartingPosition.set(300, -50, 0);
 			playerGoalStartingLocalVelocity.set(1, 0, 0).normalize().multiplyScalar(goalSpeed);
-			computerGoalStartingPosition.set(-150, -50, 0);
+			playerGoalYRotateAngle = 0;
+			computerGoal.scale.y = 35; computerGoal.updateMatrixWorld();
+			computerGoalStartingPosition.set(-300, -50, 0);
 			computerGoalStartingLocalVelocity.set(1, 0, 0).normalize().multiplyScalar(goalSpeed);
+			computerGoalYRotateAngle = 0;
 			light1StartingPosition.set(0, 0, 0);
 			light2StartingPosition.set(-0.3, 0.3, -0.3);
 			light3StartingPosition.set(0.3, -0.3, 0.3);
@@ -400,10 +404,14 @@ function updateVariablesAndUniforms()
 			glider1StartingPosition.set(0.5, -50, 175);
 			glider2StartingPosition.set(-0.5, -50, -175);
 			ballStartingPosition.set(0, -50, 0);
+			playerGoal.scale.y = 35; playerGoal.updateMatrixWorld();
 			playerGoalStartingPosition.set(175, -50, 0);
 			playerGoalStartingLocalVelocity.set(1, 0, 0).normalize().multiplyScalar(goalSpeed);
+			playerGoalYRotateAngle = 0;
+			computerGoal.scale.y = 35; computerGoal.updateMatrixWorld();
 			computerGoalStartingPosition.set(-175, -50, 0);
 			computerGoalStartingLocalVelocity.set(-1, 0, 0).normalize().multiplyScalar(goalSpeed);
+			computerGoalYRotateAngle = 0;
 			light1StartingPosition.set(0, 0, 0);
 			light2StartingPosition.set(-0.3, 0.3, -0.3);
 			light3StartingPosition.set(0.3, -0.3, 0.3);
@@ -429,10 +437,12 @@ function updateVariablesAndUniforms()
 			glider1StartingPosition.set(0.5, -10, 400);
 			glider2StartingPosition.set(-0.5, -10, -400);
 			ballStartingPosition.set(0, -10, 0);
-			playerGoalStartingPosition.set(75, -10, 0);
+			playerGoal.scale.y = 35; playerGoal.updateMatrixWorld();
 			playerGoalStartingLocalVelocity.set(1, 0, 0).normalize().multiplyScalar(goalSpeed);
-			computerGoalStartingPosition.set(-75, -10, 0);
-			computerGoalStartingLocalVelocity.set(1, 0, 0).normalize().multiplyScalar(goalSpeed);
+			playerGoalYRotateAngle = Math.PI * 0.5;
+			computerGoal.scale.y = 35; computerGoal.updateMatrixWorld();
+			computerGoalStartingLocalVelocity.set(-1, 0, 0).normalize().multiplyScalar(goalSpeed);
+			computerGoalYRotateAngle = Math.PI * 0.5;
 			light1StartingPosition.set(0, 0, 0);
 			light2StartingPosition.set(-0.3, 0.3, -0.5);
 			light3StartingPosition.set(0.3, -0.3, 0.5);
@@ -458,10 +468,14 @@ function updateVariablesAndUniforms()
 			glider1StartingPosition.set(0.5, -10, 200);
 			glider2StartingPosition.set(-0.5, -10, -200);
 			ballStartingPosition.set(0, -10, 0);
+			playerGoal.scale.y = 35; playerGoal.updateMatrixWorld();
 			playerGoalStartingPosition.set(75, -10, 0);
 			playerGoalStartingLocalVelocity.set(1, 0, 1).normalize().multiplyScalar(goalSpeed);
+			playerGoalYRotateAngle = 0;
+			computerGoal.scale.y = 35; computerGoal.updateMatrixWorld();
 			computerGoalStartingPosition.set(-75, -10, 0);
 			computerGoalStartingLocalVelocity.set(1, 0, -1).normalize().multiplyScalar(goalSpeed);
+			computerGoalYRotateAngle = 0;
 			light1StartingPosition.set(0, 0, 0);
 			light2StartingPosition.set(-0.05, 0.05, -0.5);
 			light3StartingPosition.set(0.05, -0.05, 0.5);
@@ -492,10 +506,14 @@ function updateVariablesAndUniforms()
 			glider1StartingPosition.set(0.5, -10, 500);
 			glider2StartingPosition.set(-0.5, -10, -500);
 			ballStartingPosition.set(0, -10, 0);
+			playerGoal.scale.y = 35; playerGoal.updateMatrixWorld();
 			playerGoalStartingPosition.set(75, -10, 0);
 			playerGoalStartingLocalVelocity.set(1, 0, 1).normalize().multiplyScalar(goalSpeed);
+			playerGoalYRotateAngle = 0;
+			computerGoal.scale.y = 35; computerGoal.updateMatrixWorld();
 			computerGoalStartingPosition.set(-75, -10, 0);
 			computerGoalStartingLocalVelocity.set(-1, 0, 1).normalize().multiplyScalar(goalSpeed);
+			computerGoalYRotateAngle = 0;
 			light1StartingPosition.set(0, 0, 0);
 			light2StartingPosition.set(-0.05, 0.05, -0.5);
 			light3StartingPosition.set(0.05, -0.05, 0.5);
@@ -526,10 +544,14 @@ function updateVariablesAndUniforms()
 			glider1StartingPosition.set(0.5, -10, 300);
 			glider2StartingPosition.set(-0.5, -10, -300);
 			ballStartingPosition.set(0, -10, 0);
-			playerGoalStartingPosition.set(75, -10, 50);
-			playerGoalStartingLocalVelocity.set(1, 0, 1).normalize().multiplyScalar(goalSpeed);
-			computerGoalStartingPosition.set(-75, -10, -50);
-			computerGoalStartingLocalVelocity.set(-1, 0, -1).normalize().multiplyScalar(goalSpeed);
+			playerGoal.scale.y = 35; playerGoal.updateMatrixWorld();
+			//playerGoalStartingLocalVelocity.set(1, 0, 0).normalize().multiplyScalar(goalSpeed);
+			playerGoalStartingLocalVelocity.set(0, 0, 0);
+			playerGoalYRotateAngle = Math.PI * 0.5;
+			computerGoal.scale.y = 35; computerGoal.updateMatrixWorld();
+			//computerGoalStartingLocalVelocity.set(-1, 0, 0).normalize().multiplyScalar(goalSpeed);
+			computerGoalStartingLocalVelocity.set(0, 0, 0);
+			computerGoalYRotateAngle = Math.PI * 0.5;
 			light1StartingPosition.set(0, 0, 0);
 			light2StartingPosition.set(-0.05, 0.05, -0.8);
 			light3StartingPosition.set(0.05, -0.05, 0.8);
@@ -559,10 +581,14 @@ function updateVariablesAndUniforms()
 			glider1StartingPosition.set(0.5, 300, 500);
 			glider2StartingPosition.set(-0.5, 300, -500);
 			ballStartingPosition.set(0.5, 10, 0);
+			playerGoal.scale.y = 35; playerGoal.updateMatrixWorld();
 			playerGoalStartingPosition.set(200, -10, 0);
 			playerGoalStartingLocalVelocity.set(1, 0, 0.9).normalize().multiplyScalar(goalSpeed);
+			playerGoalYRotateAngle = 0;
+			computerGoal.scale.y = 35; computerGoal.updateMatrixWorld();
 			computerGoalStartingPosition.set(-200, -10, 0);
 			computerGoalStartingLocalVelocity.set(-1, 0, -0.9).normalize().multiplyScalar(goalSpeed);
+			computerGoalYRotateAngle = 0;
 			// light1StartingPosition.set(0, 0, 0);
 			// light2StartingPosition.set(0, 0, -1);
 			// light3StartingPosition.set(0, 0, 1);
@@ -591,10 +617,14 @@ function updateVariablesAndUniforms()
 			glider1StartingPosition.set(0.5, -10, 400);
 			glider2StartingPosition.set(-0.5, -10, -400);
 			ballStartingPosition.set(0, -10, 0);
+			playerGoal.scale.y = 45; playerGoal.updateMatrixWorld();
 			playerGoalStartingPosition.set(75, -10, 0);
 			playerGoalStartingLocalVelocity.set(1, 0, 1).normalize().multiplyScalar(goalSpeed);
+			playerGoalYRotateAngle = 0;
+			computerGoal.scale.y = 45; computerGoal.updateMatrixWorld();
 			computerGoalStartingPosition.set(-75, -10, 0);
 			computerGoalStartingLocalVelocity.set(-1, 0, -1).normalize().multiplyScalar(goalSpeed);
+			computerGoalYRotateAngle = 0;
 			// light1StartingPosition.set(0, 0.3, 0);
 			// light2StartingPosition.set(-0.3, 0.3, -0.3);
 			// light3StartingPosition.set(0.3, 0.3, 0.3);
@@ -624,10 +654,14 @@ function updateVariablesAndUniforms()
 			glider1StartingPosition.set(0.5, -10, 300);
 			glider2StartingPosition.set(-0.5, -10, -300);
 			ballStartingPosition.set(0, -10, 0);
+			playerGoal.scale.y = 35; playerGoal.updateMatrixWorld();
 			playerGoalStartingPosition.set(75, -10, 0);
 			playerGoalStartingLocalVelocity.set(1, 0, 1).normalize().multiplyScalar(goalSpeed);
+			playerGoalYRotateAngle = 0;
+			computerGoal.scale.y = 35; computerGoal.updateMatrixWorld();
 			computerGoalStartingPosition.set(-75, -10, 0);
 			computerGoalStartingLocalVelocity.set(-1, 0, -1).normalize().multiplyScalar(goalSpeed);
+			computerGoalYRotateAngle = 0;
 			light1StartingPosition.set(0, 0, 0);
 			light2StartingPosition.set(-0.3, 0.3, -1);
 			light3StartingPosition.set(0.3, -0.3, 1);
@@ -658,10 +692,14 @@ function updateVariablesAndUniforms()
 			glider1StartingPosition.set(0.5, -10, 300);
 			glider2StartingPosition.set(-0.5, -10, -300);
 			ballStartingPosition.set(0, -10, 0);
+			playerGoal.scale.y = 35; playerGoal.updateMatrixWorld();
 			playerGoalStartingPosition.set(200, -10, 0);
 			playerGoalStartingLocalVelocity.set(1, 0, 0).normalize().multiplyScalar(goalSpeed);
+			playerGoalYRotateAngle = 0;
+			computerGoal.scale.y = 35; computerGoal.updateMatrixWorld();
 			computerGoalStartingPosition.set(-200, -10, 0);
 			computerGoalStartingLocalVelocity.set(-1, 0, 0).normalize().multiplyScalar(goalSpeed);
+			computerGoalYRotateAngle = 0;
 			light1StartingPosition.set(0, 0, 0);
 			light2StartingPosition.set(-0.4, 0.4, -0.4);
 			light3StartingPosition.set(0.4, -0.4, 0.4);
@@ -777,8 +815,19 @@ function updateVariablesAndUniforms()
 			course_ScaleZController.getValue());
 
 		if (courseShapeType == 'Plane')
+		{
 			courseShape.scale.y = 1000;
-
+		}
+		if (courseShapeType == 'Cylinder')
+		{
+			playerGoalStartingPosition.set(0.5, -10, courseShape.scale.z - 50);
+			computerGoalStartingPosition.set(-0.5, -10, -courseShape.scale.z + 50);
+		}
+		if (courseShapeType == 'Hyperboloid')
+		{
+			playerGoalStartingPosition.set(0.5, -10, courseShape.scale.z - 20);
+			computerGoalStartingPosition.set(-0.5, -10, -courseShape.scale.z + 20);
+		}
 		
 		light1Position.copy(light1StartingPosition).multiply(courseShape.scale); 
 		light2Position.copy(light2StartingPosition).multiply(courseShape.scale); 
@@ -797,11 +846,14 @@ function updateVariablesAndUniforms()
 			glider1StartingPosition.set(0 + course_ScaleXController.getValue(), -10, 75);
 			glider2StartingPosition.set(0 - course_ScaleXController.getValue(), -10, -75);
 			ballStartingPosition.set(0 + course_ScaleXController.getValue(), -10, 0);
+			playerGoal.scale.y = 35; playerGoal.updateMatrixWorld();
 			playerGoalStartingPosition.set(75 + course_ScaleXController.getValue(), 100, 0);
 			playerGoalStartingLocalVelocity.set(1, 0, 0).normalize().multiplyScalar(goalSpeed);
+			playerGoalYRotateAngle = 0;
+			computerGoal.scale.y = 35; computerGoal.updateMatrixWorld();
 			computerGoalStartingPosition.set(-75 - course_ScaleXController.getValue(), -100, 0);
 			computerGoalStartingLocalVelocity.set(1, 0, 0).normalize().multiplyScalar(goalSpeed);
-
+			computerGoalYRotateAngle = 0;
 			// light1Position.set(-10 - course_ScaleXController.getValue(), -15, 5);
 			// light2Position.set(10 + course_ScaleXController.getValue(), -10, -15);
 			// light3Position.set(5, course_ScaleYController.getValue(), 5);
@@ -2555,13 +2607,13 @@ function updateVariablesAndUniforms()
 	playerGoal.updateMatrixWorld();
 
 	// temporarily move playerGoal up out of the ground for final render
-	playerGoal.position.addScaledVector(playerGoalUp, 30);
-	playerGoal.updateMatrixWorld();
+	playerGoal.position.addScaledVector(playerGoalUp, 50);
+	//playerGoal.updateMatrixWorld();
 
 	// playerGoalYRotateAngle += 0.1 * frameTime;
 	// playerGoalYRotateAngle %= TWO_PI;
-	// playerGoal.rotateY(playerGoalYRotateAngle);
-	// playerGoal.updateMatrixWorld();
+	playerGoal.rotateY(playerGoalYRotateAngle);
+	playerGoal.updateMatrixWorld();
 
 	// if playerGoal is on the ground (touching the large course), set its up velocity to 0
 	if (!playerGoalIsInAir)
@@ -2574,7 +2626,7 @@ function updateVariablesAndUniforms()
 	pathTracingUniforms.uPlayerGoalInvMatrix.value.copy(playerGoal.matrixWorld).invert();
 
 	// after rendering, reset playerGoal position back down so that its center is right on the ground (this helps with ray casting against course)
-	playerGoal.position.addScaledVector(playerGoalUp, -30);
+	playerGoal.position.addScaledVector(playerGoalUp, -50);
 	// after rendering, reset playerGoal rotation to be default upright (aligned with ground surface normal), so that rotation calculation code above will be easier
 	//playerGoal.rotateX(Math.PI * 0.5);
 	playerGoal.updateMatrixWorld();
@@ -2796,13 +2848,13 @@ function updateVariablesAndUniforms()
 	computerGoal.updateMatrixWorld();
 
 	// temporarily move computerGoal up out of the ground for final render
-	computerGoal.position.addScaledVector(computerGoalUp, 30);
-	computerGoal.updateMatrixWorld();
+	computerGoal.position.addScaledVector(computerGoalUp, 50);
+	//computerGoal.updateMatrixWorld();
 
 	// computerGoalYRotateAngle += 0.1 * frameTime;
 	// computerGoalYRotateAngle %= TWO_PI;
-	// computerGoal.rotateY(computerGoalYRotateAngle);
-	// computerGoal.updateMatrixWorld();
+	computerGoal.rotateY(computerGoalYRotateAngle);
+	computerGoal.updateMatrixWorld();
 
 	// if computerGoal is on the ground (touching the large course), set its up velocity to 0
 	if (!computerGoalIsInAir)
@@ -2814,7 +2866,7 @@ function updateVariablesAndUniforms()
 	pathTracingUniforms.uComputerGoalInvMatrix.value.copy(computerGoal.matrixWorld).invert();
 
 	// after rendering, reset computerGoal position back down so that its center is right on the ground (this helps with ray casting against course)
-	computerGoal.position.addScaledVector(computerGoalUp, -30);
+	computerGoal.position.addScaledVector(computerGoalUp, -50);
 	// after rendering, reset computerGoal rotation to be default upright (aligned with ground surface normal), so that rotation calculation code above will be easier
 	//computerGoal.rotateX(Math.PI * 0.5);
 	computerGoal.updateMatrixWorld();
