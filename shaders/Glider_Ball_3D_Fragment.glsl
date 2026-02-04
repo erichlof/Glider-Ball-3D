@@ -21,6 +21,8 @@ uniform vec3 uCourseMaxBounds;
 uniform vec3 uCourseShapeScale;
 uniform float uCourseShapeKparameter;
 uniform float uTorusUpperBound;
+uniform float uPlayerGoalGlowAmount;
+uniform float uComputerGoalGlowAmount;
 uniform int uCourseShapeType;
 
 #define N_LIGHTS 3.0
@@ -1486,8 +1488,8 @@ void SetupScene(void)
 	spheres[2] = Sphere(20.0, uLight3Position, L3, vec3(0), LIGHT);//spherical blue Light3
 
 	unitBoxes[0] = UnitBox(vec3(0), vec3(0.01, 1.0, 0.4), DIFF);//Ball
-	unitBoxes[1] = UnitBox(vec3(0), vec3(0.01, 0.2, 1.0)*2.0, SPEC);//player's Goal
-	unitBoxes[2] = UnitBox(vec3(0), vec3(1.0, 0.01, 0.2)*2.0, SPEC);//computer's Goal
+	unitBoxes[1] = UnitBox(vec3(0), vec3(0.01, 0.2, 1.0) * uPlayerGoalGlowAmount, uPlayerGoalGlowAmount > 2.0 ? REFR : SPEC);//player's Goal
+	unitBoxes[2] = UnitBox(vec3(0), vec3(1.0, 0.01, 0.2) * uComputerGoalGlowAmount, uComputerGoalGlowAmount > 2.0 ? REFR : SPEC);//computer's Goal
 
 	unitParaboloids[0] = UnitParaboloid(vec3(0), vec3(0.01, 0.2, 1.0), SPEC);//player's Glider1
 	unitParaboloids[1] = UnitParaboloid(vec3(0), vec3(1.0, 0.01, 0.4), SPEC);//computer's Glider2
