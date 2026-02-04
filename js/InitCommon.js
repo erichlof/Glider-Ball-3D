@@ -24,6 +24,8 @@ let frameTime, elapsedTime;
 let sceneIsDynamic = false;
 let cameraFlightSpeed = 60;
 let cameraRotationSpeed = 1;
+let gamepad_cameraXRotationSpeed = 1;
+let gamepad_cameraYRotationSpeed = 1;
 let fovScale;
 let storedFOV = 0;
 let increaseFOV = false;
@@ -848,7 +850,7 @@ function animate()
 	if ( gp )
 	{
 		if (Math.abs(gp.axes[2]) > 0.1)
-			newDeltaX += gp.axes[2] * cameraRotationSpeed;
+			newDeltaX += gp.axes[2] * gamepad_cameraYRotationSpeed;
 		else newDeltaX = 0;
 
 		if (newDeltaX)
@@ -861,7 +863,7 @@ function animate()
 		}
 
 		if (Math.abs(gp.axes[3]) > 0.2)
-			newDeltaY += gp.axes[3] * cameraRotationSpeed;
+			newDeltaY += gp.axes[3] * gamepad_cameraXRotationSpeed;
 		else newDeltaY = 0;
 
 		if (newDeltaY)
