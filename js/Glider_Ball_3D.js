@@ -68,6 +68,7 @@ let glider2IsInAir = false;
 let glider2IsAcceleratingRight = false;
 let glider2IsAcceleratingUp = false;
 let glider2IsAcceleratingForward = false;
+let glider2_inputRotationHorizontal = 0;
 
 let ball = new THREE.Object3D();
 let ballCollisionVolume = new THREE.Object3D();
@@ -88,6 +89,7 @@ let ballIsInAir = false;
 let ballYRotateAngle = 0;
 
 let playerGoal = new THREE.Object3D();
+let playerGoalCollisionVolume = new THREE.Object3D();
 let playerGoalRotationMatrix = new THREE.Matrix4();
 let playerGoal_invMatrix = new THREE.Matrix4();
 let playerGoalRayOrigin = new THREE.Vector3();
@@ -106,6 +108,7 @@ let playerGoalIsInAir = false;
 let playerGoalYRotateAngle = 0;
 
 let computerGoal = new THREE.Object3D();
+let computerGoalCollisionVolume = new THREE.Object3D();
 let computerGoalRotationMatrix = new THREE.Matrix4();
 let computerGoal_invMatrix = new THREE.Matrix4();
 let computerGoalRayOrigin = new THREE.Vector3();
@@ -123,6 +126,7 @@ let computerGoalStartingPosition = new THREE.Vector3();
 let computerGoalIsInAir = false;
 let computerGoalYRotateAngle = 0;
 let goalSpeed = 20;
+let goalRenderingLiftAmount = 50;
 
 let impulseGlider1 = new THREE.Vector3();
 let impulseGlider2 = new THREE.Vector3();
@@ -192,6 +196,87 @@ let p8 = new THREE.Vector3(-1, 1,-2);// lb
 
 let demoInfoElement = document.getElementById('demoInfo');
 
+let playerGoalGlowTimer, computerGoalGlowTimer;
+function GameTimer(durationInSeconds = 1)
+{
+	this.duration = durationInSeconds;
+	this.secondsRemaining = durationInSeconds;
+	this.unitAmountCompleted = 0.0; // ranges from 0.0 to 1.0
+	this.isRunning = false;
+	this.isPaused = false;
+	this.wasJustStarted = false;
+	this.wasJustCompleted = false;
+}
+GameTimer.prototype.begin = function()
+{
+	this.isRunning = true;
+	this.isPaused = false;
+	this.secondsRemaining = this.duration;
+	this.unitAmountCompleted = 0.0;
+	this.wasJustStarted = true;
+	this.wasJustCompleted = false;
+}
+GameTimer.prototype.end = function()
+{
+	this.isRunning = false;
+}
+GameTimer.prototype.pause = function()
+{
+	if (this.isRunning)
+	{
+		this.isRunning = false;
+		this.isPaused = true;
+	}
+}
+GameTimer.prototype.resume = function()
+{
+	if (this.isPaused)
+	{
+		this.isRunning = true;
+		this.isPaused = false;
+	}	
+}
+GameTimer.prototype.changeDuration = function(newDuration)
+{
+	this.duration = newDuration;
+	this.end();
+}
+GameTimer.prototype.update = function()
+{
+	if (this.isRunning)
+	{
+		this.secondsRemaining -= frameTime;
+		this.unitAmountCompleted = (this.duration - this.secondsRemaining) / this.duration;
+		if (this.secondsRemaining <= 0)
+		{
+			this.secondsRemaining = 0;
+			this.unitAmountCompleted = 1;
+			this.wasJustStarted = false;
+			this.wasJustCompleted = true;
+			this.end();
+		}		
+	}
+}
+GameTimer.prototype.queryWasJustStarted = function()
+{
+	if (this.wasJustStarted)
+	{
+		this.wasJustStarted = false; // reset this flag to avoid incorrect repeated event firing
+		return true;
+	}
+	return false;
+}
+GameTimer.prototype.queryWasJustCompleted = function()
+{
+	if (this.wasJustCompleted)
+	{
+		this.wasJustCompleted = false; // reset this flag to avoid incorrect repeated event firing
+		return true;
+	}
+	return false;
+}
+
+
 let courseT = 0;
 function intersectCourse()
 {
@@ -248,6 +333,8 @@ function initSceneData()
 	// set camera's field of view
 	worldCamera.fov = 90;
 	inputRotationVertical = 0.2;
+	gamepad_cameraXRotationSpeed = 1;
+	gamepad_cameraYRotationSpeed = 2;
 
 	// COURSE 
 	courseShape.visible = false; // don't need Three.js to render this - we will ray trace it ourselves
@@ -260,26 +347,36 @@ function initSceneData()
 	// GLIDER 1 (player)
 	glider1Base.visible = false;
 	glider1Base.scale.set(20, 22, 6);
+	glider1CollisionVolume.visible = false;
 	glider1CollisionVolume.scale.set(40, 40, 40);
 
 	// GLIDER 2 (AI controlled)
 	glider2Base.visible = false;
 	glider2Base.scale.set(20, 22, 6);
+	glider2CollisionVolume.visible = false;
 	glider2CollisionVolume.scale.set(40, 40, 40);
 
 	// BALL
 	ball.visible = false;
 	ball.scale.set(26, 4, 26);
+	ballCollisionVolume.visible = false;
 	ballCollisionVolume.scale.set(40, 30, 40);
 
 	// PLAYER's GOAL
 	playerGoal.visible = false;
-	playerGoal.scale.set(4, 35, 200);
+	playerGoal.scale.set(4, 50, 200);
+	playerGoalCollisionVolume.visible = false;
+	playerGoalCollisionVolume.scale.set(playerGoal.scale.x, playerGoal.scale.y * 2, playerGoal.scale.z + ball.scale.x);
 
 	// COMPUTER's GOAL
 	computerGoal.visible = false;
-	computerGoal.scale.set(4, 35, 200);
+	computerGoal.scale.set(4, 50, 200);
+	computerGoalCollisionVolume.visible = false;
+	computerGoalCollisionVolume.scale.set(computerGoal.scale.x, computerGoal.scale.y * 2, computerGoal.scale.z + ball.scale.x);
 	
+	// game timers
+	playerGoalGlowTimer = new GameTimer(4);
+	computerGoalGlowTimer = new GameTimer(4);
 
 	
 	// In addition to the default GUI on all demos/games, add any special GUI elements that this particular game requires
@@ -351,6 +448,8 @@ function initSceneData()
 	pathTracingUniforms.uCourseShapeType = { value: 0 };
 	pathTracingUniforms.uCourseShapeKparameter = { value: 1.0 };
 	pathTracingUniforms.uTorusUpperBound = { value: 0.0 };
+	pathTracingUniforms.uPlayerGoalGlowAmount = { value: 1.5 };
+	pathTracingUniforms.uComputerGoalGlowAmount = { value: 1.5 };
 
 } // end function initSceneData()
 
@@ -370,14 +469,13 @@ function updateVariablesAndUniforms()
 			glider1StartingPosition.set(0.5, -50, 150);
 			glider2StartingPosition.set(-0.5, -50, -150);
 			ballStartingPosition.set(0, -50, 0);
-			playerGoal.scale.y = 35; playerGoal.updateMatrixWorld();
-			playerGoalStartingPosition.set(300, -50, 0);
+			playerGoalStartingPosition.set(400, -10, 0);
 			playerGoalStartingLocalVelocity.set(1, 0, 0).normalize().multiplyScalar(goalSpeed);
 			playerGoalYRotateAngle = 0;
-			computerGoal.scale.y = 35; computerGoal.updateMatrixWorld();
-			computerGoalStartingPosition.set(-300, -50, 0);
+			computerGoalStartingPosition.set(-400, -10, 0);
 			computerGoalStartingLocalVelocity.set(1, 0, 0).normalize().multiplyScalar(goalSpeed);
 			computerGoalYRotateAngle = 0;
+			goalRenderingLiftAmount = 50;
 			light1StartingPosition.set(0, 0, 0);
 			light2StartingPosition.set(-0.3, 0.3, -0.3);
 			light3StartingPosition.set(0.3, -0.3, 0.3);
@@ -404,14 +502,13 @@ function updateVariablesAndUniforms()
 			glider1StartingPosition.set(0.5, -50, 175);
 			glider2StartingPosition.set(-0.5, -50, -175);
 			ballStartingPosition.set(0, -50, 0);
-			playerGoal.scale.y = 35; playerGoal.updateMatrixWorld();
 			playerGoalStartingPosition.set(175, -50, 0);
 			playerGoalStartingLocalVelocity.set(1, 0, 0).normalize().multiplyScalar(goalSpeed);
 			playerGoalYRotateAngle = 0;
-			computerGoal.scale.y = 35; computerGoal.updateMatrixWorld();
 			computerGoalStartingPosition.set(-175, -50, 0);
 			computerGoalStartingLocalVelocity.set(-1, 0, 0).normalize().multiplyScalar(goalSpeed);
 			computerGoalYRotateAngle = 0;
+			goalRenderingLiftAmount = 50;
 			light1StartingPosition.set(0, 0, 0);
 			light2StartingPosition.set(-0.3, 0.3, -0.3);
 			light3StartingPosition.set(0.3, -0.3, 0.3);
@@ -437,12 +534,11 @@ function updateVariablesAndUniforms()
 			glider1StartingPosition.set(0.5, -10, 400);
 			glider2StartingPosition.set(-0.5, -10, -400);
 			ballStartingPosition.set(0, -10, 0);
-			playerGoal.scale.y = 35; playerGoal.updateMatrixWorld();
 			playerGoalStartingLocalVelocity.set(1, 0, 0).normalize().multiplyScalar(goalSpeed);
 			playerGoalYRotateAngle = Math.PI * 0.5;
-			computerGoal.scale.y = 35; computerGoal.updateMatrixWorld();
 			computerGoalStartingLocalVelocity.set(-1, 0, 0).normalize().multiplyScalar(goalSpeed);
 			computerGoalYRotateAngle = Math.PI * 0.5;
+			goalRenderingLiftAmount = 50;
 			light1StartingPosition.set(0, 0, 0);
 			light2StartingPosition.set(-0.3, 0.3, -0.5);
 			light3StartingPosition.set(0.3, -0.3, 0.5);
@@ -468,14 +564,13 @@ function updateVariablesAndUniforms()
 			glider1StartingPosition.set(0.5, -10, 200);
 			glider2StartingPosition.set(-0.5, -10, -200);
 			ballStartingPosition.set(0, -10, 0);
-			playerGoal.scale.y = 35; playerGoal.updateMatrixWorld();
 			playerGoalStartingPosition.set(75, -10, 0);
 			playerGoalStartingLocalVelocity.set(1, 0, 1).normalize().multiplyScalar(goalSpeed);
 			playerGoalYRotateAngle = 0;
-			computerGoal.scale.y = 35; computerGoal.updateMatrixWorld();
 			computerGoalStartingPosition.set(-75, -10, 0);
 			computerGoalStartingLocalVelocity.set(1, 0, -1).normalize().multiplyScalar(goalSpeed);
 			computerGoalYRotateAngle = 0;
+			goalRenderingLiftAmount = 50;
 			light1StartingPosition.set(0, 0, 0);
 			light2StartingPosition.set(-0.05, 0.05, -0.5);
 			light3StartingPosition.set(0.05, -0.05, 0.5);
@@ -506,14 +601,13 @@ function updateVariablesAndUniforms()
 			glider1StartingPosition.set(0.5, -10, 500);
 			glider2StartingPosition.set(-0.5, -10, -500);
 			ballStartingPosition.set(0, -10, 0);
-			playerGoal.scale.y = 35; playerGoal.updateMatrixWorld();
 			playerGoalStartingPosition.set(75, -10, 0);
 			playerGoalStartingLocalVelocity.set(1, 0, 1).normalize().multiplyScalar(goalSpeed);
 			playerGoalYRotateAngle = 0;
-			computerGoal.scale.y = 35; computerGoal.updateMatrixWorld();
 			computerGoalStartingPosition.set(-75, -10, 0);
 			computerGoalStartingLocalVelocity.set(-1, 0, 1).normalize().multiplyScalar(goalSpeed);
 			computerGoalYRotateAngle = 0;
+			goalRenderingLiftAmount = 50;
 			light1StartingPosition.set(0, 0, 0);
 			light2StartingPosition.set(-0.05, 0.05, -0.5);
 			light3StartingPosition.set(0.05, -0.05, 0.5);
@@ -544,14 +638,13 @@ function updateVariablesAndUniforms()
 			glider1StartingPosition.set(0.5, -10, 300);
 			glider2StartingPosition.set(-0.5, -10, -300);
 			ballStartingPosition.set(0, -10, 0);
-			playerGoal.scale.y = 35; playerGoal.updateMatrixWorld();
 			//playerGoalStartingLocalVelocity.set(1, 0, 0).normalize().multiplyScalar(goalSpeed);
 			playerGoalStartingLocalVelocity.set(0, 0, 0);
 			playerGoalYRotateAngle = Math.PI * 0.5;
-			computerGoal.scale.y = 35; computerGoal.updateMatrixWorld();
 			//computerGoalStartingLocalVelocity.set(-1, 0, 0).normalize().multiplyScalar(goalSpeed);
 			computerGoalStartingLocalVelocity.set(0, 0, 0);
 			computerGoalYRotateAngle = Math.PI * 0.5;
+			goalRenderingLiftAmount = 50;
 			light1StartingPosition.set(0, 0, 0);
 			light2StartingPosition.set(-0.05, 0.05, -0.8);
 			light3StartingPosition.set(0.05, -0.05, 0.8);
@@ -581,14 +674,13 @@ function updateVariablesAndUniforms()
 			glider1StartingPosition.set(0.5, 300, 500);
 			glider2StartingPosition.set(-0.5, 300, -500);
 			ballStartingPosition.set(0.5, 10, 0);
-			playerGoal.scale.y = 35; playerGoal.updateMatrixWorld();
 			playerGoalStartingPosition.set(200, -10, 0);
 			playerGoalStartingLocalVelocity.set(1, 0, 0.9).normalize().multiplyScalar(goalSpeed);
 			playerGoalYRotateAngle = 0;
-			computerGoal.scale.y = 35; computerGoal.updateMatrixWorld();
 			computerGoalStartingPosition.set(-200, -10, 0);
 			computerGoalStartingLocalVelocity.set(-1, 0, -0.9).normalize().multiplyScalar(goalSpeed);
 			computerGoalYRotateAngle = 0;
+			goalRenderingLiftAmount = 50;
 			// light1StartingPosition.set(0, 0, 0);
 			// light2StartingPosition.set(0, 0, -1);
 			// light3StartingPosition.set(0, 0, 1);
@@ -617,14 +709,13 @@ function updateVariablesAndUniforms()
 			glider1StartingPosition.set(0.5, -10, 400);
 			glider2StartingPosition.set(-0.5, -10, -400);
 			ballStartingPosition.set(0, -10, 0);
-			playerGoal.scale.y = 45; playerGoal.updateMatrixWorld();
 			playerGoalStartingPosition.set(75, -10, 0);
 			playerGoalStartingLocalVelocity.set(1, 0, 1).normalize().multiplyScalar(goalSpeed);
 			playerGoalYRotateAngle = 0;
-			computerGoal.scale.y = 45; computerGoal.updateMatrixWorld();
 			computerGoalStartingPosition.set(-75, -10, 0);
 			computerGoalStartingLocalVelocity.set(-1, 0, -1).normalize().multiplyScalar(goalSpeed);
 			computerGoalYRotateAngle = 0;
+			goalRenderingLiftAmount = 50;
 			// light1StartingPosition.set(0, 0.3, 0);
 			// light2StartingPosition.set(-0.3, 0.3, -0.3);
 			// light3StartingPosition.set(0.3, 0.3, 0.3);
@@ -654,14 +745,13 @@ function updateVariablesAndUniforms()
 			glider1StartingPosition.set(0.5, -10, 300);
 			glider2StartingPosition.set(-0.5, -10, -300);
 			ballStartingPosition.set(0, -10, 0);
-			playerGoal.scale.y = 35; playerGoal.updateMatrixWorld();
 			playerGoalStartingPosition.set(75, -10, 0);
 			playerGoalStartingLocalVelocity.set(1, 0, 1).normalize().multiplyScalar(goalSpeed);
 			playerGoalYRotateAngle = 0;
-			computerGoal.scale.y = 35; computerGoal.updateMatrixWorld();
 			computerGoalStartingPosition.set(-75, -10, 0);
 			computerGoalStartingLocalVelocity.set(-1, 0, -1).normalize().multiplyScalar(goalSpeed);
 			computerGoalYRotateAngle = 0;
+			goalRenderingLiftAmount = 50;
 			light1StartingPosition.set(0, 0, 0);
 			light2StartingPosition.set(-0.3, 0.3, -1);
 			light3StartingPosition.set(0.3, -0.3, 1);
@@ -692,14 +782,13 @@ function updateVariablesAndUniforms()
 			glider1StartingPosition.set(0.5, -10, 300);
 			glider2StartingPosition.set(-0.5, -10, -300);
 			ballStartingPosition.set(0, -10, 0);
-			playerGoal.scale.y = 35; playerGoal.updateMatrixWorld();
 			playerGoalStartingPosition.set(200, -10, 0);
 			playerGoalStartingLocalVelocity.set(1, 0, 0).normalize().multiplyScalar(goalSpeed);
 			playerGoalYRotateAngle = 0;
-			computerGoal.scale.y = 35; computerGoal.updateMatrixWorld();
 			computerGoalStartingPosition.set(-200, -10, 0);
 			computerGoalStartingLocalVelocity.set(-1, 0, 0).normalize().multiplyScalar(goalSpeed);
 			computerGoalYRotateAngle = 0;
+			goalRenderingLiftAmount = 50;
 			light1StartingPosition.set(0, 0, 0);
 			light2StartingPosition.set(-0.4, 0.4, -0.4);
 			light3StartingPosition.set(0.4, -0.4, 0.4);
@@ -814,10 +903,7 @@ function updateVariablesAndUniforms()
 			course_ScaleYController.getValue(),
 			course_ScaleZController.getValue());
 
-		if (courseShapeType == 'Plane')
-		{
-			courseShape.scale.y = 1000;
-		}
+		
 		if (courseShapeType == 'Cylinder')
 		{
 			playerGoalStartingPosition.set(0.5, -10, courseShape.scale.z - 50);
@@ -846,14 +932,13 @@ function updateVariablesAndUniforms()
 			glider1StartingPosition.set(0 + course_ScaleXController.getValue(), -10, 75);
 			glider2StartingPosition.set(0 - course_ScaleXController.getValue(), -10, -75);
 			ballStartingPosition.set(0 + course_ScaleXController.getValue(), -10, 0);
-			playerGoal.scale.y = 35; playerGoal.updateMatrixWorld();
 			playerGoalStartingPosition.set(75 + course_ScaleXController.getValue(), 100, 0);
 			playerGoalStartingLocalVelocity.set(1, 0, 0).normalize().multiplyScalar(goalSpeed);
 			playerGoalYRotateAngle = 0;
-			computerGoal.scale.y = 35; computerGoal.updateMatrixWorld();
 			computerGoalStartingPosition.set(-75 - course_ScaleXController.getValue(), -100, 0);
 			computerGoalStartingLocalVelocity.set(1, 0, 0).normalize().multiplyScalar(goalSpeed);
 			computerGoalYRotateAngle = 0;
+			goalRenderingLiftAmount = 50;
 			// light1Position.set(-10 - course_ScaleXController.getValue(), -15, 5);
 			// light2Position.set(10 + course_ScaleXController.getValue(), -10, -15);
 			// light3Position.set(5, course_ScaleYController.getValue(), 5);
@@ -976,6 +1061,10 @@ function updateVariablesAndUniforms()
 		computerGoalLocalVelocity.copy(computerGoalStartingLocalVelocity);
 		computerGoalIsInAir = true;
 
+		// reset timers
+		playerGoalGlowTimer.end();
+		computerGoalGlowTimer.end();
+
 		levelBeginFlag = false;
 	} // end if (levelBeginFlag)
 
@@ -991,6 +1080,28 @@ function updateVariablesAndUniforms()
 	glider2IsAcceleratingRight = false;
 	glider2IsAcceleratingUp = false;
 	glider2IsAcceleratingForward = false;
+
+	// update timers
+	playerGoalGlowTimer.update();
+	if (playerGoalGlowTimer.queryWasJustStarted())
+	{
+		pathTracingUniforms.uPlayerGoalGlowAmount.value = 8.0;
+	}
+	if (playerGoalGlowTimer.queryWasJustCompleted())
+	{
+		pathTracingUniforms.uPlayerGoalGlowAmount.value = 1.5;
+	}
+
+	computerGoalGlowTimer.update();
+	if (computerGoalGlowTimer.queryWasJustStarted())
+	{
+		pathTracingUniforms.uComputerGoalGlowAmount.value = 4.0;
+	}
+	if (computerGoalGlowTimer.queryWasJustCompleted())
+	{
+		pathTracingUniforms.uComputerGoalGlowAmount.value = 1.5;
+	}
+
 	
 	// get user input and apply it to Glider1's Local velocity
 	if (!isPaused)
@@ -998,10 +1109,9 @@ function updateVariablesAndUniforms()
 		// keep camera from rotating too far down underneath player's Glider
 		inputRotationVertical = Math.max(0.2, inputRotationVertical);
 		
-
+		// get gamepad input, if one is connected
 		if (gamepadIndex != null)
 		{
-			// get gamepad input, if one is connected
 			gamepads = navigator.getGamepads();
 			gp = gamepads[gamepadIndex];
 			// reset gamepad buttons state
@@ -1016,6 +1126,10 @@ function updateVariablesAndUniforms()
 					//console.log(gp);
 					gamepad_Button0Pressed = true;
 				}
+				if (gp.buttons[2].pressed)
+					increaseFOV = true;
+				if (gp.buttons[3].pressed)
+					decreaseFOV = true;
 				
 				// Read axis input (joysticks/D-pad buttons)
 				if (gp.axes[0] < -0.5 || gp.buttons[14].pressed)
@@ -1035,8 +1149,29 @@ function updateVariablesAndUniforms()
 					gamepad_DirectionDownPressed = true;
 				}
 
-				inputRotationVertical = Math.max(0.15, inputRotationVertical);
-			}
+				if (gamepad_DirectionUpPressed)
+				{
+					glider1LocalVelocity.z -= (500 * frameTime); 
+					glider1IsAcceleratingForward = true;
+					
+				}
+				if (gamepad_DirectionDownPressed)
+				{
+					glider1LocalVelocity.z += (500 * frameTime); 
+					glider1IsAcceleratingForward = true;
+				}
+				if (gamepad_DirectionLeftPressed)
+				{
+					glider1LocalVelocity.x -= (500 * frameTime);
+					glider1IsAcceleratingRight = true;
+				}
+				if (gamepad_DirectionRightPressed)
+				{ 
+					glider1LocalVelocity.x += (500 * frameTime);
+					glider1IsAcceleratingRight = true;
+				}		
+			} // end if (gp)
+
 		} // end if (gamepadIndex != null)
 
 		if ((keyPressed('Space') || button5Pressed || gamepad_Button0Pressed) && canPress_Space)
@@ -1086,23 +1221,23 @@ function updateVariablesAndUniforms()
 		{
 			if ((keyPressed('KeyW') || button3Pressed || gamepad_DirectionUpPressed) && !(keyPressed('KeyS') || button4Pressed))
 			{
-				glider1LocalVelocity.z -= (300 * frameTime); 
+				glider1LocalVelocity.z -= (400 * frameTime); 
 				glider1IsAcceleratingForward = true;
 				
 			}
 			if ((keyPressed('KeyS') || button4Pressed || gamepad_DirectionDownPressed) && !(keyPressed('KeyW') || button3Pressed))
 			{
-				glider1LocalVelocity.z += (300 * frameTime); 
+				glider1LocalVelocity.z += (400 * frameTime); 
 				glider1IsAcceleratingForward = true;
 			}
 			if ((keyPressed('KeyA') || button1Pressed || gamepad_DirectionLeftPressed) && !(keyPressed('KeyD') || button2Pressed))
 			{
-				glider1LocalVelocity.x -= (300 * frameTime);
+				glider1LocalVelocity.x -= (400 * frameTime);
 				glider1IsAcceleratingRight = true;
 			}
 			if ((keyPressed('KeyD') || button2Pressed || gamepad_DirectionRightPressed) && !(keyPressed('KeyA') || button1Pressed))
 			{ 
-				glider1LocalVelocity.x += (300 * frameTime);
+				glider1LocalVelocity.x += (400 * frameTime);
 				glider1IsAcceleratingRight = true;
 			}
 		}
@@ -1145,24 +1280,33 @@ function updateVariablesAndUniforms()
 		{
 			if ( keyPressed('KeyI') && !keyPressed('KeyK') )
 			{
-				glider2LocalVelocity.z -= (300 * frameTime); 
+				glider2LocalVelocity.z -= (400 * frameTime); 
 				glider2IsAcceleratingForward = true;
 				
 			}
 			if ( keyPressed('KeyK') && !keyPressed('KeyI') )
 			{
-				glider2LocalVelocity.z += (300 * frameTime); 
+				glider2LocalVelocity.z += (400 * frameTime); 
 				glider2IsAcceleratingForward = true;
 			}
 			if ( keyPressed('KeyJ') && !keyPressed('KeyL') )
 			{
-				glider2LocalVelocity.x -= (300 * frameTime);
+				glider2LocalVelocity.x -= (400 * frameTime);
 				glider2IsAcceleratingRight = true;
 			}
 			if ( keyPressed('KeyL') && !keyPressed('KeyJ') )
 			{ 
-				glider2LocalVelocity.x += (300 * frameTime);
+				glider2LocalVelocity.x += (400 * frameTime);
 				glider2IsAcceleratingRight = true;
+			}
+
+			if ( keyPressed('KeyU') && !keyPressed('KeyO') )
+			{
+				glider2_inputRotationHorizontal += (2 * frameTime); 
+			}
+			if ( keyPressed('KeyO') && !keyPressed('KeyU') )
+			{
+				glider2_inputRotationHorizontal -= (2 * frameTime); 
 			}
 		}
 		
@@ -1961,7 +2105,7 @@ function updateVariablesAndUniforms()
 	glider2Thrusters.scale.copy(glider2Base.scale);
 
 	glider2Thrusters.rotateY(Math.PI);
-	//glider2Thrusters.rotateY(inputRotationHorizontal);
+	glider2Thrusters.rotateY(glider2_inputRotationHorizontal);
 	glider2Thrusters.updateMatrixWorld();
 	glider2Thrusters.matrixWorld.extractBasis(glider2ThrustersRight, glider2ThrustersUp, glider2ThrustersForward);
 	glider2ThrustersRight.normalize(); glider2ThrustersUp.normalize(); glider2ThrustersForward.normalize();
@@ -2030,7 +2174,10 @@ function updateVariablesAndUniforms()
 	rayObjectOrigin.copy(ballRayOrigin);
 	rayObjectDirection.copy(ballRayDirection);
 	// put the rayObjectOrigin and rayObjectDirection in the object space of the computer A.I.'s goal box
-	computerGoal_invMatrix.copy(computerGoal.matrixWorld).invert(); // only needed if this object moves
+	computerGoalCollisionVolume.position.copy(computerGoal.position);
+	computerGoalCollisionVolume.rotation.copy(computerGoal.rotation);
+	computerGoalCollisionVolume.updateMatrixWorld();
+	computerGoal_invMatrix.copy(computerGoalCollisionVolume.matrixWorld).invert(); // only needed if this object moves
 	rayObjectOrigin.transformAsPoint(computerGoal_invMatrix);
 	rayObjectDirection.transformAsDirection(computerGoal_invMatrix);
 	// now that the ray's origin and direction are in object space, we can raycast against the goal box using a more simple unit-box intersection routine
@@ -2046,6 +2193,7 @@ function updateVariablesAndUniforms()
 		ballRight.set(1, 0, 0);
 		ballUp.set(0, 1, 0);
 		ballForward.set(0, 0, 1);
+		computerGoalGlowTimer.begin();
 	}
 
 	// check for collision between ball and player's goal (blue goal)
@@ -2053,7 +2201,10 @@ function updateVariablesAndUniforms()
 	rayObjectOrigin.copy(ballRayOrigin);
 	rayObjectDirection.copy(ballRayDirection);
 	// put the rayObjectOrigin and rayObjectDirection in the object space of the player's goal box
-	playerGoal_invMatrix.copy(playerGoal.matrixWorld).invert(); // only needed if this object moves
+	playerGoalCollisionVolume.position.copy(playerGoal.position);
+	playerGoalCollisionVolume.rotation.copy(playerGoal.rotation);
+	playerGoalCollisionVolume.updateMatrixWorld();
+	playerGoal_invMatrix.copy(playerGoalCollisionVolume.matrixWorld).invert(); // only needed if this object moves
 	rayObjectOrigin.transformAsPoint(playerGoal_invMatrix);
 	rayObjectDirection.transformAsDirection(playerGoal_invMatrix);
 	// now that the ray's origin and direction are in object space, we can raycast against the goal box using a more simple unit-box intersection routine
@@ -2069,6 +2220,7 @@ function updateVariablesAndUniforms()
 		ballRight.set(1, 0, 0);
 		ballUp.set(0, 1, 0);
 		ballForward.set(0, 0, 1);
+		playerGoalGlowTimer.begin();
 	}
 
 
@@ -2607,7 +2759,7 @@ function updateVariablesAndUniforms()
 	playerGoal.updateMatrixWorld();
 
 	// temporarily move playerGoal up out of the ground for final render
-	playerGoal.position.addScaledVector(playerGoalUp, 50);
+	playerGoal.position.addScaledVector(playerGoalUp, goalRenderingLiftAmount);
 	//playerGoal.updateMatrixWorld();
 
 	// playerGoalYRotateAngle += 0.1 * frameTime;
@@ -2626,7 +2778,7 @@ function updateVariablesAndUniforms()
 	pathTracingUniforms.uPlayerGoalInvMatrix.value.copy(playerGoal.matrixWorld).invert();
 
 	// after rendering, reset playerGoal position back down so that its center is right on the ground (this helps with ray casting against course)
-	playerGoal.position.addScaledVector(playerGoalUp, -50);
+	playerGoal.position.addScaledVector(playerGoalUp, -goalRenderingLiftAmount);
 	// after rendering, reset playerGoal rotation to be default upright (aligned with ground surface normal), so that rotation calculation code above will be easier
 	//playerGoal.rotateX(Math.PI * 0.5);
 	playerGoal.updateMatrixWorld();
@@ -2848,7 +3000,7 @@ function updateVariablesAndUniforms()
 	computerGoal.updateMatrixWorld();
 
 	// temporarily move computerGoal up out of the ground for final render
-	computerGoal.position.addScaledVector(computerGoalUp, 50);
+	computerGoal.position.addScaledVector(computerGoalUp, goalRenderingLiftAmount);
 	//computerGoal.updateMatrixWorld();
 
 	// computerGoalYRotateAngle += 0.1 * frameTime;
@@ -2866,7 +3018,7 @@ function updateVariablesAndUniforms()
 	pathTracingUniforms.uComputerGoalInvMatrix.value.copy(computerGoal.matrixWorld).invert();
 
 	// after rendering, reset computerGoal position back down so that its center is right on the ground (this helps with ray casting against course)
-	computerGoal.position.addScaledVector(computerGoalUp, -50);
+	computerGoal.position.addScaledVector(computerGoalUp, -goalRenderingLiftAmount);
 	// after rendering, reset computerGoal rotation to be default upright (aligned with ground surface normal), so that rotation calculation code above will be easier
 	//computerGoal.rotateX(Math.PI * 0.5);
 	computerGoal.updateMatrixWorld();
@@ -2897,9 +3049,14 @@ function updateVariablesAndUniforms()
 	
 	// DEBUG INFO
 	
-	demoInfoElement.innerHTML = "collisions: " + collisionCounter + "<br>" + "FOV: " + worldCamera.fov;
+	demoInfoElement.innerHTML = "collisions: " + collisionCounter + "<br>" + "FOV: " + worldCamera.fov + "<br>";
 
-	/* demoInfoElement.innerHTML += " glider1IsInAir: " + glider1IsInAir + " " + "cameraIsMoving: " + cameraIsMoving + "<br>" + 
+	/* demoInfoElement.innerHTML += "playerGoalTimer paused: " + playerGoalGlowTimer.isPaused + " running: " + playerGoalGlowTimer.isRunning + " duration: " + playerGoalGlowTimer.duration + 
+		" remaining: " + playerGoalGlowTimer.secondsRemaining.toFixed(2) + " complete: " + playerGoalGlowTimer.unitAmountCompleted.toFixed(2) + " wasJustCompleted: " + playerGoalGlowTimer.wasJustCompleted;
+	demoInfoElement.innerHTML += "<br>" + " computerGoalTimer paused: " + computerGoalGlowTimer.isPaused + " running: " + computerGoalGlowTimer.isRunning + " duration: " + computerGoalGlowTimer.duration + 
+		" remaining: " + computerGoalGlowTimer.secondsRemaining.toFixed(2) + " complete: " + computerGoalGlowTimer.unitAmountCompleted.toFixed(2) + " wasJustCompleted: " + computerGoalGlowTimer.wasJustCompleted;
+	 */
+		/* demoInfoElement.innerHTML += " glider1IsInAir: " + glider1IsInAir + " " + "cameraIsMoving: " + cameraIsMoving + "<br>" + 
 	"glider1BaseRight: " + "(" + glider1BaseRight.x.toFixed(1) + " " + glider1BaseRight.y.toFixed(1) + " " + glider1BaseRight.z.toFixed(1) + ")" + " " + 
 	"glider1BaseUp: " + "(" + glider1BaseUp.x.toFixed(1) + " " + glider1BaseUp.y.toFixed(1) + " " + glider1BaseUp.z.toFixed(1) + ")" + " " + 
 	"glider1BaseForward: " + "(" + glider1BaseForward.x.toFixed(1) + " " + glider1BaseForward.y.toFixed(1) + " " + glider1BaseForward.z.toFixed(1) + ")" + "<br>" + 
