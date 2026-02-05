@@ -1085,7 +1085,7 @@ function updateVariablesAndUniforms()
 	playerGoalGlowTimer.update();
 	if (playerGoalGlowTimer.queryWasJustStarted())
 	{
-		pathTracingUniforms.uPlayerGoalGlowAmount.value = 8.0;
+		pathTracingUniforms.uPlayerGoalGlowAmount.value = 4.0;
 	}
 	if (playerGoalGlowTimer.queryWasJustCompleted())
 	{
