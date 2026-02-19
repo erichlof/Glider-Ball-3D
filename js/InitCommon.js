@@ -19,7 +19,7 @@ let screenCopyMaterial, screenCopyMesh;
 let screenOutputMaterial, screenOutputMesh;
 let pathTracingRenderTarget, screenCopyRenderTarget;
 let orthoCamera, worldCamera;
-let renderer, clock;
+let renderer, clockTimer;
 let frameTime, elapsedTime;
 let sceneIsDynamic = false;
 let cameraFlightSpeed = 60;
@@ -527,7 +527,7 @@ function initTHREEjs()
 	container.appendChild(stats.domElement);
 
 
-	clock = new THREE.Clock();
+	clockTimer = new THREE.Timer();
 
 	pathTracingScene = new THREE.Scene();
 	screenCopyScene = new THREE.Scene();
@@ -738,10 +738,11 @@ function initTHREEjs()
 
 function animate()
 {
-
-	frameTime = clock.getDelta();
-
-	elapsedTime = clock.getElapsedTime() % 1000;
+	
+	// update clock
+	clockTimer.update();
+	frameTime = clockTimer.getDelta();
+	elapsedTime = clockTimer.getElapsed() % 1000;
 
 	// reset flags
 	cameraIsMoving = false;
@@ -849,7 +850,7 @@ function animate()
 	// if on gamepad (gp), get input from that gamepad device
 	if ( gp )
 	{
-		if (Math.abs(gp.axes[2]) > 0.1)
+		if (Math.abs(gp.axes[2]) > 0.1) // account for deadzone
 			newDeltaX += gp.axes[2] * gamepad_cameraYRotationSpeed;
 		else newDeltaX = 0;
 
@@ -862,7 +863,7 @@ function animate()
 			inputRotationHorizontal += inputMovementHorizontal;
 		}
 
-		if (Math.abs(gp.axes[3]) > 0.2)
+		if (Math.abs(gp.axes[3]) > 0.1) // account for deadzone
 			newDeltaY += gp.axes[3] * gamepad_cameraXRotationSpeed;
 		else newDeltaY = 0;
 
