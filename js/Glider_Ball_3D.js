@@ -4,7 +4,8 @@ let rayObjectDirection = new THREE.Vector3();
 let intersectionPoint = new THREE.Vector3();
 let intersectionNormal = new THREE.Vector3();
 let tempVec = new THREE.Vector3();
-
+let glider2ToTargetVec = new THREE.Vector3();
+let glider2RotateYAngle = 0;
 let courseShape = new THREE.Object3D();
 let courseShape_invMatrix = new THREE.Matrix4();
 let courseMinBounds = new THREE.Vector3(-1, -1, -1);
@@ -69,6 +70,11 @@ let glider2IsAcceleratingRight = false;
 let glider2IsAcceleratingUp = false;
 let glider2IsAcceleratingForward = false;
 let glider2_inputRotationHorizontal = 0;
+let glider2TargetRight = new THREE.Vector3();
+let glider2TargetUp = new THREE.Vector3();
+let glider2TargetForward = new THREE.Vector3();
+let glider2ThrustTimer;
+let glider2ApplyThrust = false;
 
 let ball = new THREE.Object3D();
 let ballCollisionVolume = new THREE.Object3D();
@@ -106,6 +112,7 @@ let playerGoalWorldVelocity = new THREE.Vector3();
 let playerGoalStartingPosition = new THREE.Vector3();
 let playerGoalIsInAir = false;
 let playerGoalYRotateAngle = 0;
+let playerGoalGlowTimer;
 
 let computerGoal = new THREE.Object3D();
 let computerGoalCollisionVolume = new THREE.Object3D();
@@ -125,6 +132,7 @@ let computerGoalWorldVelocity = new THREE.Vector3();
 let computerGoalStartingPosition = new THREE.Vector3();
 let computerGoalIsInAir = false;
 let computerGoalYRotateAngle = 0;
+let computerGoalGlowTimer;
 let goalSpeed = 20;
 let goalRenderingLiftAmount = 50;
 
@@ -196,7 +204,7 @@ let p8 = new THREE.Vector3(-1, 1,-2);// lb
 
 let demoInfoElement = document.getElementById('demoInfo');
 
-let playerGoalGlowTimer, computerGoalGlowTimer;
+
 function GameTimer(durationInSeconds = 1)
 {
 	this.duration = durationInSeconds;
@@ -377,6 +385,8 @@ function initSceneData()
 	// game timers
 	playerGoalGlowTimer = new GameTimer(4);
 	computerGoalGlowTimer = new GameTimer(4);
+	glider2ThrustTimer = new GameTimer(1);
+
 
 	
 	// In addition to the default GUI on all demos/games, add any special GUI elements that this particular game requires
@@ -1064,6 +1074,7 @@ function updateVariablesAndUniforms()
 		// reset timers
 		playerGoalGlowTimer.end();
 		computerGoalGlowTimer.end();
+		glider2ThrustTimer.begin(); // #AI
 
 		levelBeginFlag = false;
 	} // end if (levelBeginFlag)
@@ -1083,6 +1094,9 @@ function updateVariablesAndUniforms()
 
 	// update timers
 	playerGoalGlowTimer.update();
+	computerGoalGlowTimer.update();
+	glider2ThrustTimer.update();
+
 	if (playerGoalGlowTimer.queryWasJustStarted())
 	{
 		pathTracingUniforms.uPlayerGoalGlowAmount.value = 4.0;
@@ -1092,7 +1106,6 @@ function updateVariablesAndUniforms()
 		pathTracingUniforms.uPlayerGoalGlowAmount.value = 1.5;
 	}
 
-	computerGoalGlowTimer.update();
 	if (computerGoalGlowTimer.queryWasJustStarted())
 	{
 		pathTracingUniforms.uComputerGoalGlowAmount.value = 4.0;
@@ -1100,6 +1113,15 @@ function updateVariablesAndUniforms()
 	if (computerGoalGlowTimer.queryWasJustCompleted())
 	{
 		pathTracingUniforms.uComputerGoalGlowAmount.value = 1.5;
+	}
+	// #AI
+	if (glider2ThrustTimer.queryWasJustStarted())
+	{
+		glider2ApplyThrust = false;
+	}
+	if (glider2ThrustTimer.queryWasJustCompleted())
+	{
+		glider2ApplyThrust = true;
 	}
 
 	
@@ -1276,13 +1298,15 @@ function updateVariablesAndUniforms()
 
 		// Note: the following is temporary input code for testing red opponent glider movement
 		// will be removed when red opponent glider is fully controlled by AI code
-		//if (!glider2IsInAir)
+		if (!glider2IsInAir && !ballIsInAir) // #AI
 		{
-			if ( keyPressed('KeyI') && !keyPressed('KeyK') )
+			if ( glider2ApplyThrust || (keyPressed('KeyI') && !keyPressed('KeyK')) )
 			{
-				glider2LocalVelocity.z -= (400 * frameTime); 
-				glider2IsAcceleratingForward = true;
-				
+				if (Math.abs(glider2LocalVelocity.z) < 500)
+				{
+					glider2LocalVelocity.z -= (300 * frameTime); 
+					glider2IsAcceleratingForward = true;
+				}	
 			}
 			if ( keyPressed('KeyK') && !keyPressed('KeyI') )
 			{
@@ -1319,7 +1343,6 @@ function updateVariablesAndUniforms()
 		cameraIsMoving = false;
 	else 
 		cameraIsMoving = true;
-
 
 
 	
@@ -1882,6 +1905,7 @@ function updateVariablesAndUniforms()
 		if (rV_dot_cN < 0)
 		{
 			collisionCounter++;
+			glider2ThrustTimer.begin(); // #AI
 			unitCollisionNormal.copy(collisionNormal).normalize();
 			intersectionPoint.getPointAlongRay(glider2RayOrigin, glider2RayDirection, testT);
 			glider2Base.position.copy(intersectionPoint);
@@ -2104,16 +2128,41 @@ function updateVariablesAndUniforms()
 	glider2Thrusters.rotation.copy(glider2Base.rotation);
 	glider2Thrusters.scale.copy(glider2Base.scale);
 
-	glider2Thrusters.rotateY(Math.PI);
-	glider2Thrusters.rotateY(glider2_inputRotationHorizontal);
+	// UPDATE AI GLIDER 2 ////////////////////////////////////
+	if (!isPaused && !ballIsInAir) // #AI
+	{
+		// first, get a vector from glider2 to the target(ball.position), but negate it because AI opponent glider2 points in opposite direction from player's glider1
+		glider2TargetForward.copy(ball.position).sub(glider2Base.position).normalize().negate();
+		// construct the ortho basis frame if glider2 were to be pointing at ball
+		glider2TargetUp.copy(glider2BaseUp);
+		glider2TargetRight.crossVectors(glider2TargetForward, glider2TargetUp);
+		glider2TargetForward.crossVectors(glider2TargetUp, glider2TargetRight);
+		// now that we have the correct targetForward vec (accounting for rotation around the glider2's current Up vector), 
+		// get the angle between glider2's current heading vec3 and this new targetForward vec3
+		glider2RotateYAngle = glider2ThrustersForward.angleTo(glider2TargetForward);
+		if (glider2ThrustersRight.dot(glider2TargetForward) < 0) // determines if we need to turn left or right
+			glider2RotateYAngle *= -1;
+		glider2_inputRotationHorizontal += glider2RotateYAngle; // the input needs to be a running total of all angles so far (positive or negative)
+		// the following code keeps the input angle in the range -PI to +PI
+		if (glider2_inputRotationHorizontal < -Math.PI)
+			glider2_inputRotationHorizontal += Math.PI;
+		if (glider2_inputRotationHorizontal > Math.PI)
+			glider2_inputRotationHorizontal -= Math.PI;
+
+		
+	} // end if (!isPaused)
+
+	glider2Thrusters.rotateY(Math.PI); // from game start, the AI glider2 points in the opposite direction from human player's glider1 heading direction
+	glider2Thrusters.rotateY(glider2_inputRotationHorizontal); // rotate glider2 to final inputRotationHorizontal amount (calculated above in AI movement code)
 	glider2Thrusters.updateMatrixWorld();
 	glider2Thrusters.matrixWorld.extractBasis(glider2ThrustersRight, glider2ThrustersUp, glider2ThrustersForward);
 	glider2ThrustersRight.normalize(); glider2ThrustersUp.normalize(); glider2ThrustersForward.normalize();
 
-	
+
 	// temporarily move glider2 up out of the ground for final render
 	glider2Thrusters.position.addScaledVector(glider2ThrustersUp, 8);
 
+	// the following makes the camera follow AI-controlled Glider2
 	// cameraControlsObject.position.copy(glider2Thrusters.position);
 	// cameraControlsObject.position.addScaledVector(glider2ThrustersForward, 70);
 	// cameraControlsObject.position.addScaledVector(glider2ThrustersUp, 20);
@@ -2194,6 +2243,7 @@ function updateVariablesAndUniforms()
 		ballUp.set(0, 1, 0);
 		ballForward.set(0, 0, 1);
 		computerGoalGlowTimer.begin();
+		glider2ThrustTimer.begin(); // #AI
 	}
 
 	// check for collision between ball and player's goal (blue goal)
@@ -2221,6 +2271,7 @@ function updateVariablesAndUniforms()
 		ballUp.set(0, 1, 0);
 		ballForward.set(0, 0, 1);
 		playerGoalGlowTimer.begin();
+		glider2ThrustTimer.begin(); // #AI
 	}
 
 
@@ -2292,6 +2343,7 @@ function updateVariablesAndUniforms()
 		if (rV_dot_cN < 0)
 		{
 			collisionCounter++;
+			glider2ThrustTimer.begin(); // #AI
 			unitCollisionNormal.copy(collisionNormal).normalize();
 			intersectionPoint.getPointAlongRay(ballRayOrigin, ballRayDirection, testT);
 			ball.position.copy(intersectionPoint);
@@ -3089,8 +3141,14 @@ function updateVariablesAndUniforms()
 	"glider2ThrustersForward: " + "(" + glider2ThrustersForward.x.toFixed(1) + " " + glider2ThrustersForward.y.toFixed(1) + " " + glider2ThrustersForward.z.toFixed(1) + ")" + "<br>" + 
 	
 	"glider2LocalVelocity: " + "(" + glider2LocalVelocity.x.toFixed(1) + " " + glider2LocalVelocity.y.toFixed(1) + " " + glider2LocalVelocity.z.toFixed(1) + ")" + "<br>" + 
-	"glider2WorldVelocity: " + "(" + glider2WorldVelocity.x.toFixed(1) + " " + glider2WorldVelocity.y.toFixed(1) + " " + glider2WorldVelocity.z.toFixed(1) + ")";
-	*/
+	"glider2WorldVelocity: " + "(" + glider2WorldVelocity.x.toFixed(1) + " " + glider2WorldVelocity.y.toFixed(1) + " " + glider2WorldVelocity.z.toFixed(1) + ")" + "<br>" +
+	"glider2ToTargetVec: " + glider2ToTargetVec.x.toFixed(1) + " " + glider2ToTargetVec.y.toFixed(1) + " " + glider2ToTargetVec.z.toFixed(1) + " " + "glider2RotateYAngle: " + 
+		glider2RotateYAngle.toFixed(2) + " " + "glider2_inputRotationHorizontal: " + glider2_inputRotationHorizontal.toFixed(2);
+	 */
+	
+	/* demoInfoElement.innerHTML += "glider2RotateYAngle: " + glider2RotateYAngle.toFixed(2) + " " + "glider2_inputRotationHorizontal: " + glider2_inputRotationHorizontal.toFixed(2) + "<br>" + 
+	"glider2ApplyThrust: " + glider2ApplyThrust + " glider2ThrustTimer.secondsRemaining: " + glider2ThrustTimer.secondsRemaining.toFixed(1);
+ 	*/
 
 	/* demoInfoElement.innerHTML += " ballIsInAir: " + ballIsInAir + " " + "cameraIsMoving: " + cameraIsMoving + "<br>" + 
 	"ballRight: " + "(" + ballRight.x.toFixed(1) + " " + ballRight.y.toFixed(1) + " " + ballRight.z.toFixed(1) + ")" + " " + 
