@@ -4,7 +4,6 @@ let rayObjectDirection = new THREE.Vector3();
 let intersectionPoint = new THREE.Vector3();
 let intersectionNormal = new THREE.Vector3();
 let tempVec = new THREE.Vector3();
-let glider2ToTargetVec = new THREE.Vector3();
 let glider2RotateYAngle = 0;
 let courseShape = new THREE.Object3D();
 let courseShape_invMatrix = new THREE.Matrix4();
@@ -385,7 +384,7 @@ function initSceneData()
 	// game timers
 	playerGoalGlowTimer = new GameTimer(4);
 	computerGoalGlowTimer = new GameTimer(4);
-	glider2ThrustTimer = new GameTimer(1);
+	glider2ThrustTimer = new GameTimer(1); // #AI
 
 
 	
@@ -1041,6 +1040,7 @@ function updateVariablesAndUniforms()
 		glider2BaseForward.set(0, 0, 1);
 		glider2LocalVelocity.set(0, 0, 0);
 		glider2IsInAir = true;
+		glider2_inputRotationHorizontal = 0; // #AI
 
 		// BALL
 		ball.position.copy(ballStartingPosition);
@@ -1072,8 +1072,6 @@ function updateVariablesAndUniforms()
 		computerGoalIsInAir = true;
 
 		// reset timers
-		playerGoalGlowTimer.end();
-		computerGoalGlowTimer.end();
 		glider2ThrustTimer.begin(); // #AI
 
 		levelBeginFlag = false;
@@ -1703,7 +1701,7 @@ function updateVariablesAndUniforms()
 		glider1LocalVelocity.y = 0;
 		glider1Base.position.copy(intersectionPoint);
 	}
-	if (testT > 1) // " > 1.01" instead of " > 1" to account for floating point precision
+	if (testT > 1.01) // " > 1.01" instead of " > 1" to account for floating point precision
 	{
 		glider1IsInAir = true;
 	}
@@ -1742,7 +1740,8 @@ function updateVariablesAndUniforms()
 	cameraControlsObject.position.addScaledVector(glider1ThrustersUp, 20);
 	// match the 3rd-person camera rotation to player's glider rotation
 	cameraControlsObject.rotation.copy(glider1Thrusters.rotation);
-	cameraControlsPitchObject.rotation.x = inputRotationVertical; // glider doesn't rotate on x axis, but camera can (look up and down)
+	cameraControlsPitchObject.rotation.x = inputRotationVertical; // glider doesn't rotate on x axis, but camera can (look up and down) 
+	
 	// rotate glider paraboloid (temporary stand-in for more complex game model), so its apex faces in the forward direction
 	glider1Thrusters.rotateX(-Math.PI * 0.5);
 	glider1Thrusters.updateMatrixWorld();
@@ -2106,7 +2105,7 @@ function updateVariablesAndUniforms()
 		glider2LocalVelocity.y = 0;
 		glider2Base.position.copy(intersectionPoint);
 	}
-	if (testT > 1) // " > 1.01" instead of " > 1" to account for floating point precision
+	if (testT > 1.01) // " > 1.01" instead of " > 1" to account for floating point precision
 	{
 		glider2IsInAir = true;
 	}
@@ -2144,10 +2143,10 @@ function updateVariablesAndUniforms()
 			glider2RotateYAngle *= -1;
 		glider2_inputRotationHorizontal += glider2RotateYAngle; // the input needs to be a running total of all angles so far (positive or negative)
 		// the following code keeps the input angle in the range -PI to +PI
-		if (glider2_inputRotationHorizontal < -Math.PI)
+		/* if (glider2_inputRotationHorizontal < -Math.PI)
 			glider2_inputRotationHorizontal += Math.PI;
 		if (glider2_inputRotationHorizontal > Math.PI)
-			glider2_inputRotationHorizontal -= Math.PI;
+			glider2_inputRotationHorizontal -= Math.PI; */
 
 		
 	} // end if (!isPaused)
@@ -2162,12 +2161,14 @@ function updateVariablesAndUniforms()
 	// temporarily move glider2 up out of the ground for final render
 	glider2Thrusters.position.addScaledVector(glider2ThrustersUp, 8);
 
+	/* 
 	// the following makes the camera follow AI-controlled Glider2
-	// cameraControlsObject.position.copy(glider2Thrusters.position);
-	// cameraControlsObject.position.addScaledVector(glider2ThrustersForward, 70);
-	// cameraControlsObject.position.addScaledVector(glider2ThrustersUp, 20);
-	// cameraControlsObject.rotation.copy(glider2Thrusters.rotation);
-	// cameraControlsPitchObject.rotation.x = inputRotationVertical;
+	cameraControlsObject.position.copy(glider2Thrusters.position);
+	cameraControlsObject.position.addScaledVector(glider2ThrustersForward, 70);
+	cameraControlsObject.position.addScaledVector(glider2ThrustersUp, 20);
+	cameraControlsObject.rotation.copy(glider2Thrusters.rotation);
+	cameraControlsPitchObject.rotation.x = inputRotationVertical; 
+	*/
 
 	// rotate glider2 paraboloid (temporary stand-in for more complex game model), so its apex faces in the forward direction
 	glider2Thrusters.rotateX(-Math.PI * 0.5);
@@ -2544,7 +2545,7 @@ function updateVariablesAndUniforms()
 		ballLocalVelocity.y = 0;
 		ball.position.copy(intersectionPoint);
 	}
-	if (testT > 1) // " > 1.01" instead of " > 1" to account for floating point precision
+	if (testT > 1.01) // " > 1.01" instead of " > 1" to account for floating point precision
 	{
 		ballIsInAir = true;
 	}
@@ -2793,7 +2794,7 @@ function updateVariablesAndUniforms()
 		playerGoalLocalVelocity.y = 0;
 		playerGoal.position.copy(intersectionPoint);
 	}
-	if (testT > 1) // " > 1.01" instead of " > 1" to account for floating point precision
+	if (testT > 1.01) // " > 1.01" instead of " > 1" to account for floating point precision
 	{
 		playerGoalIsInAir = true;
 	}
@@ -3034,7 +3035,7 @@ function updateVariablesAndUniforms()
 		computerGoalLocalVelocity.y = 0;
 		computerGoal.position.copy(intersectionPoint);
 	}
-	if (testT > 1) // " > 1.01" instead of " > 1" to account for floating point precision
+	if (testT > 1.01) // " > 1.01" instead of " > 1" to account for floating point precision
 	{
 		computerGoalIsInAir = true;
 	}
@@ -3135,20 +3136,18 @@ function updateVariablesAndUniforms()
 	"glider2WorldVelocity: " + "(" + glider2WorldVelocity.x.toFixed(1) + " " + glider2WorldVelocity.y.toFixed(1) + " " + glider2WorldVelocity.z.toFixed(1) + ")";
  	*/
 
-	/* demoInfoElement.innerHTML += " glider2IsInAir: " + glider2IsInAir + " " + "cameraIsMoving: " + cameraIsMoving + "<br>" + 
+	demoInfoElement.innerHTML += " glider2IsInAir: " + glider2IsInAir + " " + "cameraIsMoving: " + cameraIsMoving + "<br>" + 
 	"glider2ThrustersRight: " + "(" + glider2ThrustersRight.x.toFixed(1) + " " + glider2ThrustersRight.y.toFixed(1) + " " + glider2ThrustersRight.z.toFixed(1) + ")" + " " + 
 	"glider2ThrustersUp: " + "(" + glider2ThrustersUp.x.toFixed(1) + " " + glider2ThrustersUp.y.toFixed(1) + " " + glider2ThrustersUp.z.toFixed(1) + ")" + " " + 
 	"glider2ThrustersForward: " + "(" + glider2ThrustersForward.x.toFixed(1) + " " + glider2ThrustersForward.y.toFixed(1) + " " + glider2ThrustersForward.z.toFixed(1) + ")" + "<br>" + 
 	
-	"glider2LocalVelocity: " + "(" + glider2LocalVelocity.x.toFixed(1) + " " + glider2LocalVelocity.y.toFixed(1) + " " + glider2LocalVelocity.z.toFixed(1) + ")" + "<br>" + 
-	"glider2WorldVelocity: " + "(" + glider2WorldVelocity.x.toFixed(1) + " " + glider2WorldVelocity.y.toFixed(1) + " " + glider2WorldVelocity.z.toFixed(1) + ")" + "<br>" +
-	"glider2ToTargetVec: " + glider2ToTargetVec.x.toFixed(1) + " " + glider2ToTargetVec.y.toFixed(1) + " " + glider2ToTargetVec.z.toFixed(1) + " " + "glider2RotateYAngle: " + 
-		glider2RotateYAngle.toFixed(2) + " " + "glider2_inputRotationHorizontal: " + glider2_inputRotationHorizontal.toFixed(2);
-	 */
-	
-	/* demoInfoElement.innerHTML += "glider2RotateYAngle: " + glider2RotateYAngle.toFixed(2) + " " + "glider2_inputRotationHorizontal: " + glider2_inputRotationHorizontal.toFixed(2) + "<br>" + 
+	//"glider2LocalVelocity: " + "(" + glider2LocalVelocity.x.toFixed(1) + " " + glider2LocalVelocity.y.toFixed(1) + " " + glider2LocalVelocity.z.toFixed(1) + ")" + "<br>" + 
+	//"glider2WorldVelocity: " + "(" + glider2WorldVelocity.x.toFixed(1) + " " + glider2WorldVelocity.y.toFixed(1) + " " + glider2WorldVelocity.z.toFixed(1) + ")" + "<br>" +
+	"glider2TargetForward: " + glider2TargetForward.x.toFixed(1) + " " + glider2TargetForward.y.toFixed(1) + " " + glider2TargetForward.z.toFixed(1) + " " +
+	"glider2RotateYAngle: " + glider2RotateYAngle.toFixed(2) + " " + "<br>" + 
+	"glider2_inputRotationHorizontal: " + glider2_inputRotationHorizontal.toFixed(2) + "<br>" + 
 	"glider2ApplyThrust: " + glider2ApplyThrust + " glider2ThrustTimer.secondsRemaining: " + glider2ThrustTimer.secondsRemaining.toFixed(1);
- 	*/
+ 	
 
 	/* demoInfoElement.innerHTML += " ballIsInAir: " + ballIsInAir + " " + "cameraIsMoving: " + cameraIsMoving + "<br>" + 
 	"ballRight: " + "(" + ballRight.x.toFixed(1) + " " + ballRight.y.toFixed(1) + " " + ballRight.z.toFixed(1) + ")" + " " + 
