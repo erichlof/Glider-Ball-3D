@@ -178,6 +178,13 @@ let course_ClipMinZObject, course_ClipMinZController;
 let course_ClipMaxZObject, course_ClipMaxZController;
 let needChangeCourseClipXYZBounds = false;
 let level_RestartObject;
+let useAIGlider_ChaseCamObject, useAIGlider_ChaseCamController;
+let needChangeUseAIGliderChaseCam = false;
+let useAIGliderChaseCam = false;
+let useFreeFly_CameraObject, useFreeFly_CameraController;
+let needChangeUseFreeFlyCamera = false;
+let useFreeFlyCamera = false;
+
 /* 
 // left front quad
 let p0 = new THREE.Vector3(-1, 1, 1);// lf
@@ -319,6 +326,16 @@ function beginLevel()
 	levelBeginFlag = true; 
 }
 
+function handleUseAIGliderChaseCamChange() 
+{
+	needChangeUseAIGliderChaseCam = true;
+}
+
+function handleUseFreeFlyCameraChange() 
+{
+	needChangeUseFreeFlyCamera = true;
+}
+
 
 // called automatically from within initTHREEjs() function (located in InitCommon.js file)
 function initSceneData()
@@ -330,7 +347,7 @@ function initSceneData()
 
 	useGenericInput = false;
 	
-	cameraFlightSpeed = 60;
+	cameraFlightSpeed = 150;
 
 	// pixelRatio is resolution - range: 0.5(half resolution) to 1.0(full resolution)
 	pixelRatio = mouseControl ? 1.0 : 0.75;
@@ -339,7 +356,6 @@ function initSceneData()
 
 	// set camera's field of view
 	worldCamera.fov = 90;
-	inputRotationVertical = 0.2;
 	gamepad_cameraXRotationSpeed = 1;
 	gamepad_cameraYRotationSpeed = 2;
 
@@ -403,6 +419,8 @@ function initSceneData()
 	course_ClipMaxZObject = { clipMaxZ: 1.0 };
 	course_ShapeKparameterObject = { shape_Kparam: 1.0 };
 	level_RestartObject = { 'restart level' : beginLevel };
+	useAIGlider_ChaseCamObject = { useAIGlider_ChaseCam : false };
+	useFreeFly_CameraObject = { useFreeFly_Camera : false };
 
 	function handleCourseTypeChange() { needChangeCourseType = true; }
 	function handleCourseScaleUniformChange() { needChangeCourseScaleUniform = true; }
@@ -430,6 +448,8 @@ function initSceneData()
 
 	course_ShapeKparameterController = gui.add(course_ShapeKparameterObject, 'shape_Kparam', 0.01, 1.0, 0.01).onChange(handleCourseShapeKparamChange);
 
+	useAIGlider_ChaseCamController = gui.add(useAIGlider_ChaseCamObject, 'useAIGlider_ChaseCam', false).onChange(handleUseAIGliderChaseCamChange);
+	useFreeFly_CameraController = gui.add(useFreeFly_CameraObject, 'useFreeFly_Camera', false).onChange(handleUseFreeFlyCameraChange);
 	gui.add(level_RestartObject, 'restart level');
 
 	handleCourseTypeChange();
@@ -437,6 +457,8 @@ function initSceneData()
 	handleCourseScaleChange();
 	handleCourseClipXYZChange();
 	handleCourseShapeKparamChange();
+	handleUseAIGliderChaseCamChange();
+	handleUseFreeFlyCameraChange();
 
 	// scene/demo-specific uniforms go here
 	pathTracingUniforms.uCourseShape_invMatrix = { value: courseShape_invMatrix };
@@ -1018,6 +1040,40 @@ function updateVariablesAndUniforms()
 		beginLevel();
 	}
 
+	if (needChangeUseAIGliderChaseCam)
+	{
+		useAIGliderChaseCam = useAIGlider_ChaseCamController.getValue();
+		if (useAIGliderChaseCam)
+		{
+			if (useFreeFly_CameraController.getValue() == true)
+				useFreeFly_CameraController.setValue(false);
+		}
+		
+		cameraIsMoving = true;
+		needChangeUseAIGliderChaseCam = false;
+	}
+
+	if (needChangeUseFreeFlyCamera)
+	{
+		useFreeFlyCamera = useFreeFly_CameraController.getValue();
+		if (useFreeFlyCamera)
+		{
+			if (useAIGlider_ChaseCamController.getValue() == true)
+				useAIGlider_ChaseCamController.setValue(false);
+
+			inputRotationHorizontal = inputRotationVertical = 0;
+			cameraControlsPitchObject.rotation.set(0, 0, 0);
+			cameraControlsYawObject.rotation.set(0, 0, 0);
+			cameraControlsObject.position.set(0, 0, 200);
+			useGenericInput = true;
+		}
+		else
+			useGenericInput = false;
+		
+		cameraIsMoving = true;
+		needChangeUseFreeFlyCamera = false;
+	}
+
 
 	if (levelBeginFlag)
 	{
@@ -1122,13 +1178,25 @@ function updateVariablesAndUniforms()
 		glider2ApplyThrust = true;
 	}
 
+	// depth of field effects are disabled for this game
+	increaseAperture = decreaseAperture = false;
 	
 	// get user input and apply it to Glider1's Local velocity
 	if (!isPaused)
 	{
 		// keep camera from rotating too far down underneath player's Glider
-		inputRotationVertical = Math.max(0.2, inputRotationVertical);
-		
+		if (!useFreeFlyCamera)
+		{
+			if (inputRotationVertical < 0.0)
+			{
+				inputRotationVertical = 0.0;
+			}
+			if (inputRotationVertical > PI_2)
+			{
+				inputRotationVertical = PI_2;
+			}
+		}
+			
 		// get gamepad input, if one is connected
 		if (gamepadIndex != null)
 		{
@@ -1238,6 +1306,7 @@ function updateVariablesAndUniforms()
 		// When everything is moving really fast, it may be helpful to 'steer' the floating Glider, in order to maximize ball-targeting ability, and thus fun factor.
 		
 		//if (!glider1IsInAir)
+		if (!useFreeFlyCamera)
 		{
 			if ((keyPressed('KeyW') || button3Pressed || gamepad_DirectionUpPressed) && !(keyPressed('KeyS') || button4Pressed))
 			{
@@ -1340,6 +1409,9 @@ function updateVariablesAndUniforms()
 	if (!cameraIsMoving && glider1LocalVelocity.x * glider1LocalVelocity.x < 20 && glider1LocalVelocity.z * glider1LocalVelocity.z  < 20)
 		cameraIsMoving = false;
 	else 
+		cameraIsMoving = true;
+
+	if (useAIGliderChaseCam)
 		cameraIsMoving = true;
 
 
@@ -1734,13 +1806,17 @@ function updateVariablesAndUniforms()
 	// temporarily move glider up out of the ground for final render
 	glider1Thrusters.position.addScaledVector(glider1ThrustersUp, 8);
 	
-	// move 3rd-person camera back and up from player's glider
-	cameraControlsObject.position.copy(glider1Thrusters.position);
-	cameraControlsObject.position.addScaledVector(glider1ThrustersForward, 70);
-	cameraControlsObject.position.addScaledVector(glider1ThrustersUp, 20);
-	// match the 3rd-person camera rotation to player's glider rotation
-	cameraControlsObject.rotation.copy(glider1Thrusters.rotation);
-	cameraControlsPitchObject.rotation.x = inputRotationVertical; // glider doesn't rotate on x axis, but camera can (look up and down) 
+	if (!useAIGliderChaseCam && !useFreeFlyCamera)
+	{
+		// move 3rd-person camera back and up from player's glider
+		cameraControlsObject.position.copy(glider1Thrusters.position);
+		cameraControlsObject.position.addScaledVector(glider1ThrustersForward, 70);
+		cameraControlsObject.position.addScaledVector(glider1ThrustersUp, 20);
+		// match the 3rd-person camera rotation to player's glider rotation
+		cameraControlsObject.rotation.copy(glider1Thrusters.rotation);
+	}
+
+	cameraControlsPitchObject.rotation.x = inputRotationVertical; 
 	
 	// rotate glider paraboloid (temporary stand-in for more complex game model), so its apex faces in the forward direction
 	glider1Thrusters.rotateX(-Math.PI * 0.5);
@@ -2142,14 +2218,8 @@ function updateVariablesAndUniforms()
 		if (glider2ThrustersRight.dot(glider2TargetForward) < 0) // determines if we need to turn left or right
 			glider2RotateYAngle *= -1;
 		glider2_inputRotationHorizontal += glider2RotateYAngle; // the input needs to be a running total of all angles so far (positive or negative)
-		// the following code keeps the input angle in the range -PI to +PI
-		/* if (glider2_inputRotationHorizontal < -Math.PI)
-			glider2_inputRotationHorizontal += Math.PI;
-		if (glider2_inputRotationHorizontal > Math.PI)
-			glider2_inputRotationHorizontal -= Math.PI; */
-
 		
-	} // end if (!isPaused)
+	} // end if (!isPaused && !ballIsInAir)
 
 	glider2Thrusters.rotateY(Math.PI); // from game start, the AI glider2 points in the opposite direction from human player's glider1 heading direction
 	glider2Thrusters.rotateY(glider2_inputRotationHorizontal); // rotate glider2 to final inputRotationHorizontal amount (calculated above in AI movement code)
@@ -2161,14 +2231,16 @@ function updateVariablesAndUniforms()
 	// temporarily move glider2 up out of the ground for final render
 	glider2Thrusters.position.addScaledVector(glider2ThrustersUp, 8);
 
-	/* 
+	
 	// the following makes the camera follow AI-controlled Glider2
-	cameraControlsObject.position.copy(glider2Thrusters.position);
-	cameraControlsObject.position.addScaledVector(glider2ThrustersForward, 70);
-	cameraControlsObject.position.addScaledVector(glider2ThrustersUp, 20);
-	cameraControlsObject.rotation.copy(glider2Thrusters.rotation);
-	cameraControlsPitchObject.rotation.x = inputRotationVertical; 
-	*/
+	if (useAIGliderChaseCam && !useFreeFlyCamera)
+	{
+		cameraControlsObject.position.copy(glider2Thrusters.position);
+		cameraControlsObject.position.addScaledVector(glider2ThrustersForward, 70);
+		cameraControlsObject.position.addScaledVector(glider2ThrustersUp, 20);
+		cameraControlsObject.rotation.copy(glider2Thrusters.rotation);
+	}
+	
 
 	// rotate glider2 paraboloid (temporary stand-in for more complex game model), so its apex faces in the forward direction
 	glider2Thrusters.rotateX(-Math.PI * 0.5);
@@ -3136,18 +3208,18 @@ function updateVariablesAndUniforms()
 	"glider2WorldVelocity: " + "(" + glider2WorldVelocity.x.toFixed(1) + " " + glider2WorldVelocity.y.toFixed(1) + " " + glider2WorldVelocity.z.toFixed(1) + ")";
  	*/
 
+	/* 
 	demoInfoElement.innerHTML += " glider2IsInAir: " + glider2IsInAir + " " + "cameraIsMoving: " + cameraIsMoving + "<br>" + 
 	"glider2ThrustersRight: " + "(" + glider2ThrustersRight.x.toFixed(1) + " " + glider2ThrustersRight.y.toFixed(1) + " " + glider2ThrustersRight.z.toFixed(1) + ")" + " " + 
 	"glider2ThrustersUp: " + "(" + glider2ThrustersUp.x.toFixed(1) + " " + glider2ThrustersUp.y.toFixed(1) + " " + glider2ThrustersUp.z.toFixed(1) + ")" + " " + 
 	"glider2ThrustersForward: " + "(" + glider2ThrustersForward.x.toFixed(1) + " " + glider2ThrustersForward.y.toFixed(1) + " " + glider2ThrustersForward.z.toFixed(1) + ")" + "<br>" + 
-	
 	//"glider2LocalVelocity: " + "(" + glider2LocalVelocity.x.toFixed(1) + " " + glider2LocalVelocity.y.toFixed(1) + " " + glider2LocalVelocity.z.toFixed(1) + ")" + "<br>" + 
 	//"glider2WorldVelocity: " + "(" + glider2WorldVelocity.x.toFixed(1) + " " + glider2WorldVelocity.y.toFixed(1) + " " + glider2WorldVelocity.z.toFixed(1) + ")" + "<br>" +
 	"glider2TargetForward: " + glider2TargetForward.x.toFixed(1) + " " + glider2TargetForward.y.toFixed(1) + " " + glider2TargetForward.z.toFixed(1) + " " +
 	"glider2RotateYAngle: " + glider2RotateYAngle.toFixed(2) + " " + "<br>" + 
 	"glider2_inputRotationHorizontal: " + glider2_inputRotationHorizontal.toFixed(2) + "<br>" + 
 	"glider2ApplyThrust: " + glider2ApplyThrust + " glider2ThrustTimer.secondsRemaining: " + glider2ThrustTimer.secondsRemaining.toFixed(1);
- 	
+ 	 */
 
 	/* demoInfoElement.innerHTML += " ballIsInAir: " + ballIsInAir + " " + "cameraIsMoving: " + cameraIsMoving + "<br>" + 
 	"ballRight: " + "(" + ballRight.x.toFixed(1) + " " + ballRight.y.toFixed(1) + " " + ballRight.z.toFixed(1) + ")" + " " + 
