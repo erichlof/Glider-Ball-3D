@@ -252,7 +252,7 @@ float UnitConeInterior_ParamIntersect( vec3 ro, vec3 rd, float k, out vec3 n, ou
 
 float UnitHyperboloidInterior_ParamIntersect( vec3 ro, vec3 rd, float k, out vec3 n, out vec2 uv, vec2 uvScale )
 {
-	vec3 hit;
+	vec3 hit, hn;
 	float phi, theta;
 	float t0, t1;
 	float t = INFINITY;
@@ -265,9 +265,10 @@ float UnitHyperboloidInterior_ParamIntersect( vec3 ro, vec3 rd, float k, out vec
 	solveQuadratic(a, b, c, t0, t1);
 
 	hit = ro + (rd * t1);
-	if ( t1 > 0.0 && all(greaterThanEqual(hit, uCourseMinBounds)) && all(lessThanEqual(hit, uCourseMaxBounds)) )
+	hn = vec3(k * hit.x, k * hit.y, j * -hit.z);
+	if ( t1 > 0.0 && dot(rd, hn) > 0.0 && all(greaterThanEqual(hit, uCourseMinBounds)) && all(lessThanEqual(hit, uCourseMaxBounds)) )
 	{
-		n = vec3(k * hit.x, k * hit.y, j * -hit.z);
+		n = hn;
 		// inverse cylindrical mapping
 		phi = atan(-hit.y, hit.x);
 		theta = hit.z * 0.5;
@@ -278,9 +279,10 @@ float UnitHyperboloidInterior_ParamIntersect( vec3 ro, vec3 rd, float k, out vec
 	}
 
 	hit = ro + (rd * t0);
-	if ( t0 > 0.0 && all(greaterThanEqual(hit, uCourseMinBounds)) && all(lessThanEqual(hit, uCourseMaxBounds)) )
+	hn = vec3(k * hit.x, k * hit.y, j * -hit.z);
+	if ( t0 > 0.0 && dot(rd, hn) > 0.0 && all(greaterThanEqual(hit, uCourseMinBounds)) && all(lessThanEqual(hit, uCourseMaxBounds)) )
 	{
-		n = vec3(k * hit.x, k * hit.y, j * -hit.z);
+		n = hn;
 		phi = atan(-hit.y, hit.x);
 		theta = hit.z * 0.5;
 		uv.x = phi * ONE_OVER_TWO_PI + 0.5;
