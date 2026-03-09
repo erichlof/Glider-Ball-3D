@@ -347,7 +347,7 @@ function initSceneData()
 
 	useGenericInput = false;
 	
-	cameraFlightSpeed = 150;
+	cameraFlightSpeed = 200;
 
 	// pixelRatio is resolution - range: 0.5(half resolution) to 1.0(full resolution)
 	pixelRatio = mouseControl ? 1.0 : 0.75;
@@ -547,9 +547,9 @@ function updateVariablesAndUniforms()
 			course_ScaleXController.show();
 			course_ScaleYController.show();
 			course_ScaleZController.show();
-			course_ScaleXController.setValue(600);
+			course_ScaleXController.setValue(700);
 			course_ScaleYController.setValue(300);
-			course_ScaleZController.setValue(600);
+			course_ScaleZController.setValue(700);
 			clipBoundaries_Folder.show();
 			course_ClipMinXController.min(-1); course_ClipMaxXController.max(1);
 			course_ClipMinYController.min(-1); course_ClipMaxYController.max(1);
@@ -1059,14 +1059,19 @@ function updateVariablesAndUniforms()
 			if (useAIGlider_ChaseCamController.getValue() == true)
 				useAIGlider_ChaseCamController.setValue(false);
 
-			inputRotationHorizontal = inputRotationVertical = 0;
-			cameraControlsPitchObject.rotation.set(0, 0, 0);
-			cameraControlsYawObject.rotation.set(0, 0, 0);
-			cameraControlsObject.position.set(0, 0, 200);
+			inputRotationHorizontal = 0;
+			cameraControlsYawObject.rotation.set(0, 0.79, 0);
+			inputRotationVertical = -0.62; // must set pitch this way, due to 1-line code below that sets rotation.x to inputRotationVertical
+			cameraControlsPitchObject.rotation.set(0, 0, 0); // the x rotation component will get overwritten further below
+			cameraControlsObject.position.set(350, 350, 350);
 			useGenericInput = true;
 		}
 		else
+		{
+			inputRotationHorizontal = inputRotationVertical = 0;
 			useGenericInput = false;
+		}
+			
 		
 		cameraIsMoving = true;
 		needChangeUseFreeFlyCamera = false;
@@ -1808,8 +1813,8 @@ function updateVariablesAndUniforms()
 	{
 		// move 3rd-person camera back and up from player's glider
 		cameraControlsObject.position.copy(glider1Thrusters.position);
-		cameraControlsObject.position.addScaledVector(glider1ThrustersForward, 70);
-		cameraControlsObject.position.addScaledVector(glider1ThrustersUp, 20);
+		cameraControlsObject.position.addScaledVector(glider1ThrustersForward, 70);//70
+		cameraControlsObject.position.addScaledVector(glider1ThrustersUp, 20);//20
 		// match the 3rd-person camera rotation to player's glider rotation
 		cameraControlsObject.rotation.copy(glider1Thrusters.rotation);
 	}
@@ -2234,8 +2239,8 @@ function updateVariablesAndUniforms()
 	if (useAIGliderChaseCam && !useFreeFlyCamera)
 	{
 		cameraControlsObject.position.copy(glider2Thrusters.position);
-		cameraControlsObject.position.addScaledVector(glider2ThrustersForward, 70);
-		cameraControlsObject.position.addScaledVector(glider2ThrustersUp, 20);
+		cameraControlsObject.position.addScaledVector(glider2ThrustersForward, 70);//70
+		cameraControlsObject.position.addScaledVector(glider2ThrustersUp, 20);//20
 		cameraControlsObject.rotation.copy(glider2Thrusters.rotation);
 	}
 	
