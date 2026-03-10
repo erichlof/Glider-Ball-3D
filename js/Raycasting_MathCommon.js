@@ -176,12 +176,12 @@ function intersectUnitCylinder(rayO, rayD, normal)
 
 	if (solveQuadratic(a, b, c) == true)
 	{
-		if (t0 > 0)
+		/* if (t0 > 0)
 		{
 			normal.getPointAlongRay(rayO, rayD, t0);
 			normal.z = 0;
 			return t0;
-		}
+		} */
 		if (t1 > 0)
 		{
 			normal.getPointAlongRay(rayO, rayD, t1);
@@ -205,12 +205,12 @@ function intersectUnitParaboloid(rayO, rayD, K, normal)
 
 	if (solveQuadratic(a, b, c) == true)
 	{
-		if (t0 > 0)
+		/* if (t0 > 0)
 		{
 			normal.getPointAlongRay(rayO, rayD, t0);
 			normal.x *= 2; normal.y *= 2; normal.z = K;
 			return t0;
-		}
+		} */
 		if (t1 > 0)
 		{
 			normal.getPointAlongRay(rayO, rayD, t1);
@@ -240,12 +240,12 @@ function intersectUnitCone(rayO, rayD, K, normal)
 
 	if (solveQuadratic(a, b, c) == true)
 	{
-		if (t0 > 0)
+		/* if (t0 > 0)
 		{
 			normal.getPointAlongRay(rayO, rayD, t0);
 			normal.x *= J; normal.y *= J; normal.z = (K * 0.25) * (H - normal.z);
 			return t0;
-		}
+		} */
 		if (t1 > 0)
 		{
 			normal.getPointAlongRay(rayO, rayD, t1);
@@ -268,12 +268,12 @@ function intersectUnitHyperboloid(rayO, rayD, K, normal)
 
 	if (solveQuadratic(a, b, c) == true)
 	{
-		if (t0 > 0)
+		/* if (t0 > 0)
 		{	
 			normal.getPointAlongRay(rayO, rayD, t0);
 			normal.x *= K; normal.y *= K; normal.z *= J * -1;
 			return t0;
-		}
+		} */
 		
 		if (t1 > 0)
 		{	
@@ -294,21 +294,23 @@ function intersectUnitHyperbolicParaboloid(rayO, rayD, normal)
 
 	if (solveQuadratic(a, b, c) == true)
 	{
-		if (t0 > 0)
+		tempVec.getPointAlongRay(rayO, rayD, t1);
+		tempVec.x *= 2; tempVec.y = 1; tempVec.z *= -2;
+		if (t1 > 0 && rayD.dot(tempVec) < 0)
 		{	
-			normal.getPointAlongRay(rayO, rayD, t0);
-			normal.x *= 2; normal.y = 1; normal.z *= -2;
-			normal.negate();
-			return t0;
+			normal.copy(tempVec).negate();
+			testT = t1;
 		}
 
-		if (t1 > 0)
+		tempVec.getPointAlongRay(rayO, rayD, t0);
+		tempVec.x *= 2; tempVec.y = 1; tempVec.z *= -2;
+		if (t0 > 0 && rayD.dot(tempVec) < 0)
 		{	
-			normal.getPointAlongRay(rayO, rayD, t1);
-			normal.x *= 2; normal.y = 1; normal.z *= -2;
-			normal.negate();
-			return t1;
+			normal.copy(tempVec).negate();
+			testT = t0;
 		}
+
+		return testT;
 	}
 }
 
