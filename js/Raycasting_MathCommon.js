@@ -948,7 +948,7 @@ function raycastUnitBox(rayO, rayD)
 	return Infinity;
 }
 
-/*
+
 let q00 = new THREE.Vector3();
 let q10 = new THREE.Vector3();
 let q11 = new THREE.Vector3();
@@ -1029,14 +1029,14 @@ function intersectBilinearPatch( p0, p1, p2, p3, rayO, rayD, normal )
 	tempVec.copy(q11).sub(q01);
 	VecA.lerpVectors(e10, tempVec, v); VecB.lerpVectors(e00, e11, u);
 	normal.crossVectors(VecA, VecB).negate(); //geometric normal
-
-	return t;
+	if (rayD.dot(normal) > 0)
+		return t;
 }
 
 let testNormal = new THREE.Vector3();
 let finalT = 0;
 
-function intersectBilinearPatchGroup( p0, p1, p2, p3, p4, p5, p6, p7, p8, rayO, rayD, normal )
+function intersectBilinearPatchGroup( p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15, rayO, rayD, normal )
 {
 	finalT = Infinity;
 	// left front quad
@@ -1046,32 +1046,68 @@ function intersectBilinearPatchGroup( p0, p1, p2, p3, p4, p5, p6, p7, p8, rayO, 
 		finalT = d;
 		normal.copy(testNormal);
 	}
-	// right front quad
+	// center front quad
 	d = intersectBilinearPatch( p1, p4, p5, p2, rayO, rayD, testNormal );
 	if (d < finalT)
 	{
 		finalT = d;
 		normal.copy(testNormal);
 	}
-	// right back quad
-	d = intersectBilinearPatch( p2, p5, p6, p7, rayO, rayD, testNormal );
+	// right front quad
+	d = intersectBilinearPatch( p4, p6, p7, p5, rayO, rayD, testNormal );
+	if (d < finalT)
+	{
+		finalT = d;
+		normal.copy(testNormal);
+	}
+	// left quad
+	d = intersectBilinearPatch( p3, p2, p8, p9, rayO, rayD, testNormal );
+	if (d < finalT)
+	{
+		finalT = d;
+		normal.copy(testNormal);
+	}
+	// center quad
+	d = intersectBilinearPatch( p2, p5, p10, p8, rayO, rayD, testNormal );
+	if (d < finalT)
+	{
+		finalT = d;
+		normal.copy(testNormal);
+	}
+	// right quad
+	d = intersectBilinearPatch( p5, p7, p11, p10, rayO, rayD, testNormal );
 	if (d < finalT)
 	{
 		finalT = d;
 		normal.copy(testNormal);
 	}
 	// left back quad
-	d = intersectBilinearPatch( p3, p2, p7, p8, rayO, rayD, testNormal );
+	d = intersectBilinearPatch( p9, p8, p12, p13, rayO, rayD, testNormal );
 	if (d < finalT)
 	{
 		finalT = d;
 		normal.copy(testNormal);
 	}
+	// center back quad
+	d = intersectBilinearPatch( p8, p10, p14, p12, rayO, rayD, testNormal );
+	if (d < finalT)
+	{
+		finalT = d;
+		normal.copy(testNormal);
+	}
+	// right back quad
+	d = intersectBilinearPatch( p10, p11, p15, p14, rayO, rayD, testNormal );
+	if (d < finalT)
+	{
+		finalT = d;
+		normal.copy(testNormal);
+	}
+	
 
 	if (finalT < Infinity)
 		return finalT;
 } 
-*/
+
 
 
 
