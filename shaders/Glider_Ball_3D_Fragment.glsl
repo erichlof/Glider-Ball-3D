@@ -13,6 +13,10 @@ uniform mat4 uComputerGoalInvMatrix;
 uniform mat4 uBallCollisionVolumeInvMatrix;
 uniform mat4 uGlider1CollisionVolumeInvMatrix;
 uniform mat4 uGlider2CollisionVolumeInvMatrix;
+uniform vec4 uP0P1P2P3_heights;
+uniform vec4 uP4P5P6P7_heights;
+uniform vec4 uP8P9P10P11_heights;
+uniform vec4 uP12P13P14P15_heights;
 uniform vec3 uLight1Position;
 uniform vec3 uLight2Position;
 uniform vec3 uLight3Position;
@@ -907,7 +911,7 @@ float UnitTorusInterior_ParamIntersect(vec3 ro, vec3 rd, float torus_r, float up
 	return INFINITY;
 }
 
-/* 
+
 float BilinearPatch_ParamIntersect( vec3 p0, vec3 p1, vec3 p2, vec3 p3, vec3 rayOrigin, vec3 rayDirection, out vec3 normal, out vec2 uv )
 { // algorithm/code by Alexander Reshetov (NVIDIA), from the book "Ray Tracing Gems", pg 95-109 
 	// 4 corners + "normal" qn
@@ -972,11 +976,12 @@ float BilinearPatch_ParamIntersect( vec3 p0, vec3 p1, vec3 p2, vec3 p3, vec3 ray
 
 	//geometric normal
 	normal = cross(mix(e10, q11 - q01, uv.y), mix(e00, e11, uv.x)); // geometric normal = cross(du, dv)
-	
-	return t;
+	normal = -normal;
+	return dot(rayDirection, normal) > 0.0 ? t : INFINITY;
 }
 
-float BilinearPatchGroupIntersect( vec3 p0, vec3 p1, vec3 p2, vec3 p3, vec3 p4, vec3 p5, vec3 p6, vec3 p7, vec3 p8, 
+float BilinearPatchGroupIntersect( vec3 p0, vec3 p1, vec3 p2, vec3 p3, vec3 p4, vec3 p5, vec3 p6, vec3 p7, 
+				   vec3 p8, vec3 p9, vec3 p10, vec3 p11, vec3 p12, vec3 p13, vec3 p14, vec3 p15,
 				   vec3 rayOrigin, vec3 rayDirection, out vec3 final_normal, out vec2 final_uv, vec2 uvScale )
 {
 	vec3 normal;
@@ -991,7 +996,7 @@ float BilinearPatchGroupIntersect( vec3 p0, vec3 p1, vec3 p2, vec3 p3, vec3 p4, 
 		final_normal = normal;
 		final_uv = uv;
 	}
-	// right front quad
+	// center front quad
 	d = BilinearPatch_ParamIntersect( p1, p4, p5, p2, rayOrigin, rayDirection, normal, uv );
 	if (d < t)
 	{
@@ -999,8 +1004,32 @@ float BilinearPatchGroupIntersect( vec3 p0, vec3 p1, vec3 p2, vec3 p3, vec3 p4, 
 		final_normal = normal;
 		final_uv = uv;
 	}
-	// right back quad
-	d = BilinearPatch_ParamIntersect( p2, p5, p6, p7, rayOrigin, rayDirection, normal, uv );
+	// right front quad
+	d = BilinearPatch_ParamIntersect( p4, p6, p7, p5, rayOrigin, rayDirection, normal, uv );
+	if (d < t)
+	{
+		t = d;
+		final_normal = normal;
+		final_uv = uv;
+	}
+	// left quad
+	d = BilinearPatch_ParamIntersect( p3, p2, p8, p9, rayOrigin, rayDirection, normal, uv );
+	if (d < t)
+	{
+		t = d;
+		final_normal = normal;
+		final_uv = uv;
+	}
+	// center quad
+	d = BilinearPatch_ParamIntersect( p2, p5, p10, p8, rayOrigin, rayDirection, normal, uv );
+	if (d < t)
+	{
+		t = d;
+		final_normal = normal;
+		final_uv = uv;
+	}
+	// right quad
+	d = BilinearPatch_ParamIntersect( p5, p7, p11, p10, rayOrigin, rayDirection, normal, uv );
 	if (d < t)
 	{
 		t = d;
@@ -1008,7 +1037,23 @@ float BilinearPatchGroupIntersect( vec3 p0, vec3 p1, vec3 p2, vec3 p3, vec3 p4, 
 		final_uv = uv;
 	}
 	// left back quad
-	d = BilinearPatch_ParamIntersect( p3, p2, p7, p8, rayOrigin, rayDirection, normal, uv );
+	d = BilinearPatch_ParamIntersect( p9, p8, p12, p13, rayOrigin, rayDirection, normal, uv );
+	if (d < t)
+	{
+		t = d;
+		final_normal = normal;
+		final_uv = uv;
+	}
+	// center back quad
+	d = BilinearPatch_ParamIntersect( p8, p10, p14, p12, rayOrigin, rayDirection, normal, uv );
+	if (d < t)
+	{
+		t = d;
+		final_normal = normal;
+		final_uv = uv;
+	}
+	// right back quad
+	d = BilinearPatch_ParamIntersect( p10, p11, p15, p14, rayOrigin, rayDirection, normal, uv );
 	if (d < t)
 	{
 		t = d;
@@ -1019,7 +1064,7 @@ float BilinearPatchGroupIntersect( vec3 p0, vec3 p1, vec3 p2, vec3 p3, vec3 p4, 
 	final_uv *= uvScale;
 	return t;
 }
- */
+
 
 //-------------------------------------------------------------------------------------------------------------------
 float SceneIntersect(out int finalIsRayExiting)
@@ -1028,6 +1073,22 @@ float SceneIntersect(out int finalIsRayExiting)
 	vec3 rObjOrigin, rObjDirection;
 	vec3 normal;
 	vec3 hitPos;
+	vec3 p0 =  vec3(-3, uP0P1P2P3_heights.x, 3);
+	vec3 p1 =  vec3(-1, uP0P1P2P3_heights.y, 3);
+	vec3 p2 =  vec3(-1, uP0P1P2P3_heights.z, 1);
+	vec3 p3 =  vec3(-3, uP0P1P2P3_heights.w, 1);
+	vec3 p4 =  vec3( 1, uP4P5P6P7_heights.x, 3);
+	vec3 p5 =  vec3( 1, uP4P5P6P7_heights.y, 1);
+	vec3 p6 =  vec3( 3, uP4P5P6P7_heights.z, 3);
+	vec3 p7 =  vec3( 3, uP4P5P6P7_heights.w, 1);
+	vec3 p8 =  vec3(-1, uP8P9P10P11_heights.x,-1);
+	vec3 p9 =  vec3(-3, uP8P9P10P11_heights.y,-1);
+	vec3 p10 = vec3( 1, uP8P9P10P11_heights.z,-1);
+	vec3 p11 = vec3( 3, uP8P9P10P11_heights.w,-1);
+	vec3 p12 = vec3(-1, uP12P13P14P15_heights.x,-3);
+	vec3 p13 = vec3(-3, uP12P13P14P15_heights.y,-3);
+	vec3 p14 = vec3( 1, uP12P13P14P15_heights.z,-3);
+	vec3 p15 = vec3( 3, uP12P13P14P15_heights.w,-3);
 	vec2 uv;
 	float q;
 	float d, dt;
@@ -1097,9 +1158,8 @@ float SceneIntersect(out int finalIsRayExiting)
 		d = UnitRoundedBoxInterior_ParamIntersect(rObjOrigin, rObjDirection, uCourseShapeKparameter, normal, uv);
 	else if (uCourseShapeType == 10)
 		d = UnitTorusInterior_ParamIntersect(rObjOrigin, rObjDirection, uCourseShapeKparameter, uTorusUpperBound, normal, uv, floor(vec2(32.0  * uvFactor.x, 16.0  * uvFactor.y)));
-	// else if (uCourseShapeType == 11)
-	// 	d = BilinearPatchGroupIntersect(vec3(-1,1,1), vec3(1,1,1), vec3(1,-1,-1), vec3(-1,1,-1), vec3(2,1,1), vec3(2,1,-1), vec3(2,1,-2), vec3(1,1,-2), vec3(-1,1,-2), 
-	// 		rObjOrigin, rObjDirection, normal, uv, floor(vec2(10.0 * uvFactor.x, 10.0 * uvFactor.z)));
+	else if (uCourseShapeType == 11)
+		d = BilinearPatchGroupIntersect(p0,p1,p2,p3,p4,p5,p6,p7,p8,p9,p10,p11,p12,p13,p14,p15, rObjOrigin, rObjDirection, normal, uv, floor(vec2(10.0 * uvFactor.x, 10.0 * uvFactor.z)));
 	if (d < t)
 	{
 		t = d;
