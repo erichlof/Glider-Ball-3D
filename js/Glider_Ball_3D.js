@@ -184,29 +184,76 @@ let useAIGliderChaseCam = false;
 let useFreeFly_CameraObject, useFreeFly_CameraController;
 let needChangeUseFreeFlyCamera = false;
 let useFreeFlyCamera = false;
+let vertices_Front_Left_HeightObject,        vertices_Front_Left_HeightController;
+let vertices_Front_MidLeft_HeightObject,     vertices_Front_MidLeft_HeightController;
+let vertices_Front_MidRight_HeightObject,    vertices_Front_MidRight_HeightController;
+let vertices_Front_Right_HeightObject,       vertices_Front_Right_HeightController;
+let vertices_MidFront_Left_HeightObject,     vertices_MidFront_Left_HeightController;
+let vertices_MidFront_MidLeft_HeightObject,  vertices_MidFront_MidLeft_HeightController;
+let vertices_MidFront_MidRight_HeightObject, vertices_MidFront_MidRight_HeightController;
+let vertices_MidFront_Right_HeightObject,    vertices_MidFront_Right_HeightController;
+let vertices_MidBack_Left_HeightObject,      vertices_MidBack_Left_HeightController;
+let vertices_MidBack_MidLeft_HeightObject,   vertices_MidBack_MidLeft_HeightController;
+let vertices_MidBack_MidRight_HeightObject,  vertices_MidBack_MidRight_HeightController;
+let vertices_MidBack_Right_HeightObject,     vertices_MidBack_Right_HeightController;
+let vertices_Back_Left_HeightObject,         vertices_Back_Left_HeightController;
+let vertices_Back_MidLeft_HeightObject,      vertices_Back_MidLeft_HeightController;
+let vertices_Back_MidRight_HeightObject,     vertices_Back_MidRight_HeightController;
+let vertices_Back_Right_HeightObject,        vertices_Back_Right_HeightController;
 
-/* 
+let needChangeBilinearPatchGroupVertexHeights = false;
+let BilinearPatchGroupVertexHeights_Folder;
+
+// Bilinear Patches group (total of 9 connected quads)
 // left front quad
-let p0 = new THREE.Vector3(-1, 1, 1);// lf
-let p1 = new THREE.Vector3( 1, 1, 1);// rf
-let p2 = new THREE.Vector3( 1,-1,-1);// rb
-let p3 = new THREE.Vector3(-1, 1,-1);// lb
+let p0  = new THREE.Vector3(-3, 0, 3);// lf
+let p1  = new THREE.Vector3(-1, 0, 3);// rf
+let p2  = new THREE.Vector3(-1, 0, 1);// rb
+let p3  = new THREE.Vector3(-3, 0, 1);// lb
+// center front quad
+//  p1  = new THREE.Vector3(-1, 0, 3);// lf
+let p4  = new THREE.Vector3( 1, 0, 3);// rf
+let p5  = new THREE.Vector3( 1, 0, 1);// rb
+//  p2  = new THREE.Vector3(-1, 0, 1);// lb
 // right front quad
-//  p1 = new THREE.Vector3( 1,-1, 1);// lf
-let p4 = new THREE.Vector3( 2, 1, 1);// rf
-let p5 = new THREE.Vector3( 2, 1,-1);// rb
-//  p2 = new THREE.Vector3( 1, 1,-1);// lb
-// right back quad
-//  p2 = new THREE.Vector3( 1, 1,-1);// lf
-//  p5 = new THREE.Vector3( 2, 0,-1);// rf
-let p6 = new THREE.Vector3( 2, 1,-2);// rb
-let p7 = new THREE.Vector3( 1, 1,-2);// lb
+//  p4  = new THREE.Vector3( 1, 0, 3);// lf
+let p6  = new THREE.Vector3( 3, 0, 3);// rf
+let p7  = new THREE.Vector3( 3, 0, 1);// rb
+//  p5  = new THREE.Vector3( 1, 0, 1);// lb
+
+// left quad
+//  p3  = new THREE.Vector3(-3, 0, 1);// lf
+//  p2  = new THREE.Vector3(-1, 0, 1);// rf
+let p8  = new THREE.Vector3(-1, 0,-1);// rb
+let p9  = new THREE.Vector3(-3, 0,-1);// lb
+// center quad
+//  p2  = new THREE.Vector3(-1, 0, 1);// lf
+//  p5  = new THREE.Vector3( 1, 0, 1);// rf
+let p10 = new THREE.Vector3( 1, 0,-1);// rb
+//  p8  = new THREE.Vector3(-1, 0,-1);// lb
+// right quad
+//  p5  = new THREE.Vector3( 1, 0, 1);// lf
+//  p7  = new THREE.Vector3( 3, 0, 1);// rf
+let p11 = new THREE.Vector3( 3, 0,-1);// rb
+//  p10 = new THREE.Vector3( 1, 0,-1);// lb
+
 // left back quad
-//  p3 = new THREE.Vector3(-1, 0,-1);// lf
-//  p2 = new THREE.Vector3( 1, 1,-1);// rf
-//  p7 = new THREE.Vector3( 1, 1,-2);// rb
-let p8 = new THREE.Vector3(-1, 1,-2);// lb 
-*/
+//  p9  = new THREE.Vector3(-3, 0,-1);// lf
+//  p8  = new THREE.Vector3(-1, 0,-1);// rf
+let p12 = new THREE.Vector3(-1, 0,-3);// rb
+let p13 = new THREE.Vector3(-3, 0,-3);// lb
+// center back quad
+//  p8  = new THREE.Vector3(-1, 0,-1);// lf
+//  p10 = new THREE.Vector3( 1, 0,-1);// rf
+let p14 = new THREE.Vector3( 1, 0,-3);// rb
+//  p12 = new THREE.Vector3(-1, 0,-3);// lb
+// right back quad
+//  p10 = new THREE.Vector3( 1, 0,-1);// lf
+//  p11 = new THREE.Vector3( 3, 0,-1);// rf
+let p15 = new THREE.Vector3( 3, 0,-3);// rb
+//  p14 = new THREE.Vector3( 1, 0,-3);// lb
+
+
 
 let demoInfoElement = document.getElementById('demoInfo');
 
@@ -315,8 +362,8 @@ function intersectCourse()
 		courseT = intersectUnitRoundedBox(rayObjectOrigin, rayObjectDirection, courseShapeKparameter, intersectionNormal);
 	else if (courseShapeType == 'Torus')
 		courseT = intersectUnitTorus(rayObjectOrigin, rayObjectDirection, courseShapeKparameter, torusUpperBound, intersectionNormal);
-	// else if (courseShapeType == 'BilinearPatch')
-	// 	courseT = intersectBilinearPatchGroup(p0, p1, p2, p3, p4, p5, p6, p7, p8, rayObjectOrigin, rayObjectDirection, intersectionNormal);
+	else if (courseShapeType == 'BilinearPatch')
+		courseT = intersectBilinearPatchGroup(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15, rayObjectOrigin, rayObjectDirection, intersectionNormal);
 	
 	return courseT;
 }
@@ -334,6 +381,11 @@ function handleUseAIGliderChaseCamChange()
 function handleUseFreeFlyCameraChange() 
 {
 	needChangeUseFreeFlyCamera = true;
+}
+
+function handleBilinearPatchGroupVertexHeightsChange()
+{
+	needChangeBilinearPatchGroupVertexHeights = true;
 }
 
 
@@ -418,6 +470,24 @@ function initSceneData()
 	course_ClipMinZObject = { clipMinZ: -1.0 };
 	course_ClipMaxZObject = { clipMaxZ: 1.0 };
 	course_ShapeKparameterObject = { shape_Kparam: 1.0 };
+
+	vertices_Front_Left_HeightObject = { Front_Left: 0 };
+	vertices_Front_MidLeft_HeightObject = { Front_MidLeft: 0 };
+	vertices_Front_MidRight_HeightObject = { Front_MidRight: 0 };
+	vertices_Front_Right_HeightObject = { Front_Right: 0 };
+	vertices_MidFront_Left_HeightObject = { MidFront_Left: 0 };
+	vertices_MidFront_MidLeft_HeightObject = { MidFront_MidLeft: 0 };
+	vertices_MidFront_MidRight_HeightObject = { MidFront_MidRight: 0 };
+	vertices_MidFront_Right_HeightObject = { MidFront_Right: 0 };
+	vertices_MidBack_Left_HeightObject = { MidBack_Left: 0 };
+	vertices_MidBack_MidLeft_HeightObject = { MidBack_MidLeft: 0 };
+	vertices_MidBack_MidRight_HeightObject = { MidBack_MidRight: 0 };
+	vertices_MidBack_Right_HeightObject = { MidBack_Right: 0 };
+	vertices_Back_Left_HeightObject = { Back_Left: 0 };
+	vertices_Back_MidLeft_HeightObject = { Back_MidLeft: 0 };
+	vertices_Back_MidRight_HeightObject = { Back_MidRight: 0 };
+	vertices_Back_Right_HeightObject = { Back_Right: 0 };
+
 	level_RestartObject = { 'restart level' : beginLevel };
 	useAIGlider_ChaseCamObject = { useAIGlider_ChaseCam : false };
 	useFreeFly_CameraObject = { useFreeFly_Camera : false };
@@ -429,7 +499,7 @@ function initSceneData()
 	function handleCourseShapeKparamChange() { needChangeCourseShapeKparameter = true; }
 
 	course_TypeController = gui.add(course_TypeObject, 'Course_Type', ['Sphere', 'Ellipsoid', 'Cylinder', 'Paraboloid', 'Cone', 'Hyperboloid', 'HyperbolicParaboloid', 
-		'Plane', 'Capsule', 'RoundedBox', 'Torus']).onChange(handleCourseTypeChange);
+		'Plane', 'Capsule', 'RoundedBox', 'Torus', 'BilinearPatch']).onChange(handleCourseTypeChange);
 	
 	scale_Folder = gui.addFolder('Scale');
 	course_ScaleUniformController = scale_Folder.add(course_ScaleUniformObject, 'uniformScale', 200, 1500, 1).onChange(handleCourseScaleUniformChange);
@@ -448,6 +518,24 @@ function initSceneData()
 
 	course_ShapeKparameterController = gui.add(course_ShapeKparameterObject, 'shape_Kparam', 0.01, 1.0, 0.01).onChange(handleCourseShapeKparamChange);
 
+	BilinearPatchGroupVertexHeights_Folder = gui.addFolder('BilinearPatchGroup vertex Heights');
+	vertices_Front_Left_HeightController = BilinearPatchGroupVertexHeights_Folder.add(vertices_Front_Left_HeightObject, 'Front_Left', 0.0, 1.0, 0.01).onChange(handleBilinearPatchGroupVertexHeightsChange);
+	vertices_Front_MidLeft_HeightController = BilinearPatchGroupVertexHeights_Folder.add(vertices_Front_MidLeft_HeightObject, 'Front_MidLeft', 0.0, 1.0, 0.01).onChange(handleBilinearPatchGroupVertexHeightsChange);
+	vertices_Front_MidRight_HeightController = BilinearPatchGroupVertexHeights_Folder.add(vertices_Front_MidRight_HeightObject, 'Front_MidRight', 0.0, 1.0, 0.01).onChange(handleBilinearPatchGroupVertexHeightsChange);
+	vertices_Front_Right_HeightController = BilinearPatchGroupVertexHeights_Folder.add(vertices_Front_Right_HeightObject, 'Front_Right', 0.0, 1.0, 0.01).onChange(handleBilinearPatchGroupVertexHeightsChange);
+	vertices_MidFront_Left_HeightController = BilinearPatchGroupVertexHeights_Folder.add(vertices_MidFront_Left_HeightObject, 'MidFront_Left', 0.0, 1.0, 0.01).onChange(handleBilinearPatchGroupVertexHeightsChange);
+	vertices_MidFront_MidLeft_HeightController = BilinearPatchGroupVertexHeights_Folder.add(vertices_MidFront_MidLeft_HeightObject, 'MidFront_MidLeft', 0.0, 1.0, 0.01).onChange(handleBilinearPatchGroupVertexHeightsChange);
+	vertices_MidFront_MidRight_HeightController = BilinearPatchGroupVertexHeights_Folder.add(vertices_MidFront_MidRight_HeightObject, 'MidFront_MidRight', 0.0, 1.0, 0.01).onChange(handleBilinearPatchGroupVertexHeightsChange);
+	vertices_MidFront_Right_HeightController = BilinearPatchGroupVertexHeights_Folder.add(vertices_MidFront_Right_HeightObject, 'MidFront_Right', 0.0, 1.0, 0.01).onChange(handleBilinearPatchGroupVertexHeightsChange);
+	vertices_MidBack_Left_HeightController = BilinearPatchGroupVertexHeights_Folder.add(vertices_MidBack_Left_HeightObject, 'MidBack_Left', 0.0, 1.0, 0.01).onChange(handleBilinearPatchGroupVertexHeightsChange);
+	vertices_MidBack_MidLeft_HeightController = BilinearPatchGroupVertexHeights_Folder.add(vertices_MidBack_MidLeft_HeightObject, 'MidBack_MidLeft', 0.0, 1.0, 0.01).onChange(handleBilinearPatchGroupVertexHeightsChange);
+	vertices_MidBack_MidRight_HeightController = BilinearPatchGroupVertexHeights_Folder.add(vertices_MidBack_MidRight_HeightObject, 'MidBack_MidRight', 0.0, 1.0, 0.01).onChange(handleBilinearPatchGroupVertexHeightsChange);
+	vertices_MidBack_Right_HeightController = BilinearPatchGroupVertexHeights_Folder.add(vertices_MidBack_Right_HeightObject, 'MidBack_Right', 0.0, 1.0, 0.01).onChange(handleBilinearPatchGroupVertexHeightsChange);
+	vertices_Back_Left_HeightController = BilinearPatchGroupVertexHeights_Folder.add(vertices_Back_Left_HeightObject, 'Back_Left', 0.0, 1.0, 0.01).onChange(handleBilinearPatchGroupVertexHeightsChange);
+	vertices_Back_MidLeft_HeightController = BilinearPatchGroupVertexHeights_Folder.add(vertices_Back_MidLeft_HeightObject, 'Back_MidLeft', 0.0, 1.0, 0.01).onChange(handleBilinearPatchGroupVertexHeightsChange);
+	vertices_Back_MidRight_HeightController = BilinearPatchGroupVertexHeights_Folder.add(vertices_Back_MidRight_HeightObject, 'Back_MidRight', 0.0, 1.0, 0.01).onChange(handleBilinearPatchGroupVertexHeightsChange);
+	vertices_Back_Right_HeightController = BilinearPatchGroupVertexHeights_Folder.add(vertices_Back_Right_HeightObject, 'Back_Right', 0.0, 1.0, 0.01).onChange(handleBilinearPatchGroupVertexHeightsChange);
+	
 	useAIGlider_ChaseCamController = gui.add(useAIGlider_ChaseCamObject, 'useAIGlider_ChaseCam', false).onChange(handleUseAIGliderChaseCamChange);
 	useFreeFly_CameraController = gui.add(useFreeFly_CameraObject, 'useFreeFly_Camera', false).onChange(handleUseFreeFlyCameraChange);
 	gui.add(level_RestartObject, 'restart level');
@@ -470,6 +558,10 @@ function initSceneData()
 	pathTracingUniforms.uBallCollisionVolumeInvMatrix = { value: new THREE.Matrix4() };
 	pathTracingUniforms.uGlider1CollisionVolumeInvMatrix = { value: new THREE.Matrix4() };
 	pathTracingUniforms.uGlider2CollisionVolumeInvMatrix = { value: new THREE.Matrix4() };
+	pathTracingUniforms.uP0P1P2P3_heights = { value: new THREE.Vector4() };
+	pathTracingUniforms.uP4P5P6P7_heights = { value: new THREE.Vector4() };
+	pathTracingUniforms.uP8P9P10P11_heights = { value: new THREE.Vector4() };
+	pathTracingUniforms.uP12P13P14P15_heights = { value: new THREE.Vector4() };
 	pathTracingUniforms.uLight1Position = { value: light1Position };
 	pathTracingUniforms.uLight2Position = { value: light2Position };
 	pathTracingUniforms.uLight3Position = { value: light3Position };
@@ -526,6 +618,7 @@ function updateVariablesAndUniforms()
 			course_ClipMinYController.setValue(-1); course_ClipMaxYController.setValue(1);
 			course_ClipMinZController.setValue(-1); course_ClipMaxZController.setValue(1);
 			course_ShapeKparameterController.hide();
+			BilinearPatchGroupVertexHeights_Folder.hide();
 			pathTracingUniforms.uCourseShapeType.value = 0;
 		}
 		else if (courseShapeType == 'Ellipsoid')
@@ -558,6 +651,7 @@ function updateVariablesAndUniforms()
 			course_ClipMinYController.setValue(-1); course_ClipMaxYController.setValue(1);
 			course_ClipMinZController.setValue(-1); course_ClipMaxZController.setValue(1);
 			course_ShapeKparameterController.hide();
+			BilinearPatchGroupVertexHeights_Folder.hide();
 			pathTracingUniforms.uCourseShapeType.value = 1;
 		}
 		else if (courseShapeType == 'Cylinder')
@@ -588,6 +682,7 @@ function updateVariablesAndUniforms()
 			course_ClipMinYController.setValue(-1); course_ClipMaxYController.setValue(1);
 			course_ClipMinZController.setValue(-1); course_ClipMaxZController.setValue(1);
 			course_ShapeKparameterController.hide();
+			BilinearPatchGroupVertexHeights_Folder.hide();
 			pathTracingUniforms.uCourseShapeType.value = 2;
 		}
 		else if (courseShapeType == 'Paraboloid')
@@ -625,6 +720,7 @@ function updateVariablesAndUniforms()
 			course_ShapeKparameterController.setValue(courseShapeKparameter);
 			//course_ShapeKparameterController.hide();
 			pathTracingUniforms.uCourseShapeKparameter.value = courseShapeKparameter;
+			BilinearPatchGroupVertexHeights_Folder.hide();
 			pathTracingUniforms.uCourseShapeType.value = 3;
 		}
 		else if (courseShapeType == 'Cone')
@@ -662,6 +758,7 @@ function updateVariablesAndUniforms()
 			course_ShapeKparameterController.min(0); course_ShapeKparameterController.max(0.5);
 			course_ShapeKparameterController.setValue(courseShapeKparameter);
 			pathTracingUniforms.uCourseShapeKparameter.value = courseShapeKparameter;
+			BilinearPatchGroupVertexHeights_Folder.hide();
 			pathTracingUniforms.uCourseShapeType.value = 4;
 		}
 		else if (courseShapeType == 'Hyperboloid')
@@ -696,6 +793,7 @@ function updateVariablesAndUniforms()
 			course_ShapeKparameterController.min(0.0); course_ShapeKparameterController.max(0.97);
 			course_ShapeKparameterController.setValue(courseShapeKparameter);
 			pathTracingUniforms.uCourseShapeKparameter.value = courseShapeKparameter;
+			BilinearPatchGroupVertexHeights_Folder.hide();
 			pathTracingUniforms.uCourseShapeType.value = 5;
 		}
 		else if (courseShapeType == 'HyperbolicParaboloid')
@@ -713,9 +811,9 @@ function updateVariablesAndUniforms()
 			// light1StartingPosition.set(0, 0, 0);
 			// light2StartingPosition.set(0, 0, -1);
 			// light3StartingPosition.set(0, 0, 1);
-			light1StartingPosition.set( Math.cos(ONETHIRD_PI * 0), 0,  Math.sin(ONETHIRD_PI * 0));
-			light2StartingPosition.set( Math.cos(ONETHIRD_PI * 4) * 1.5, 0,  Math.sin(ONETHIRD_PI * 4) * 0.5);
-			light3StartingPosition.set( Math.cos(ONETHIRD_PI * 2) * 2, 0,  Math.sin(ONETHIRD_PI * 2) * 0.5);
+			light1StartingPosition.set( Math.cos(ONETHIRD_PI * 0), 0,  Math.sin(ONETHIRD_PI * 0) );
+			light2StartingPosition.set( Math.cos(ONETHIRD_PI * 4) * 1.5, 0,  Math.sin(ONETHIRD_PI * 4) * 0.5 );
+			light3StartingPosition.set( Math.cos(ONETHIRD_PI * 2) * 2, 0,  Math.sin(ONETHIRD_PI * 2) * 0.5 );
 			courseShape.position.set(0, -300, 0);
 			course_ScaleXController.show();
 			course_ScaleYController.show();
@@ -731,6 +829,7 @@ function updateVariablesAndUniforms()
 			course_ClipMinZController.setValue(-1); course_ClipMaxZController.setValue(1);
 			clipBoundaries_Folder.hide();
 			course_ShapeKparameterController.hide();
+			BilinearPatchGroupVertexHeights_Folder.hide();
 			pathTracingUniforms.uCourseShapeType.value = 6;
 		}
 		else if (courseShapeType == 'Plane')
@@ -748,9 +847,9 @@ function updateVariablesAndUniforms()
 			// light1StartingPosition.set(0, 0.3, 0);
 			// light2StartingPosition.set(-0.3, 0.3, -0.3);
 			// light3StartingPosition.set(0.3, 0.3, 0.3);
-			light1StartingPosition.set(Math.cos(ONETHIRD_PI * 0) * 0.5, 0.3, Math.sin(ONETHIRD_PI * 0) * 0.5);
-			light2StartingPosition.set(Math.cos(ONETHIRD_PI * 2) * 0.5, 0.3, Math.sin(ONETHIRD_PI * 2) * 0.5);
-			light3StartingPosition.set(Math.cos(ONETHIRD_PI * 4) * 0.5, 0.3, Math.sin(ONETHIRD_PI * 4) * 0.5);
+			light1StartingPosition.set( Math.cos(ONETHIRD_PI * 0) * 0.5, 0.3, Math.sin(ONETHIRD_PI * 0) * 0.5);
+			light2StartingPosition.set( Math.cos(ONETHIRD_PI * 2) * 0.5, 0.3, Math.sin(ONETHIRD_PI * 2) * 0.5);
+			light3StartingPosition.set( Math.cos(ONETHIRD_PI * 4) * 0.5, 0.3, Math.sin(ONETHIRD_PI * 4) * 0.5);
 			courseShape.position.set(0, -200, 0);
 			course_ScaleUniformController.setValue(1000);
 			course_ScaleXController.show();
@@ -767,6 +866,7 @@ function updateVariablesAndUniforms()
 			course_ClipMinZController.setValue(-1); course_ClipMaxZController.setValue(1);
 			clipBoundaries_Folder.hide();
 			course_ShapeKparameterController.hide();
+			BilinearPatchGroupVertexHeights_Folder.hide();
 			pathTracingUniforms.uCourseShapeType.value = 7;
 		}
 		else if (courseShapeType == 'Capsule')
@@ -804,6 +904,7 @@ function updateVariablesAndUniforms()
 			course_ShapeKparameterController.min(0.5); course_ShapeKparameterController.max(3);
 			course_ShapeKparameterController.setValue(courseShapeKparameter);
 			pathTracingUniforms.uCourseShapeKparameter.value = courseShapeKparameter;
+			BilinearPatchGroupVertexHeights_Folder.hide();
 			pathTracingUniforms.uCourseShapeType.value = 8;
 		}
 		else if (courseShapeType == 'RoundedBox')
@@ -841,6 +942,7 @@ function updateVariablesAndUniforms()
 			course_ShapeKparameterController.min(0.05); course_ShapeKparameterController.max(0.5);
 			course_ShapeKparameterController.setValue(courseShapeKparameter);
 			pathTracingUniforms.uCourseShapeKparameter.value = courseShapeKparameter;
+			BilinearPatchGroupVertexHeights_Folder.hide();
 			pathTracingUniforms.uCourseShapeType.value = 9;
 		}
 		else if (courseShapeType == 'Torus')
@@ -867,46 +969,69 @@ function updateVariablesAndUniforms()
 			course_ShapeKparameterController.min(0.2); course_ShapeKparameterController.max(0.99);
 			course_ShapeKparameterController.setValue(courseShapeKparameter);
 			pathTracingUniforms.uCourseShapeKparameter.value = courseShapeKparameter;
+			BilinearPatchGroupVertexHeights_Folder.hide();
 			pathTracingUniforms.uCourseShapeType.value = 10;
 		}
-		/* else if (courseShapeType == 'BilinearPatch')
+		else if (courseShapeType == 'BilinearPatch')
 		{
-			glider1StartingPosition.set(0.5, -10, 75);
-			glider2StartingPosition.set(-0.5, -10, -75);
-			ballStartingPosition.set(0, -10, 0);
-			playerGoalStartingPosition.set(75, -10, 0);
-			playerGoalLocalVelocity.set(1, 0, 0).normalize().multiplyScalar(goalSpeed);
-			computerGoalStartingPosition.set(-75, -10, 0);
-			computerGoalLocalVelocity.set(1, 0, 0).normalize().multiplyScalar(goalSpeed);
-			light1StartingPosition.set(1, 1, -1);
-			light2StartingPosition.set(-0.5, 0.2, -2);
-			light3StartingPosition.set(2, 0.2, 0);
-			//light1StartingPosition.set( Math.cos(ONETHIRD_PI * 0), 0.3,  Math.sin(ONETHIRD_PI * 0));
-			//light2StartingPosition.set( Math.cos(ONETHIRD_PI * 4), 0.3,  Math.sin(ONETHIRD_PI * 4));
-			//light3StartingPosition.set( Math.cos(ONETHIRD_PI * 2), 0.3,  Math.sin(ONETHIRD_PI * 2));
-			courseShape.position.set(0, -700, 0);
-			course_ScaleUniformController.setValue(800);
-			course_ScaleXController.setValue(800);
-			course_ScaleYController.setValue(800);
-			course_ScaleZController.setValue(800);
-			course_ScaleXController.hide();
-			course_ScaleYController.hide();
-			course_ScaleZController.hide();
-			course_ClipMinXController.min(-1); course_ClipMaxXController.max(2);
+			glider1StartingPosition.set(0.5, 0, 75);
+			glider2StartingPosition.set(-0.5, 0, -75);
+			ballStartingPosition.set(0, 0, 0);
+			playerGoalStartingPosition.set(300, 0, 0);
+			playerGoalStartingLocalVelocity.set(1, 0, 0).normalize().multiplyScalar(goalSpeed);
+			computerGoalStartingPosition.set(-300, 0, 0);
+			computerGoalStartingLocalVelocity.set(-1, 0, 0).normalize().multiplyScalar(goalSpeed);
+			// light1StartingPosition.set(1, 1, -1);
+			// light2StartingPosition.set(-0.5, 1, -1);
+			// light3StartingPosition.set(1, 1, 0);
+			light1StartingPosition.set( 2 * Math.cos(ONETHIRD_PI * 0), 1, 2 * Math.sin(ONETHIRD_PI * 0) );
+			light2StartingPosition.set( 2 * Math.cos(ONETHIRD_PI * 4), 1, 2 * Math.sin(ONETHIRD_PI * 4) );
+			light3StartingPosition.set( 2 * Math.cos(ONETHIRD_PI * 2), 1, 2 * Math.sin(ONETHIRD_PI * 2) );
+			courseShape.position.set(0, -300, 0);
+			course_ScaleUniformController.setValue(600);
+			course_ScaleXController.show();
+			course_ScaleYController.show();
+			course_ScaleZController.show();
+			course_ScaleXController.setValue(600);
+			course_ScaleYController.setValue(600);
+			course_ScaleZController.setValue(600);
+			// course_ScaleXController.hide();
+			// course_ScaleYController.hide();
+			// course_ScaleZController.hide();
+			course_ClipMinXController.min(-3); course_ClipMaxXController.max(3);
 			course_ClipMinYController.min(-1); course_ClipMaxYController.max(2);
-			course_ClipMinZController.min(-2); course_ClipMaxZController.max(1);
-			course_ClipMinXController.setValue(-1); course_ClipMaxXController.setValue(2);
+			course_ClipMinZController.min(-3); course_ClipMaxZController.max(3);
+			course_ClipMinXController.setValue(-3); course_ClipMaxXController.setValue(3);
 			course_ClipMinYController.setValue(-1); course_ClipMaxYController.setValue(2);
-			course_ClipMinZController.setValue(-2); course_ClipMaxZController.setValue(1);
+			course_ClipMinZController.setValue(-3); course_ClipMaxZController.setValue(3);
 			clipBoundaries_Folder.hide();
 			course_ShapeKparameterController.hide();
+			
+			BilinearPatchGroupVertexHeights_Folder.show();
+			vertices_Front_Left_HeightController.setValue(1);
+			vertices_Front_MidLeft_HeightController.setValue(0.5);
+			vertices_Front_MidRight_HeightController.setValue(0.5);
+			vertices_Front_Right_HeightController.setValue(1);
+			vertices_MidFront_Left_HeightController.setValue(0.25);
+			vertices_MidFront_MidLeft_HeightController.setValue(0);
+			vertices_MidFront_MidRight_HeightController.setValue(0);
+			vertices_MidFront_Right_HeightController.setValue(0.25);
+			vertices_MidBack_Left_HeightController.setValue(0.25);
+			vertices_MidBack_MidLeft_HeightController.setValue(0);
+			vertices_MidBack_MidRight_HeightController.setValue(0);
+			vertices_MidBack_Right_HeightController.setValue(0.25);
+			vertices_Back_Left_HeightController.setValue(1);
+			vertices_Back_MidLeft_HeightController.setValue(0.5);
+			vertices_Back_MidRight_HeightController.setValue(0.5);
+			vertices_Back_Right_HeightController.setValue(1);
+			
 			pathTracingUniforms.uCourseShapeType.value = 11;
-		} */
+		}
 
 		cameraIsMoving = true;
 		needChangeCourseType = false;
 		beginLevel();
-	}
+	} // end if (needChangeCourseType)
 
 	if (needChangeCourseScaleUniform)
 	{
@@ -1035,6 +1160,35 @@ function updateVariablesAndUniforms()
 
 		cameraIsMoving = true;
 		needChangeCourseShapeKparameter = false;
+		beginLevel();
+	}
+
+	if (needChangeBilinearPatchGroupVertexHeights)
+	{
+		p0.y = vertices_Front_Left_HeightController.getValue();
+		p1.y = vertices_Front_MidLeft_HeightController.getValue();
+		p4.y = vertices_Front_MidRight_HeightController.getValue();
+		p6.y = vertices_Front_Right_HeightController.getValue();
+		p3.y = vertices_MidFront_Left_HeightController.getValue();
+		p2.y = vertices_MidFront_MidLeft_HeightController.getValue();
+		p5.y = vertices_MidFront_MidRight_HeightController.getValue();
+		p7.y = vertices_MidFront_Right_HeightController.getValue();
+		p9.y = vertices_MidBack_Left_HeightController.getValue();
+		p8.y = vertices_MidBack_MidLeft_HeightController.getValue();
+		p10.y = vertices_MidBack_MidRight_HeightController.getValue();
+		p11.y = vertices_MidBack_Right_HeightController.getValue();
+		p13.y = vertices_Back_Left_HeightController.getValue();
+		p12.y = vertices_Back_MidLeft_HeightController.getValue();
+		p14.y = vertices_Back_MidRight_HeightController.getValue();
+		p15.y = vertices_Back_Right_HeightController.getValue();
+		
+		pathTracingUniforms.uP0P1P2P3_heights.value.set(p0.y, p1.y, p2.y, p3.y);
+		pathTracingUniforms.uP4P5P6P7_heights.value.set(p4.y, p5.y, p6.y, p7.y);
+		pathTracingUniforms.uP8P9P10P11_heights.value.set(p8.y, p9.y, p10.y, p11.y);
+		pathTracingUniforms.uP12P13P14P15_heights.value.set(p12.y, p13.y, p14.y, p15.y);
+							
+		cameraIsMoving = true;
+		needChangeBilinearPatchGroupVertexHeights = false;
 		beginLevel();
 	}
 
@@ -1368,7 +1522,7 @@ function updateVariablesAndUniforms()
 
 		// Note: the following is temporary input code for testing red opponent glider movement
 		// will be removed when red opponent glider is fully controlled by AI code
-		if (!glider2IsInAir && !ballIsInAir) // #AI
+		if ((!glider2IsInAir && !ballIsInAir) || (courseShapeType == 'BilinearPatch')) // #AI
 		{
 			if ( glider2ApplyThrust || (keyPressed('KeyI') && !keyPressed('KeyK')) )
 			{
@@ -1766,12 +1920,21 @@ function updateVariablesAndUniforms()
 		intersectionNormal.normalize(); // after the various transformations, make sure normal is a unit-length vector (length of 1)
 		intersectionPoint.getPointAlongRay(glider1RayOrigin, glider1RayDirection, testT);
 		intersectionPoint.addScaledVector(intersectionNormal, 1);
-		glider1BaseUp.copy(intersectionNormal);
-		glider1BaseRight.crossVectors(glider1BaseUp, glider1BaseForward).normalize();
-		glider1BaseForward.crossVectors(glider1BaseRight, glider1BaseUp).normalize();
+		if (courseShapeType != 'BilinearPatch')
+		{
+			glider1BaseUp.copy(intersectionNormal);
+			glider1BaseRight.crossVectors(glider1BaseUp, glider1BaseForward).normalize();
+			glider1BaseForward.crossVectors(glider1BaseRight, glider1BaseUp).normalize();
+		}
 	}
 	if (testT <= 1)
 	{
+		if (courseShapeType == 'BilinearPatch')
+		{
+			glider1BaseUp.copy(intersectionNormal);
+			glider1BaseRight.crossVectors(glider1BaseUp, glider1BaseForward).normalize();
+			glider1BaseForward.crossVectors(glider1BaseRight, glider1BaseUp).normalize();
+		}
 		glider1IsInAir = false;
 		glider1LocalVelocity.y = 0;
 		glider1Base.position.copy(intersectionPoint);
@@ -2174,12 +2337,21 @@ function updateVariablesAndUniforms()
 		intersectionNormal.normalize(); // after the various transformations, make sure normal is a unit-length vector (length of 1)
 		intersectionPoint.getPointAlongRay(glider2RayOrigin, glider2RayDirection, testT);
 		intersectionPoint.addScaledVector(intersectionNormal, 1);
-		glider2BaseUp.copy(intersectionNormal);
-		glider2BaseRight.crossVectors(glider2BaseUp, glider2BaseForward).normalize();
-		glider2BaseForward.crossVectors(glider2BaseRight, glider2BaseUp).normalize();
+		if (courseShapeType != 'BilinearPatch')
+		{
+			glider2BaseUp.copy(intersectionNormal);
+			glider2BaseRight.crossVectors(glider2BaseUp, glider2BaseForward).normalize();
+			glider2BaseForward.crossVectors(glider2BaseRight, glider2BaseUp).normalize();
+		}
 	}
 	if (testT <= 1)
 	{
+		if (courseShapeType == 'BilinearPatch')
+		{
+			glider2BaseUp.copy(intersectionNormal);
+			glider2BaseRight.crossVectors(glider2BaseUp, glider2BaseForward).normalize();
+			glider2BaseForward.crossVectors(glider2BaseRight, glider2BaseUp).normalize();
+		}
 		glider2IsInAir = false;
 		glider2LocalVelocity.y = 0;
 		glider2Base.position.copy(intersectionPoint);
@@ -2207,7 +2379,7 @@ function updateVariablesAndUniforms()
 	glider2Thrusters.scale.copy(glider2Base.scale);
 
 	// UPDATE AI GLIDER 2 ////////////////////////////////////
-	if (!isPaused && !ballIsInAir) // #AI
+	if ((!isPaused && !ballIsInAir) || (!isPaused && courseShapeType == 'BilinearPatch')) // #AI
 	{
 		// first, get a vector from glider2 to the target(ball.position), but negate it because AI opponent glider2 points in opposite direction from player's glider1
 		glider2TargetForward.copy(ball.position).sub(glider2Base.position).normalize().negate();
@@ -2610,12 +2782,21 @@ function updateVariablesAndUniforms()
 		intersectionNormal.normalize(); // after the various transformations, make sure normal is a unit-length vector (length of 1)
 		intersectionPoint.getPointAlongRay(ballRayOrigin, ballRayDirection, testT);
 		intersectionPoint.addScaledVector(intersectionNormal, 1);
-		ballUp.copy(intersectionNormal);
-		ballRight.crossVectors(ballUp, ballForward).normalize();
-		ballForward.crossVectors(ballRight, ballUp).normalize();	
+		if (courseShapeType != 'BilinearPatch')
+		{
+			ballUp.copy(intersectionNormal);
+			ballRight.crossVectors(ballUp, ballForward).normalize();
+			ballForward.crossVectors(ballRight, ballUp).normalize();
+		}	
 	}
 	if (testT <= 1)
 	{
+		if (courseShapeType == 'BilinearPatch')
+		{
+			ballUp.copy(intersectionNormal);
+			ballRight.crossVectors(ballUp, ballForward).normalize();
+			ballForward.crossVectors(ballRight, ballUp).normalize();
+		}
 		ballIsInAir = false;
 		ballLocalVelocity.y = 0;
 		ball.position.copy(intersectionPoint);
