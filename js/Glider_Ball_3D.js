@@ -3,6 +3,7 @@ let rayObjectOrigin = new THREE.Vector3();
 let rayObjectDirection = new THREE.Vector3();
 let intersectionPoint = new THREE.Vector3();
 let intersectionNormal = new THREE.Vector3();
+let worldUp = new THREE.Vector3(0, 1, 0);
 let tempVec = new THREE.Vector3();
 let glider2RotateYAngle = 0;
 let courseShape = new THREE.Object3D();
@@ -44,6 +45,7 @@ let glider1IsInAir = false;
 let glider1IsAcceleratingRight = false;
 let glider1IsAcceleratingUp = false;
 let glider1IsAcceleratingForward = false;
+let glider1Gravity = 0; // used only on 'BilinearPatch' courses
 
 let glider2Base = new THREE.Object3D();
 let glider2CollisionVolume = new THREE.Object3D();
@@ -74,6 +76,7 @@ let glider2TargetUp = new THREE.Vector3();
 let glider2TargetForward = new THREE.Vector3();
 let glider2ThrustTimer;
 let glider2ApplyThrust = false;
+let glider2Gravity = 0; // used only on 'BilinearPatch' courses
 
 let ball = new THREE.Object3D();
 let ballCollisionVolume = new THREE.Object3D();
@@ -92,6 +95,7 @@ let ballWorldVelocity = new THREE.Vector3();
 let ballStartingPosition = new THREE.Vector3();
 let ballIsInAir = false;
 let ballYRotateAngle = 0;
+let ballGravity = 0; // used only on 'BilinearPatch' courses
 
 let playerGoal = new THREE.Object3D();
 let playerGoalCollisionVolume = new THREE.Object3D();
@@ -1581,6 +1585,7 @@ function updateVariablesAndUniforms()
 	if (!glider1IsInAir)
 	{
 		glider1LocalVelocity.y = 0;
+		glider1Gravity = 0;
 		glider1IsAcceleratingUp = false;
 		canPress_Space = true;
 	}
@@ -1588,8 +1593,11 @@ function updateVariablesAndUniforms()
 	if (glider1IsInAir)
 	{
 		canPress_Space = false;
-		glider1LocalVelocity.y -= (200 * frameTime);
 		glider1IsAcceleratingUp = true;
+		if (courseShapeType != 'BilinearPatch')
+			glider1LocalVelocity.y -= (200 * frameTime);
+		else // courseShapeType == 'BilinearPatch', so apply conventional Earth-like downward Gravity force
+			glider1Gravity -= (300 * frameTime);
 	}
 	// if a legal jump action was triggered, apply a short, upward impulse to glider
 	if (jumpWasTriggered)
@@ -1643,7 +1651,8 @@ function updateVariablesAndUniforms()
 	glider1WorldVelocity.addScaledVector(glider1ThrustersRight, glider1LocalVelocity.x);
 	glider1WorldVelocity.addScaledVector(glider1ThrustersUp, glider1LocalVelocity.y);
 	glider1WorldVelocity.addScaledVector(glider1ThrustersForward, glider1LocalVelocity.z);
-	
+	glider1WorldVelocity.addScaledVector(worldUp, glider1Gravity); // glider1Gravity is only non-zero on 'BilinearPatch' courses
+
 	glider1Base.position.addScaledVector(glider1WorldVelocity, frameTime);
 	
 
@@ -2009,6 +2018,7 @@ function updateVariablesAndUniforms()
 	if (!glider2IsInAir)
 	{
 		glider2LocalVelocity.y = 0;
+		glider2Gravity = 0;
 		glider2IsAcceleratingUp = false;
 		//canPress_Space = true;
 	}
@@ -2016,8 +2026,11 @@ function updateVariablesAndUniforms()
 	if (glider2IsInAir)
 	{
 		//canPress_Space = false;
-		glider2LocalVelocity.y -= (200 * frameTime);
 		glider2IsAcceleratingUp = true;
+		if (courseShapeType != 'BilinearPatch')
+			glider2LocalVelocity.y -= (200 * frameTime);
+		else // courseShapeType == 'BilinearPatch', so apply conventional Earth-like downward Gravity force
+			glider2Gravity -= (300 * frameTime);
 	}
 	// if a legal jump action was triggered, apply a short, upward impulse to glider2
 	/* if (jumpWasTriggered)
@@ -2058,6 +2071,7 @@ function updateVariablesAndUniforms()
 	glider2WorldVelocity.addScaledVector(glider2ThrustersRight, glider2LocalVelocity.x);
 	glider2WorldVelocity.addScaledVector(glider2ThrustersUp, glider2LocalVelocity.y);
 	glider2WorldVelocity.addScaledVector(glider2ThrustersForward, glider2LocalVelocity.z);
+	glider2WorldVelocity.addScaledVector(worldUp, glider2Gravity); // glider2Gravity is only non-zero on 'BilinearPatch' courses
 	
 	glider2Base.position.addScaledVector(glider2WorldVelocity, frameTime);
 	
@@ -2436,10 +2450,18 @@ function updateVariablesAndUniforms()
 
 	// UPDATE BALL ///////////////////////////////////////////////////////////////////////////////////
 
+	if (!ballIsInAir)
+	{
+		ballLocalVelocity.y = 0;
+		ballGravity = 0;
+	}
 	// if in air, apply gravity (actually anti-gravity: pulls ball down to the large course surface in all directions)
 	if (ballIsInAir)
 	{
-		ballLocalVelocity.y -= (200 * frameTime);
+		if (courseShapeType != 'BilinearPatch')
+			ballLocalVelocity.y -= (200 * frameTime);
+		else // courseShapeType == 'BilinearPatch', so apply conventional Earth-like downward Gravity force
+			ballGravity -= (300 * frameTime);
 	}
 
 	// the following gives a very slight invisible movement to the ball, so that a ray can be created from its old position to its new position 
@@ -2454,6 +2476,7 @@ function updateVariablesAndUniforms()
 	ballWorldVelocity.addScaledVector(ballRight, ballLocalVelocity.x);
 	ballWorldVelocity.addScaledVector(ballUp, ballLocalVelocity.y);
 	ballWorldVelocity.addScaledVector(ballForward, ballLocalVelocity.z);
+	ballWorldVelocity.addScaledVector(worldUp, ballGravity); // ballGravity is only non-zero on 'BilinearPatch' courses
 	
 	ball.position.addScaledVector(ballWorldVelocity, frameTime);
 
