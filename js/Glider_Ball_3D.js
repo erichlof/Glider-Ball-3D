@@ -9,7 +9,7 @@ let glider2RotateYAngle = 0;
 let courseShape = new THREE.Object3D();
 let courseShape_invMatrix = new THREE.Matrix4();
 let courseMinBounds = new THREE.Vector3(-1, -1, -1);
-let courseMaxBounds = new THREE.Vector3( 1, 1, 1);
+let courseMaxBounds = new THREE.Vector3(1, 1, 1);
 let torusUpperBound = 0;
 let light1StartingPosition = new THREE.Vector3();
 let light2StartingPosition = new THREE.Vector3();
@@ -46,6 +46,7 @@ let glider1IsAcceleratingRight = false;
 let glider1IsAcceleratingUp = false;
 let glider1IsAcceleratingForward = false;
 let glider1Gravity = 0; // used only on 'BilinearPatch' courses
+let glider1InAirTimer;
 
 let glider2Base = new THREE.Object3D();
 let glider2CollisionVolume = new THREE.Object3D();
@@ -77,6 +78,7 @@ let glider2TargetForward = new THREE.Vector3();
 let glider2ThrustTimer;
 let glider2ApplyThrust = false;
 let glider2Gravity = 0; // used only on 'BilinearPatch' courses
+let glider2InAirTimer;
 
 let ball = new THREE.Object3D();
 let ballCollisionVolume = new THREE.Object3D();
@@ -96,6 +98,7 @@ let ballStartingPosition = new THREE.Vector3();
 let ballIsInAir = false;
 let ballYRotateAngle = 0;
 let ballGravity = 0; // used only on 'BilinearPatch' courses
+let ballInAirTimer;
 
 let playerGoal = new THREE.Object3D();
 let playerGoalCollisionVolume = new THREE.Object3D();
@@ -116,6 +119,8 @@ let playerGoalStartingPosition = new THREE.Vector3();
 let playerGoalIsInAir = false;
 let playerGoalYRotateAngle = 0;
 let playerGoalGlowTimer;
+let playerGoalGravity = 0; // used only on 'BilinearPatch' courses
+let playerGoalInAirTimer;
 
 let computerGoal = new THREE.Object3D();
 let computerGoalCollisionVolume = new THREE.Object3D();
@@ -136,8 +141,11 @@ let computerGoalStartingPosition = new THREE.Vector3();
 let computerGoalIsInAir = false;
 let computerGoalYRotateAngle = 0;
 let computerGoalGlowTimer;
+let computerGoalGravity = 0; // used only on 'BilinearPatch' courses
+let computerGoalInAirTimer;
 let goalSpeed = 20;
 let goalRenderingLiftAmount = 50;
+
 
 let impulseGlider1 = new THREE.Vector3();
 let impulseGlider2 = new THREE.Vector3();
@@ -403,7 +411,7 @@ function initSceneData()
 
 	useGenericInput = false;
 	
-	cameraFlightSpeed = 200;
+	cameraFlightSpeed = 300;
 
 	// pixelRatio is resolution - range: 0.5(half resolution) to 1.0(full resolution)
 	pixelRatio = mouseControl ? 1.0 : 0.75;
@@ -417,11 +425,7 @@ function initSceneData()
 
 	// COURSE 
 	courseShape.visible = false; // don't need Three.js to render this - we will ray trace it ourselves
-	courseShape.position.set(0, 0, 0);
-	courseShape.scale.set(500, 500, 500); // Sphere-shaped
-	// must call this each time we change an object's transform
-	// courseShape.updateMatrixWorld();
-	// courseShape_invMatrix.copy(courseShape.matrixWorld).invert();
+	
 
 	// GLIDER 1 (player)
 	glider1Base.visible = false;
@@ -457,6 +461,12 @@ function initSceneData()
 	playerGoalGlowTimer = new GameTimer(4);
 	computerGoalGlowTimer = new GameTimer(4);
 	glider2ThrustTimer = new GameTimer(1); // #AI
+	glider1InAirTimer = new GameTimer(1);
+	glider2InAirTimer = new GameTimer(1);
+	ballInAirTimer = new GameTimer(1);
+	playerGoalInAirTimer = new GameTimer(1);
+	computerGoalInAirTimer = new GameTimer(1);
+	
 
 
 	
@@ -607,13 +617,10 @@ function updateVariablesAndUniforms()
 			light2StartingPosition.set(-0.3, 0.3, -0.3);
 			light3StartingPosition.set(0.3, -0.3, 0.3);
 			courseShape.position.set(0, 0, 0);
-			course_ScaleUniformController.setValue(500);
+			course_ScaleUniformController.setValue(600);
 			course_ScaleXController.hide();
 			course_ScaleYController.hide();
 			course_ScaleZController.hide();
-			// course_ScaleXController.setValue(500);
-			// course_ScaleYController.setValue(500);
-			// course_ScaleZController.setValue(500);
 			clipBoundaries_Folder.show();
 			course_ClipMinXController.min(-1); course_ClipMaxXController.max(1);
 			course_ClipMinYController.min(-1); course_ClipMaxYController.max(1);
@@ -630,10 +637,10 @@ function updateVariablesAndUniforms()
 			glider1StartingPosition.set(0.5, -50, 175);
 			glider2StartingPosition.set(-0.5, -50, -175);
 			ballStartingPosition.set(0, -50, 0);
-			playerGoalStartingPosition.set(175, -50, 0);
+			playerGoalStartingPosition.set(200, -50, 0);
 			playerGoalStartingLocalVelocity.set(1, 0, 0).normalize().multiplyScalar(goalSpeed);
 			playerGoalYRotateAngle = 0;
-			computerGoalStartingPosition.set(-175, -50, 0);
+			computerGoalStartingPosition.set(-200, -50, 0);
 			computerGoalStartingLocalVelocity.set(-1, 0, 0).normalize().multiplyScalar(goalSpeed);
 			computerGoalYRotateAngle = 0;
 			goalRenderingLiftAmount = 50;
@@ -644,9 +651,9 @@ function updateVariablesAndUniforms()
 			course_ScaleXController.show();
 			course_ScaleYController.show();
 			course_ScaleZController.show();
-			course_ScaleXController.setValue(700);
+			course_ScaleXController.setValue(800);
 			course_ScaleYController.setValue(300);
-			course_ScaleZController.setValue(700);
+			course_ScaleZController.setValue(800);
 			clipBoundaries_Folder.show();
 			course_ClipMinXController.min(-1); course_ClipMaxXController.max(1);
 			course_ClipMinYController.min(-1); course_ClipMaxYController.max(1);
@@ -677,7 +684,7 @@ function updateVariablesAndUniforms()
 			course_ScaleZController.show();
 			course_ScaleXController.setValue(500);
 			course_ScaleYController.setValue(500);
-			course_ScaleZController.setValue(700);
+			course_ScaleZController.setValue(800);
 			clipBoundaries_Folder.show();
 			course_ClipMinXController.min(-1); course_ClipMaxXController.max(1);
 			course_ClipMinYController.min(-1); course_ClipMaxYController.max(1);
@@ -784,7 +791,7 @@ function updateVariablesAndUniforms()
 			course_ScaleZController.show();
 			course_ScaleXController.setValue(500);
 			course_ScaleYController.setValue(500);
-			course_ScaleZController.setValue(1400);
+			course_ScaleZController.setValue(1500);
 			clipBoundaries_Folder.show();
 			course_ClipMinXController.min(-1); course_ClipMaxXController.max(1);
 			course_ClipMinYController.min(-1); course_ClipMaxYController.max(1);
@@ -812,9 +819,6 @@ function updateVariablesAndUniforms()
 			computerGoalStartingLocalVelocity.set(-1, 0, -0.9).normalize().multiplyScalar(goalSpeed);
 			computerGoalYRotateAngle = 0;
 			goalRenderingLiftAmount = 50;
-			// light1StartingPosition.set(0, 0, 0);
-			// light2StartingPosition.set(0, 0, -1);
-			// light3StartingPosition.set(0, 0, 1);
 			light1StartingPosition.set( Math.cos(ONETHIRD_PI * 0), 0,  Math.sin(ONETHIRD_PI * 0) );
 			light2StartingPosition.set( Math.cos(ONETHIRD_PI * 4) * 1.5, 0,  Math.sin(ONETHIRD_PI * 4) * 0.5 );
 			light3StartingPosition.set( Math.cos(ONETHIRD_PI * 2) * 2, 0,  Math.sin(ONETHIRD_PI * 2) * 0.5 );
@@ -848,9 +852,6 @@ function updateVariablesAndUniforms()
 			computerGoalStartingLocalVelocity.set(-1, 0, -0.3).normalize().multiplyScalar(goalSpeed);
 			computerGoalYRotateAngle = 0;
 			goalRenderingLiftAmount = 50;
-			// light1StartingPosition.set(0, 0.3, 0);
-			// light2StartingPosition.set(-0.3, 0.3, -0.3);
-			// light3StartingPosition.set(0.3, 0.3, 0.3);
 			light1StartingPosition.set( Math.cos(ONETHIRD_PI * 0) * 0.5, 0.3, Math.sin(ONETHIRD_PI * 0) * 0.5);
 			light2StartingPosition.set( Math.cos(ONETHIRD_PI * 2) * 0.5, 0.3, Math.sin(ONETHIRD_PI * 2) * 0.5);
 			light3StartingPosition.set( Math.cos(ONETHIRD_PI * 4) * 0.5, 0.3, Math.sin(ONETHIRD_PI * 4) * 0.5);
@@ -860,7 +861,7 @@ function updateVariablesAndUniforms()
 			course_ScaleYController.hide();
 			course_ScaleZController.show();
 			course_ScaleXController.setValue(1000);
-			//course_ScaleYController.setValue(1000);
+			//course_ScaleYController.setValue(1000); // the XZ-Plane has no Y scale
 			course_ScaleZController.setValue(1000);
 			course_ClipMinXController.min(-1); course_ClipMaxXController.max(1);
 			course_ClipMinYController.min(-1); course_ClipMaxYController.max(1);
@@ -875,15 +876,15 @@ function updateVariablesAndUniforms()
 		}
 		else if (courseShapeType == 'Capsule')
 		{
-			glider1StartingPosition.set(0.5, -10, 300);
-			glider2StartingPosition.set(-0.5, -10, -300);
+			glider1StartingPosition.set(0.5, -10, 200);
+			glider2StartingPosition.set(-0.5, -10, -200);
 			ballStartingPosition.set(0, -10, 0);
-			playerGoalStartingPosition.set(75, -10, 0);
+			playerGoalStartingPosition.set(0, -10, 200);
 			playerGoalStartingLocalVelocity.set(1, 0, 1).normalize().multiplyScalar(goalSpeed);
-			playerGoalYRotateAngle = 0;
-			computerGoalStartingPosition.set(-75, -10, 0);
+			playerGoalYRotateAngle = Math.PI * 0.5;
+			computerGoalStartingPosition.set(0, -10, -200);
 			computerGoalStartingLocalVelocity.set(-1, 0, -1).normalize().multiplyScalar(goalSpeed);
-			computerGoalYRotateAngle = 0;
+			computerGoalYRotateAngle = Math.PI * 0.5;
 			goalRenderingLiftAmount = 50;
 			light1StartingPosition.set(0, 0, 0);
 			light2StartingPosition.set(-0.3, 0.3, -1);
@@ -901,7 +902,7 @@ function updateVariablesAndUniforms()
 			course_ClipMinYController.min(-1); course_ClipMaxYController.max(1);
 			course_ClipMinXController.setValue(-1); course_ClipMaxXController.setValue(1);
 			course_ClipMinYController.setValue(-1); course_ClipMaxYController.setValue(1);
-			courseShapeKparameter = 1;
+			courseShapeKparameter = 1.5;
 			course_ClipMinZController.min(-courseShapeKparameter - 1); course_ClipMaxZController.max(courseShapeKparameter + 1);
 			course_ClipMinZController.setValue(-courseShapeKparameter - 1); course_ClipMaxZController.setValue(courseShapeKparameter + 1);
 			course_ShapeKparameterController.show();
@@ -978,56 +979,52 @@ function updateVariablesAndUniforms()
 		}
 		else if (courseShapeType == 'BilinearPatch')
 		{
-			glider1StartingPosition.set(0.5, 0, 75);
-			glider2StartingPosition.set(-0.5, 0, -75);
+			glider1StartingPosition.set(1, 0, 200);
+			glider2StartingPosition.set(-1, 0, -200);
 			ballStartingPosition.set(0, 0, 0);
-			playerGoalStartingPosition.set(300, 0, 0);
-			playerGoalStartingLocalVelocity.set(1, 0, 0).normalize().multiplyScalar(goalSpeed);
-			computerGoalStartingPosition.set(-300, 0, 0);
-			computerGoalStartingLocalVelocity.set(-1, 0, 0).normalize().multiplyScalar(goalSpeed);
-			// light1StartingPosition.set(1, 1, -1);
-			// light2StartingPosition.set(-0.5, 1, -1);
-			// light3StartingPosition.set(1, 1, 0);
-			light1StartingPosition.set( 2 * Math.cos(ONETHIRD_PI * 0), 1, 2 * Math.sin(ONETHIRD_PI * 0) );
-			light2StartingPosition.set( 2 * Math.cos(ONETHIRD_PI * 4), 1, 2 * Math.sin(ONETHIRD_PI * 4) );
-			light3StartingPosition.set( 2 * Math.cos(ONETHIRD_PI * 2), 1, 2 * Math.sin(ONETHIRD_PI * 2) );
-			courseShape.position.set(0, -300, 0);
-			course_ScaleUniformController.setValue(600);
+			playerGoalStartingPosition.set(0, 0, 300);
+			playerGoalStartingLocalVelocity.set(0, 0, 1).normalize().multiplyScalar(goalSpeed);
+			playerGoalYRotateAngle = Math.PI * 0.5;
+			computerGoalStartingPosition.set(0, 0, -300);
+			computerGoalStartingLocalVelocity.set(0, 0, -1).normalize().multiplyScalar(goalSpeed);
+			computerGoalYRotateAngle = Math.PI * 0.5;
+			light1StartingPosition.set( 1.75 * Math.cos(ONETHIRD_PI * 0), 1, 1.75 * Math.sin(ONETHIRD_PI * 0) );
+			light2StartingPosition.set( 1.75 * Math.cos(ONETHIRD_PI * 4), 1, 1.75 * Math.sin(ONETHIRD_PI * 4) );
+			light3StartingPosition.set( 1.75 * Math.cos(ONETHIRD_PI * 2), 1, 1.75 * Math.sin(ONETHIRD_PI * 2) );
+			courseShape.position.set(0, -600, 0);
+			//course_ScaleUniformController.setValue(600);
 			course_ScaleXController.show();
 			course_ScaleYController.show();
 			course_ScaleZController.show();
-			course_ScaleXController.setValue(600);
+			course_ScaleXController.setValue(800);
 			course_ScaleYController.setValue(600);
-			course_ScaleZController.setValue(600);
-			// course_ScaleXController.hide();
-			// course_ScaleYController.hide();
-			// course_ScaleZController.hide();
+			course_ScaleZController.setValue(800);
 			course_ClipMinXController.min(-3); course_ClipMaxXController.max(3);
-			course_ClipMinYController.min(-1); course_ClipMaxYController.max(2);
+			course_ClipMinYController.min(-1); course_ClipMaxYController.max(3);
 			course_ClipMinZController.min(-3); course_ClipMaxZController.max(3);
 			course_ClipMinXController.setValue(-3); course_ClipMaxXController.setValue(3);
-			course_ClipMinYController.setValue(-1); course_ClipMaxYController.setValue(2);
+			course_ClipMinYController.setValue(-1); course_ClipMaxYController.setValue(3);
 			course_ClipMinZController.setValue(-3); course_ClipMaxZController.setValue(3);
 			clipBoundaries_Folder.hide();
 			course_ShapeKparameterController.hide();
 			
 			BilinearPatchGroupVertexHeights_Folder.show();
-			vertices_Front_Left_HeightController.setValue(1);
-			vertices_Front_MidLeft_HeightController.setValue(0.5);
-			vertices_Front_MidRight_HeightController.setValue(0.5);
-			vertices_Front_Right_HeightController.setValue(1);
-			vertices_MidFront_Left_HeightController.setValue(0.25);
-			vertices_MidFront_MidLeft_HeightController.setValue(0);
-			vertices_MidFront_MidRight_HeightController.setValue(0);
-			vertices_MidFront_Right_HeightController.setValue(0.25);
-			vertices_MidBack_Left_HeightController.setValue(0.25);
-			vertices_MidBack_MidLeft_HeightController.setValue(0);
+			vertices_Front_Left_HeightController.setValue(0);
+			vertices_Front_MidLeft_HeightController.setValue(0);
+			vertices_Front_MidRight_HeightController.setValue(0);
+			vertices_Front_Right_HeightController.setValue(0.5);
+			vertices_MidFront_Left_HeightController.setValue(0);
+			vertices_MidFront_MidLeft_HeightController.setValue(0.5);
+			vertices_MidFront_MidRight_HeightController.setValue(1);
+			vertices_MidFront_Right_HeightController.setValue(0);
+			vertices_MidBack_Left_HeightController.setValue(0);
+			vertices_MidBack_MidLeft_HeightController.setValue(1);
 			vertices_MidBack_MidRight_HeightController.setValue(0);
-			vertices_MidBack_Right_HeightController.setValue(0.25);
-			vertices_Back_Left_HeightController.setValue(1);
-			vertices_Back_MidLeft_HeightController.setValue(0.5);
-			vertices_Back_MidRight_HeightController.setValue(0.5);
-			vertices_Back_Right_HeightController.setValue(1);
+			vertices_MidBack_Right_HeightController.setValue(0);
+			vertices_Back_Left_HeightController.setValue(0);
+			vertices_Back_MidLeft_HeightController.setValue(0);
+			vertices_Back_MidRight_HeightController.setValue(0);
+			vertices_Back_Right_HeightController.setValue(0);
 			
 			pathTracingUniforms.uCourseShapeType.value = 11;
 		}
@@ -1045,10 +1042,6 @@ function updateVariablesAndUniforms()
 		course_ScaleXController.setValue(courseUniformScale);
 		course_ScaleYController.setValue(courseUniformScale);
 		course_ScaleZController.setValue(courseUniformScale);
-
-		// courseShape.updateMatrixWorld();
-		// courseShape_invMatrix.copy(courseShape.matrixWorld).invert();
-		// pathTracingUniforms.uCourseShape_invMatrix.value.copy(courseShape_invMatrix);
 
 		cameraIsMoving = true;
 		needChangeCourseScaleUniform = false;
@@ -1097,9 +1090,6 @@ function updateVariablesAndUniforms()
 			computerGoalStartingLocalVelocity.set(1, 0, 0).normalize().multiplyScalar(goalSpeed);
 			computerGoalYRotateAngle = 0;
 			goalRenderingLiftAmount = 50;
-			// light1Position.set(-10 - course_ScaleXController.getValue(), -15, 5);
-			// light2Position.set(10 + course_ScaleXController.getValue(), -10, -15);
-			// light3Position.set(5, course_ScaleYController.getValue(), 5);
 
 			light1Position.copy(torusLight1PositionVec).multiply(courseShape.scale);
 			light2Position.copy(torusLight2PositionVec).multiply(courseShape.scale);
@@ -1111,6 +1101,15 @@ function updateVariablesAndUniforms()
 
 			torusUpperBound *= 4;
 			pathTracingUniforms.uTorusUpperBound.value = torusUpperBound;
+		}
+
+		if (courseShapeType == 'BilinearPatch')
+		{
+			glider1StartingPosition.y = courseShape.scale.y;
+			glider2StartingPosition.y = courseShape.scale.y;
+			ballStartingPosition.y = courseShape.scale.y;
+			playerGoalStartingPosition.y = courseShape.scale.y;
+			computerGoalStartingPosition.y = courseShape.scale.y;
 		}
 
 		pathTracingUniforms.uCourseShapeScale.value.copy(courseShape.scale);
@@ -1290,6 +1289,11 @@ function updateVariablesAndUniforms()
 
 		// reset timers
 		glider2ThrustTimer.begin(); // #AI
+		glider1InAirTimer.begin();
+		glider2InAirTimer.begin();
+		ballInAirTimer.begin();
+		playerGoalInAirTimer.begin();
+		computerGoalInAirTimer.begin();
 
 		levelBeginFlag = false;
 	} // end if (levelBeginFlag)
@@ -1311,7 +1315,16 @@ function updateVariablesAndUniforms()
 	playerGoalGlowTimer.update();
 	computerGoalGlowTimer.update();
 	glider2ThrustTimer.update();
-
+	glider1InAirTimer.update();
+	glider2InAirTimer.update();
+	ballInAirTimer.update();
+	playerGoalInAirTimer.update();
+	computerGoalInAirTimer.update();
+	/* 
+	// Debug: make goals very visible
+	pathTracingUniforms.uPlayerGoalGlowAmount.value = 4.0;
+	pathTracingUniforms.uComputerGoalGlowAmount.value = 4.0; 
+	*/
 	if (playerGoalGlowTimer.queryWasJustStarted())
 	{
 		pathTracingUniforms.uPlayerGoalGlowAmount.value = 4.0;
@@ -1329,6 +1342,7 @@ function updateVariablesAndUniforms()
 	{
 		pathTracingUniforms.uComputerGoalGlowAmount.value = 1.5;
 	}
+
 	// #AI
 	if (glider2ThrustTimer.queryWasJustStarted())
 	{
@@ -1348,9 +1362,13 @@ function updateVariablesAndUniforms()
 		// keep camera from rotating too far down underneath player's Glider
 		if (!useFreeFlyCamera)
 		{
-			if (inputRotationVertical < 0.0)
+			if (courseShapeType != 'BilinearPatch' && inputRotationVertical < 0.0)
 			{
 				inputRotationVertical = 0.0;
+			}
+			if (courseShapeType == 'BilinearPatch' && inputRotationVertical < -0.6)
+			{
+				inputRotationVertical = -0.6;
 			}
 			if (inputRotationVertical > PI_2)
 			{
@@ -1588,6 +1606,7 @@ function updateVariablesAndUniforms()
 		glider1Gravity = 0;
 		glider1IsAcceleratingUp = false;
 		canPress_Space = true;
+		glider1InAirTimer.begin();
 	}
 	// if in air, apply gravity (actually anti-gravity: pulls Glider down to the large course surface in all directions)
 	if (glider1IsInAir)
@@ -1597,7 +1616,7 @@ function updateVariablesAndUniforms()
 		if (courseShapeType != 'BilinearPatch')
 			glider1LocalVelocity.y -= (200 * frameTime);
 		else // courseShapeType == 'BilinearPatch', so apply conventional Earth-like downward Gravity force
-			glider1Gravity -= (300 * frameTime);
+			glider1Gravity -= (400 * frameTime);
 	}
 	// if a legal jump action was triggered, apply a short, upward impulse to glider
 	if (jumpWasTriggered)
@@ -1700,6 +1719,7 @@ function updateVariablesAndUniforms()
 			// glider1LocalVelocity.x += impulseGlider1.dot(glider1BaseRight);
 			// glider1LocalVelocity.y += impulseGlider1.dot(glider1BaseUp);
 			// glider1LocalVelocity.z += impulseGlider1.dot(glider1BaseForward);
+
 			// use for constantly steerable glider (less realistic, but easier to handle)
 			glider1LocalVelocity.x += impulseGlider1.dot(glider1ThrustersRight);
 			glider1LocalVelocity.y += impulseGlider1.dot(glider1ThrustersUp);
@@ -1709,6 +1729,7 @@ function updateVariablesAndUniforms()
 			// glider2LocalVelocity.x += impulseGlider2.dot(glider2BaseRight);
 			// glider2LocalVelocity.y += impulseGlider2.dot(glider2BaseUp);
 			// glider2LocalVelocity.z += impulseGlider2.dot(glider2BaseForward);
+
 			// use for constantly steerable glider (less realistic, but easier to handle)
 			glider2LocalVelocity.x += impulseGlider2.dot(glider2ThrustersRight);
 			glider2LocalVelocity.y += impulseGlider2.dot(glider2ThrustersUp);
@@ -1754,6 +1775,7 @@ function updateVariablesAndUniforms()
 			// glider1LocalVelocity.x += impulseGlider1.dot(glider1BaseRight);
 			// glider1LocalVelocity.y += impulseGlider1.dot(glider1BaseUp);
 			// glider1LocalVelocity.z += impulseGlider1.dot(glider1BaseForward);
+
 			// use for constantly steerable glider (less realistic, but easier to handle)
 			glider1LocalVelocity.x += impulseGlider1.dot(glider1ThrustersRight);
 			glider1LocalVelocity.y += impulseGlider1.dot(glider1ThrustersUp);
@@ -1911,7 +1933,10 @@ function updateVariablesAndUniforms()
 	// check glider1 base center probe for intersection with course (a ray is cast from glider1's position downward towards the floor beneath)
 	
 	glider1RayOrigin.copy(glider1Base.position);
-	glider1RayDirection.copy(glider1BaseUp).negate();
+	if (courseShapeType == 'BilinearPatch' && glider1IsInAir && glider1InAirTimer.secondsRemaining < 0.01)
+		glider1RayDirection.copy(worldUp).negate();
+	else
+		glider1RayDirection.copy(glider1BaseUp).negate();
 
 	rayObjectOrigin.copy(glider1RayOrigin);
 	rayObjectDirection.copy(glider1RayDirection);
@@ -2021,6 +2046,7 @@ function updateVariablesAndUniforms()
 		glider2Gravity = 0;
 		glider2IsAcceleratingUp = false;
 		//canPress_Space = true;
+		glider2InAirTimer.begin();
 	}
 	// if in air, apply gravity (actually anti-gravity: pulls Glider2 down to the large course surface in all directions)
 	if (glider2IsInAir)
@@ -2030,7 +2056,7 @@ function updateVariablesAndUniforms()
 		if (courseShapeType != 'BilinearPatch')
 			glider2LocalVelocity.y -= (200 * frameTime);
 		else // courseShapeType == 'BilinearPatch', so apply conventional Earth-like downward Gravity force
-			glider2Gravity -= (300 * frameTime);
+			glider2Gravity -= (400 * frameTime);
 	}
 	// if a legal jump action was triggered, apply a short, upward impulse to glider2
 	/* if (jumpWasTriggered)
@@ -2121,6 +2147,7 @@ function updateVariablesAndUniforms()
 			// glider2LocalVelocity.x += impulseGlider2.dot(glider2BaseRight);
 			// glider2LocalVelocity.y += impulseGlider2.dot(glider2BaseUp);
 			// glider2LocalVelocity.z += impulseGlider2.dot(glider2BaseForward);
+
 			// use for constantly steerable glider (less realistic, but easier to handle)
 			glider2LocalVelocity.x += impulseGlider2.dot(glider2ThrustersRight);
 			glider2LocalVelocity.y += impulseGlider2.dot(glider2ThrustersUp);
@@ -2130,6 +2157,7 @@ function updateVariablesAndUniforms()
 			// glider1LocalVelocity.x += impulseGlider1.dot(glider1BaseRight);
 			// glider1LocalVelocity.y += impulseGlider1.dot(glider1BaseUp);
 			// glider1LocalVelocity.z += impulseGlider1.dot(glider1BaseForward);
+
 			// use for constantly steerable glider (less realistic, but easier to handle)
 			glider1LocalVelocity.x += impulseGlider1.dot(glider1ThrustersRight);
 			glider1LocalVelocity.y += impulseGlider1.dot(glider1ThrustersUp);
@@ -2176,6 +2204,7 @@ function updateVariablesAndUniforms()
 			// glider2LocalVelocity.x += impulseGlider2.dot(glider2BaseRight);
 			// glider2LocalVelocity.y += impulseGlider2.dot(glider2BaseUp);
 			// glider2LocalVelocity.z += impulseGlider2.dot(glider2BaseForward);
+
 			// use for constantly steerable glider (less realistic, but easier to handle)
 			glider2LocalVelocity.x += impulseGlider2.dot(glider2ThrustersRight);
 			glider2LocalVelocity.y += impulseGlider2.dot(glider2ThrustersUp);
@@ -2333,7 +2362,10 @@ function updateVariablesAndUniforms()
 	// now check glider2 base center probe for intersection with course (a ray is cast from glider2's position downward towards the floor beneath)
 	
 	glider2RayOrigin.copy(glider2Base.position);
-	glider2RayDirection.copy(glider2BaseUp).negate();
+	if (courseShapeType == 'BilinearPatch' && glider2IsInAir && glider2InAirTimer.secondsRemaining < 0.01)
+		glider2RayDirection.copy(worldUp).negate();
+	else
+		glider2RayDirection.copy(glider2BaseUp).negate();
 
 	rayObjectOrigin.copy(glider2RayOrigin);
 	rayObjectDirection.copy(glider2RayDirection);
@@ -2454,6 +2486,7 @@ function updateVariablesAndUniforms()
 	{
 		ballLocalVelocity.y = 0;
 		ballGravity = 0;
+		ballInAirTimer.begin();
 	}
 	// if in air, apply gravity (actually anti-gravity: pulls ball down to the large course surface in all directions)
 	if (ballIsInAir)
@@ -2461,7 +2494,7 @@ function updateVariablesAndUniforms()
 		if (courseShapeType != 'BilinearPatch')
 			ballLocalVelocity.y -= (200 * frameTime);
 		else // courseShapeType == 'BilinearPatch', so apply conventional Earth-like downward Gravity force
-			ballGravity -= (300 * frameTime);
+			ballGravity -= (400 * frameTime);
 	}
 
 	// the following gives a very slight invisible movement to the ball, so that a ray can be created from its old position to its new position 
@@ -2586,6 +2619,7 @@ function updateVariablesAndUniforms()
 			// glider1LocalVelocity.x += impulseGlider1.dot(glider1BaseRight);
 			// glider1LocalVelocity.y += impulseGlider1.dot(glider1BaseUp);
 			// glider1LocalVelocity.z += impulseGlider1.dot(glider1BaseForward);
+
 			// use for constantly steerable glider (less realistic, but easier to handle)
 			glider1LocalVelocity.x += impulseGlider1.dot(glider1ThrustersRight);
 			glider1LocalVelocity.y += impulseGlider1.dot(glider1ThrustersUp);
@@ -2634,6 +2668,7 @@ function updateVariablesAndUniforms()
 			// glider2LocalVelocity.x += impulseGlider2.dot(glider2BaseRight);
 			// glider2LocalVelocity.y += impulseGlider2.dot(glider2BaseUp);
 			// glider2LocalVelocity.z += impulseGlider2.dot(glider2BaseForward);
+
 			// use for constantly steerable glider (less realistic, but easier to handle)
 			glider2LocalVelocity.x += impulseGlider2.dot(glider2ThrustersRight);
 			glider2LocalVelocity.y += impulseGlider2.dot(glider2ThrustersUp);
@@ -2787,7 +2822,10 @@ function updateVariablesAndUniforms()
 	// now check ball base center probe for intersection with course (a ray is cast from ball's position downward towards the floor beneath)
 	
 	ballRayOrigin.copy(ball.position);
-	ballRayDirection.copy(ballUp).negate();
+	if (courseShapeType == 'BilinearPatch' && ballIsInAir && ballInAirTimer.secondsRemaining < 0.01)
+		ballRayDirection.copy(worldUp).negate();
+	else
+		ballRayDirection.copy(ballUp).negate();
 
 	rayObjectOrigin.copy(ballRayOrigin);
 	rayObjectDirection.copy(ballRayDirection);
@@ -2879,10 +2917,19 @@ function updateVariablesAndUniforms()
 
 	// UPDATE PLAYER's GOAL ///////////////////////////////////////////////////////////////////////////////////
 
+	if (!playerGoalIsInAir)
+	{
+		playerGoalLocalVelocity.y = 0;
+		playerGoalGravity = 0;
+		playerGoalInAirTimer.begin();
+	}
 	// if in air, apply gravity (actually anti-gravity: pulls playerGoal down to the large course surface in all directions)
 	if (playerGoalIsInAir)
 	{
-		playerGoalLocalVelocity.y -= (200 * frameTime);
+		if (courseShapeType != 'BilinearPatch')
+			playerGoalLocalVelocity.y -= (200 * frameTime);
+		else // courseShapeType == 'BilinearPatch', so apply conventional Earth-like downward Gravity force
+			playerGoalGravity -= (400 * frameTime);
 	}
 
 	// the following gives a very slight invisible movement to the playerGoal, so that a ray can be created from its old position to its new position 
@@ -2897,6 +2944,7 @@ function updateVariablesAndUniforms()
 	playerGoalWorldVelocity.addScaledVector(playerGoalRight, playerGoalLocalVelocity.x);
 	playerGoalWorldVelocity.addScaledVector(playerGoalUp, playerGoalLocalVelocity.y);
 	playerGoalWorldVelocity.addScaledVector(playerGoalForward, playerGoalLocalVelocity.z);
+	playerGoalWorldVelocity.addScaledVector(worldUp, playerGoalGravity); // playerGoalGravity is only non-zero on 'BilinearPatch' courses
 	
 	playerGoal.position.addScaledVector(playerGoalWorldVelocity, frameTime);
 
@@ -3045,7 +3093,10 @@ function updateVariablesAndUniforms()
 	// now check playerGoal base center probe for intersection with course (a ray is cast from playerGoal's position downward towards the floor beneath)
 	
 	playerGoalRayOrigin.copy(playerGoal.position);
-	playerGoalRayDirection.copy(playerGoalUp).negate();
+	if (courseShapeType == 'BilinearPatch' && playerGoalIsInAir && playerGoalInAirTimer.secondsRemaining < 0.01)
+		playerGoalRayDirection.copy(worldUp).negate();
+	else
+		playerGoalRayDirection.copy(playerGoalUp).negate();
 
 	rayObjectOrigin.copy(playerGoalRayOrigin);
 	rayObjectDirection.copy(playerGoalRayDirection);
@@ -3120,10 +3171,19 @@ function updateVariablesAndUniforms()
 
 	// UPDATE COMPUTER's GOAL ///////////////////////////////////////////////////////////////////////////////////
 
+	if (!computerGoalIsInAir)
+	{
+		computerGoalLocalVelocity.y = 0;
+		computerGoalGravity = 0;
+		computerGoalInAirTimer.begin();
+	}
 	// if in air, apply gravity (actually anti-gravity: pulls computerGoal down to the large course surface in all directions)
 	if (computerGoalIsInAir)
 	{
-		computerGoalLocalVelocity.y -= (200 * frameTime);
+		if (courseShapeType != 'BilinearPatch')
+			computerGoalLocalVelocity.y -= (200 * frameTime);
+		else // courseShapeType == 'BilinearPatch', so apply conventional Earth-like downward Gravity force
+			computerGoalGravity -= (400 * frameTime);
 	}
 
 	// the following gives a very slight invisible movement to the playerGoal, so that a ray can be created from its old position to its new position 
@@ -3138,6 +3198,7 @@ function updateVariablesAndUniforms()
 	computerGoalWorldVelocity.addScaledVector(computerGoalRight, computerGoalLocalVelocity.x);
 	computerGoalWorldVelocity.addScaledVector(computerGoalUp, computerGoalLocalVelocity.y);
 	computerGoalWorldVelocity.addScaledVector(computerGoalForward, computerGoalLocalVelocity.z);
+	computerGoalWorldVelocity.addScaledVector(worldUp, computerGoalGravity); // computerGoalGravity is only non-zero on 'BilinearPatch' courses
 	
 	computerGoal.position.addScaledVector(computerGoalWorldVelocity, frameTime);
 
@@ -3286,7 +3347,10 @@ function updateVariablesAndUniforms()
 	// now check computerGoal base center probe for intersection with course (a ray is cast from computerGoal's position downward towards the floor beneath)
 	
 	computerGoalRayOrigin.copy(computerGoal.position);
-	computerGoalRayDirection.copy(computerGoalUp).negate();
+	if (courseShapeType == 'BilinearPatch' && computerGoalIsInAir && computerGoalInAirTimer.secondsRemaining < 0.01)
+		computerGoalRayDirection.copy(worldUp).negate();
+	else
+		computerGoalRayDirection.copy(computerGoalUp).negate();
 
 	rayObjectOrigin.copy(computerGoalRayOrigin);
 	rayObjectDirection.copy(computerGoalRayDirection);
@@ -3381,13 +3445,19 @@ function updateVariablesAndUniforms()
 	
 	// DEBUG INFO
 	
-	demoInfoElement.innerHTML = "collisions: " + collisionCounter + "<br>" + "FOV: " + worldCamera.fov + "<br>";
+	demoInfoElement.innerHTML = "FOV: " + worldCamera.fov + "<br>";
+
+	// demoInfoElement.innerHTML += "collisions: " + collisionCounter + "<br>";
+
+	/* demoInfoElement.innerHTML += "glider1InAirTimer: " + glider1InAirTimer.secondsRemaining.toFixed(2) + " glider2InAirTimer: " + glider2InAirTimer.secondsRemaining.toFixed(2) + "<br>" +
+		"ballInAirTimer: " + ballInAirTimer.secondsRemaining.toFixed(2) + "<br>" +
+		"playerGoalInAirTimer: " + playerGoalInAirTimer.secondsRemaining.toFixed(2) + " computerGoalInAirTimer: " + computerGoalInAirTimer.secondsRemaining.toFixed(2); */
 
 	/* demoInfoElement.innerHTML += "playerGoalTimer paused: " + playerGoalGlowTimer.isPaused + " running: " + playerGoalGlowTimer.isRunning + " duration: " + playerGoalGlowTimer.duration + 
 		" remaining: " + playerGoalGlowTimer.secondsRemaining.toFixed(2) + " complete: " + playerGoalGlowTimer.unitAmountCompleted.toFixed(2) + " wasJustCompleted: " + playerGoalGlowTimer.wasJustCompleted;
 	demoInfoElement.innerHTML += "<br>" + " computerGoalTimer paused: " + computerGoalGlowTimer.isPaused + " running: " + computerGoalGlowTimer.isRunning + " duration: " + computerGoalGlowTimer.duration + 
-		" remaining: " + computerGoalGlowTimer.secondsRemaining.toFixed(2) + " complete: " + computerGoalGlowTimer.unitAmountCompleted.toFixed(2) + " wasJustCompleted: " + computerGoalGlowTimer.wasJustCompleted;
-	 */
+		" remaining: " + computerGoalGlowTimer.secondsRemaining.toFixed(2) + " complete: " + computerGoalGlowTimer.unitAmountCompleted.toFixed(2) + " wasJustCompleted: " + computerGoalGlowTimer.wasJustCompleted; */
+	
 		/* demoInfoElement.innerHTML += " glider1IsInAir: " + glider1IsInAir + " " + "cameraIsMoving: " + cameraIsMoving + "<br>" + 
 	"glider1BaseRight: " + "(" + glider1BaseRight.x.toFixed(1) + " " + glider1BaseRight.y.toFixed(1) + " " + glider1BaseRight.z.toFixed(1) + ")" + " " + 
 	"glider1BaseUp: " + "(" + glider1BaseUp.x.toFixed(1) + " " + glider1BaseUp.y.toFixed(1) + " " + glider1BaseUp.z.toFixed(1) + ")" + " " + 
