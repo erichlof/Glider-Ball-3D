@@ -1541,8 +1541,8 @@ void SetupScene(void)
 //-----------------------------------------------------------------------
 {
 	float lightPower = (uCourseShapeScale.x + uCourseShapeScale.y + uCourseShapeScale.z) * 0.3333;
-	lightPower = 0.00005 * (lightPower * lightPower);
-	lightPower = clamp(lightPower, 4.0, 100.0);
+	lightPower = (uCourseShapeType == 11) ? 0.0005 * (lightPower * lightPower) : 0.00005 * (lightPower * lightPower);
+	lightPower = clamp(lightPower, 4.0, 1000.0);
 	vec3 L1 = vec3(1.0, 1.0, 1.0) * lightPower;// White light
 	vec3 L2 = vec3(1.0, 0.8, 0.2) * lightPower;// Yellow light
 	vec3 L3 = vec3(0.1, 0.7, 1.0) * lightPower;// Blue light
@@ -1552,8 +1552,8 @@ void SetupScene(void)
 	spheres[2] = Sphere(20.0, uLight3Position, L3, vec3(0), LIGHT);//spherical blue Light3
 
 	unitBoxes[0] = UnitBox(vec3(0), vec3(0.01, 1.0, 0.4), DIFF);//Ball
-	unitBoxes[1] = UnitBox(vec3(0.01, 0.2, 1.0) * uPlayerGoalGlowAmount, vec3(0.01, 0.2, 1.0) * uPlayerGoalGlowAmount, uPlayerGoalGlowAmount > 2.0 ? LIGHT : SPEC);//player's Goal
-	unitBoxes[2] = UnitBox(vec3(1.0, 0.01, 0.2) * uComputerGoalGlowAmount, vec3(1.0, 0.01, 0.2) * uComputerGoalGlowAmount, uComputerGoalGlowAmount > 2.0 ? LIGHT : SPEC);//computer's Goal
+	unitBoxes[1] = UnitBox(vec3(0.01, 0.2, 1.0) * uPlayerGoalGlowAmount, vec3(0.01, 0.2, 1.0) * uPlayerGoalGlowAmount, uPlayerGoalGlowAmount > 1.5 ? LIGHT : SPEC);//player's Goal
+	unitBoxes[2] = UnitBox(vec3(1.0, 0.01, 0.2) * uComputerGoalGlowAmount, vec3(1.0, 0.01, 0.2) * uComputerGoalGlowAmount, uComputerGoalGlowAmount > 1.5 ? LIGHT : SPEC);//computer's Goal
 
 	unitParaboloids[0] = UnitParaboloid(vec3(0), vec3(0.01, 0.2, 1.0), SPEC);//player's Glider1
 	unitParaboloids[1] = UnitParaboloid(vec3(0), vec3(1.0, 0.01, 0.4), SPEC);//computer's Glider2
