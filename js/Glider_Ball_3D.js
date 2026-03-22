@@ -684,7 +684,7 @@ function updateVariablesAndUniforms()
 			course_ScaleZController.show();
 			course_ScaleXController.setValue(500);
 			course_ScaleYController.setValue(500);
-			course_ScaleZController.setValue(800);
+			course_ScaleZController.setValue(1000);
 			clipBoundaries_Folder.show();
 			course_ClipMinXController.min(-1); course_ClipMaxXController.max(1);
 			course_ClipMinYController.min(-1); course_ClipMaxYController.max(1);
@@ -799,7 +799,7 @@ function updateVariablesAndUniforms()
 			course_ClipMinXController.setValue(-1); course_ClipMaxXController.setValue(1);
 			course_ClipMinYController.setValue(-1); course_ClipMaxYController.setValue(1);
 			course_ClipMinZController.setValue(-1); course_ClipMaxZController.setValue(1);
-			courseShapeKparameter = 0.9;
+			courseShapeKparameter = 0.8;
 			course_ShapeKparameterController.show();
 			course_ShapeKparameterController.min(0.0); course_ShapeKparameterController.max(0.97);
 			course_ShapeKparameterController.setValue(courseShapeKparameter);
@@ -890,13 +890,13 @@ function updateVariablesAndUniforms()
 			light2StartingPosition.set(-0.3, 0.3, -1);
 			light3StartingPosition.set(0.3, -0.3, 1);
 			courseShape.position.set(0, 0, 0);
-			course_ScaleUniformController.setValue(500);
+			course_ScaleUniformController.setValue(700);
 			course_ScaleXController.show();
 			course_ScaleYController.show();
 			course_ScaleZController.show();
-			course_ScaleXController.setValue(500);
-			course_ScaleYController.setValue(500);
-			course_ScaleZController.setValue(500);
+			course_ScaleXController.setValue(700);
+			course_ScaleYController.setValue(700);
+			course_ScaleZController.setValue(700);
 			clipBoundaries_Folder.show();
 			course_ClipMinXController.min(-1); course_ClipMaxXController.max(1);
 			course_ClipMinYController.min(-1); course_ClipMaxYController.max(1);
@@ -1973,7 +1973,7 @@ function updateVariablesAndUniforms()
 		glider1LocalVelocity.y = 0;
 		glider1Base.position.copy(intersectionPoint);
 	}
-	if (testT > 1.01) // " > 1.01" instead of " > 1" to account for floating point precision
+	if (testT > 1) // " > 1.01" instead of " > 1" to account for floating point precision
 	{
 		glider1IsInAir = true;
 	}
@@ -2402,7 +2402,7 @@ function updateVariablesAndUniforms()
 		glider2LocalVelocity.y = 0;
 		glider2Base.position.copy(intersectionPoint);
 	}
-	if (testT > 1.01) // " > 1.01" instead of " > 1" to account for floating point precision
+	if (testT > 1) // " > 1.01" instead of " > 1" to account for floating point precision
 	{
 		glider2IsInAir = true;
 	}
@@ -2862,7 +2862,7 @@ function updateVariablesAndUniforms()
 		ballLocalVelocity.y = 0;
 		ball.position.copy(intersectionPoint);
 	}
-	if (testT > 1.01) // " > 1.01" instead of " > 1" to account for floating point precision
+	if (testT > 1) // " > 1.01" instead of " > 1" to account for floating point precision
 	{
 		ballIsInAir = true;
 	}
@@ -3124,7 +3124,7 @@ function updateVariablesAndUniforms()
 		playerGoalLocalVelocity.y = 0;
 		playerGoal.position.copy(intersectionPoint);
 	}
-	if (testT > 1.01) // " > 1.01" instead of " > 1" to account for floating point precision
+	if (testT > 1) // " > 1.01" instead of " > 1" to account for floating point precision
 	{
 		playerGoalIsInAir = true;
 	}
@@ -3378,7 +3378,7 @@ function updateVariablesAndUniforms()
 		computerGoalLocalVelocity.y = 0;
 		computerGoal.position.copy(intersectionPoint);
 	}
-	if (testT > 1.01) // " > 1.01" instead of " > 1" to account for floating point precision
+	if (testT > 1) // " > 1.01" instead of " > 1" to account for floating point precision
 	{
 		computerGoalIsInAir = true;
 	}
@@ -3474,7 +3474,7 @@ function updateVariablesAndUniforms()
 	
 	"glider1LocalVelocity: " + "(" + glider1LocalVelocity.x.toFixed(1) + " " + glider1LocalVelocity.y.toFixed(1) + " " + glider1LocalVelocity.z.toFixed(1) + ")" + "<br>" + 
 	"glider1WorldVelocity: " + "(" + glider1WorldVelocity.x.toFixed(1) + " " + glider1WorldVelocity.y.toFixed(1) + " " + glider1WorldVelocity.z.toFixed(1) + ")";
- 	*/
+ 	 */
 
 	/* demoInfoElement.innerHTML += " glider2IsInAir: " + glider2IsInAir + " " + "cameraIsMoving: " + cameraIsMoving + "<br>" + 
 	"glider2BaseRight: " + "(" + glider2BaseRight.x.toFixed(1) + " " + glider2BaseRight.y.toFixed(1) + " " + glider2BaseRight.z.toFixed(1) + ")" + " " + 
