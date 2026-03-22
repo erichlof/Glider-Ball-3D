@@ -890,13 +890,13 @@ function updateVariablesAndUniforms()
 			light2StartingPosition.set(-0.3, 0.3, -1);
 			light3StartingPosition.set(0.3, -0.3, 1);
 			courseShape.position.set(0, 0, 0);
-			course_ScaleUniformController.setValue(700);
+			course_ScaleUniformController.setValue(800);
 			course_ScaleXController.show();
 			course_ScaleYController.show();
 			course_ScaleZController.show();
-			course_ScaleXController.setValue(700);
-			course_ScaleYController.setValue(700);
-			course_ScaleZController.setValue(700);
+			course_ScaleXController.setValue(800);
+			course_ScaleYController.setValue(800);
+			course_ScaleZController.setValue(800);
 			clipBoundaries_Folder.show();
 			course_ClipMinXController.min(-1); course_ClipMaxXController.max(1);
 			course_ClipMinYController.min(-1); course_ClipMaxYController.max(1);
