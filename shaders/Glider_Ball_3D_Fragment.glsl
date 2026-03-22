@@ -376,7 +376,7 @@ float UnitCapsuleInterior_ParamIntersect( vec3 ro, vec3 rd, float k, out vec3 n,
 
 	// simple XY-plane mapping
 	uv = vec2(hit.x, hit.y);
-	uv *= 8.0;//2.0 * PI;
+	uv *= uvScale.x * 0.18;
 	if ( hit.z < 0.0 && t1 > 0.0 && all(greaterThanEqual(hit, uCourseMinBounds+vec3(0,0,k))) && all(lessThanEqual(hit, uCourseMaxBounds)) )
 	{
 		n = hit;
@@ -393,7 +393,7 @@ float UnitCapsuleInterior_ParamIntersect( vec3 ro, vec3 rd, float k, out vec3 n,
 
 	hit = ro + (rd * t1);
 	uv = vec2(hit.x, hit.y);
-	uv *= 8.0;//2.0 * PI;
+	uv *= uvScale.x * 0.18;
 	if ( hit.z > 0.0 && t1 > 0.0 && all(greaterThanEqual(hit, uCourseMinBounds)) && all(lessThanEqual(hit, uCourseMaxBounds-vec3(0,0,k))) )
 	{
 		n = hit;
@@ -1153,7 +1153,7 @@ float SceneIntersect(out int finalIsRayExiting)
 	else if (uCourseShapeType == 7)
 		d = XZPlane_ParamIntersect(rObjOrigin, rObjDirection, normal, uv, floor(vec2(8.0 * uvFactor.x, 8.0 * uvFactor.z)));
 	else if (uCourseShapeType == 8)
-		d = UnitCapsuleInterior_ParamIntersect(rObjOrigin, rObjDirection, uCourseShapeKparameter, normal, uv, floor(vec2(40.0 * uvFactor.x, 12.0 * uvFactor.z)));
+		d = UnitCapsuleInterior_ParamIntersect(rObjOrigin, rObjDirection, uCourseShapeKparameter, normal, uv, floor(vec2(30.0 * uvFactor.x, 10.0 * uvFactor.z)));
 	else if (uCourseShapeType == 9)
 		d = UnitRoundedBoxInterior_ParamIntersect(rObjOrigin, rObjDirection, uCourseShapeKparameter, normal, uv);
 	else if (uCourseShapeType == 10)
