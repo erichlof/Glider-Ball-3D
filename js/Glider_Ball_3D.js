@@ -79,6 +79,9 @@ let glider2ThrustTimer;
 let glider2ApplyThrust = false;
 let glider2Gravity = 0; // used only on 'BilinearPatch' courses
 let glider2InAirTimer;
+let glider2MaxRotationSpeed = 7; // #AI
+let glider2ThrustersForward_dot_clipBoundaryWallNormal = 0; // #AI
+let savedBoundaryCollisionNormal = new THREE.Vector3();
 
 let ball = new THREE.Object3D();
 let ballCollisionVolume = new THREE.Object3D();
@@ -1544,9 +1547,9 @@ function updateVariablesAndUniforms()
 
 		// Note: the following is temporary input code for testing red opponent glider movement
 		// will be removed when red opponent glider is fully controlled by AI code
-		if ((!glider2IsInAir && !ballIsInAir) || (courseShapeType == 'BilinearPatch')) // #AI
+		if ((!ballIsInAir) || (courseShapeType == 'BilinearPatch')) 
 		{
-			if ( glider2ApplyThrust || (keyPressed('KeyI') && !keyPressed('KeyK')) )
+			if ( glider2ApplyThrust || (keyPressed('KeyI') && !keyPressed('KeyK')) ) // #AI
 			{
 				if (Math.abs(glider2LocalVelocity.z) < 500)
 				{
@@ -2223,6 +2226,8 @@ function updateVariablesAndUniforms()
 	{
 		glider2Base.position.x = courseShape.position.x + (courseShape.scale.x * courseMaxBounds.x);
 		collisionNormal.set(-1,0,0);
+		savedBoundaryCollisionNormal.copy(collisionNormal);
+		glider2ThrustersForward_dot_clipBoundaryWallNormal = glider2ThrustersForward.dot(collisionNormal); // #AI
 		tempVec.crossVectors(glider2BaseUp, collisionNormal).normalize();
 		collisionNormal.crossVectors(tempVec, glider2BaseUp);
 		tempVec.set(-1,0,0);
@@ -2237,6 +2242,8 @@ function updateVariablesAndUniforms()
 	{
 		glider2Base.position.x = courseShape.position.x + (courseShape.scale.x * courseMinBounds.x);
 		collisionNormal.set(1,0,0);
+		savedBoundaryCollisionNormal.copy(collisionNormal);
+		glider2ThrustersForward_dot_clipBoundaryWallNormal = glider2ThrustersForward.dot(collisionNormal); // #AI
 		tempVec.crossVectors(glider2BaseUp, collisionNormal).normalize();
 		collisionNormal.crossVectors(tempVec, glider2BaseUp);
 		tempVec.set(1,0,0);
@@ -2251,6 +2258,8 @@ function updateVariablesAndUniforms()
 	{
 		glider2Base.position.y = courseShape.position.y + (courseShape.scale.y * courseMaxBounds.y);
 		collisionNormal.set(0,-1,0);
+		savedBoundaryCollisionNormal.copy(collisionNormal);
+		glider2ThrustersForward_dot_clipBoundaryWallNormal = glider2ThrustersForward.dot(collisionNormal); // #AI
 		tempVec.crossVectors(glider2BaseUp, collisionNormal).normalize();
 		collisionNormal.crossVectors(tempVec, glider2BaseUp);
 		tempVec.set(0,-1,0);
@@ -2265,6 +2274,8 @@ function updateVariablesAndUniforms()
 	{
 		glider2Base.position.y = courseShape.position.y + (courseShape.scale.y * courseMinBounds.y);
 		collisionNormal.set(0,1,0);
+		savedBoundaryCollisionNormal.copy(collisionNormal);
+		glider2ThrustersForward_dot_clipBoundaryWallNormal = glider2ThrustersForward.dot(collisionNormal); // #AI
 		tempVec.crossVectors(glider2BaseUp, collisionNormal).normalize();
 		collisionNormal.crossVectors(tempVec, glider2BaseUp);
 		tempVec.set(0,1,0);
@@ -2279,6 +2290,8 @@ function updateVariablesAndUniforms()
 	{
 		glider2Base.position.z = courseShape.position.z + (courseShape.scale.z * courseMaxBounds.z);
 		collisionNormal.set(0,0,-1);
+		savedBoundaryCollisionNormal.copy(collisionNormal);
+		glider2ThrustersForward_dot_clipBoundaryWallNormal = glider2ThrustersForward.dot(collisionNormal); // #AI
 		tempVec.crossVectors(glider2BaseUp, collisionNormal).normalize();
 		collisionNormal.crossVectors(tempVec, glider2BaseUp);
 		tempVec.set(0,0,-1);
@@ -2293,6 +2306,8 @@ function updateVariablesAndUniforms()
 	{
 		glider2Base.position.z = courseShape.position.z + (courseShape.scale.z * courseMinBounds.z);
 		collisionNormal.set(0,0,1);
+		savedBoundaryCollisionNormal.copy(collisionNormal);
+		glider2ThrustersForward_dot_clipBoundaryWallNormal = glider2ThrustersForward.dot(collisionNormal); // #AI
 		tempVec.crossVectors(glider2BaseUp, collisionNormal).normalize();
 		collisionNormal.crossVectors(tempVec, glider2BaseUp);
 		tempVec.set(0,0,1);
@@ -2424,11 +2439,18 @@ function updateVariablesAndUniforms()
 	glider2Thrusters.rotation.copy(glider2Base.rotation);
 	glider2Thrusters.scale.copy(glider2Base.scale);
 
+	// #AI
 	// UPDATE AI GLIDER 2 ////////////////////////////////////
-	if ((!isPaused && !ballIsInAir) || (!isPaused && courseShapeType == 'BilinearPatch')) // #AI
+	if ((!isPaused && !ballIsInAir) || (!isPaused && courseShapeType == 'BilinearPatch'))
 	{
 		// first, get a vector from glider2 to the target(ball.position), but negate it because AI opponent glider2 points in opposite direction from player's glider1
-		glider2TargetForward.copy(ball.position).sub(glider2Base.position).normalize().negate();
+		if (glider2BaseUp.dot(ballUp) > -0.5)
+			glider2TargetForward.copy(ball.position).sub(glider2Base.position).normalize().negate();
+		if (glider2ThrustersForward_dot_clipBoundaryWallNormal > 0)
+			glider2TargetForward.copy(savedBoundaryCollisionNormal).negate();
+		
+		glider2ThrustersForward_dot_clipBoundaryWallNormal = 0; // reset this value every frame
+			
 		// construct the ortho basis frame if glider2 were to be pointing at ball
 		glider2TargetUp.copy(glider2BaseUp);
 		glider2TargetRight.crossVectors(glider2TargetForward, glider2TargetUp);
@@ -2438,9 +2460,10 @@ function updateVariablesAndUniforms()
 		glider2RotateYAngle = glider2ThrustersForward.angleTo(glider2TargetForward);
 		if (glider2ThrustersRight.dot(glider2TargetForward) < 0) // determines if we need to turn left or right
 			glider2RotateYAngle *= -1;
-		glider2_inputRotationHorizontal += glider2RotateYAngle; // the input needs to be a running total of all angles so far (positive or negative)
+		glider2_inputRotationHorizontal += (glider2RotateYAngle * frameTime * glider2MaxRotationSpeed); // the input needs to be a running total of all angles so far (positive or negative)
 		
-	} // end if (!isPaused && !ballIsInAir)
+	} // end if ((!isPaused && !ballIsInAir) || (!isPaused && courseShapeType == 'BilinearPatch'))
+
 
 	glider2Thrusters.rotateY(Math.PI); // from game start, the AI glider2 points in the opposite direction from human player's glider1 heading direction
 	glider2Thrusters.rotateY(glider2_inputRotationHorizontal); // rotate glider2 to final inputRotationHorizontal amount (calculated above in AI movement code)
@@ -3485,8 +3508,8 @@ function updateVariablesAndUniforms()
 	"glider2WorldVelocity: " + "(" + glider2WorldVelocity.x.toFixed(1) + " " + glider2WorldVelocity.y.toFixed(1) + " " + glider2WorldVelocity.z.toFixed(1) + ")";
  	*/
 
-	/* 
-	demoInfoElement.innerHTML += " glider2IsInAir: " + glider2IsInAir + " " + "cameraIsMoving: " + cameraIsMoving + "<br>" + 
+	
+	/* demoInfoElement.innerHTML += " glider2IsInAir: " + glider2IsInAir + " " + "cameraIsMoving: " + cameraIsMoving + "<br>" + 
 	"glider2ThrustersRight: " + "(" + glider2ThrustersRight.x.toFixed(1) + " " + glider2ThrustersRight.y.toFixed(1) + " " + glider2ThrustersRight.z.toFixed(1) + ")" + " " + 
 	"glider2ThrustersUp: " + "(" + glider2ThrustersUp.x.toFixed(1) + " " + glider2ThrustersUp.y.toFixed(1) + " " + glider2ThrustersUp.z.toFixed(1) + ")" + " " + 
 	"glider2ThrustersForward: " + "(" + glider2ThrustersForward.x.toFixed(1) + " " + glider2ThrustersForward.y.toFixed(1) + " " + glider2ThrustersForward.z.toFixed(1) + ")" + "<br>" + 
