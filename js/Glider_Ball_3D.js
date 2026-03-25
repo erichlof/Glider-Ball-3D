@@ -1907,7 +1907,6 @@ function updateVariablesAndUniforms()
 	if (testT < glider1RaySegmentLength)
 	{
 		glider1IsInAir = false;
-		glider1LocalVelocity.y = 0;
 		intersectionNormal.transformSurfaceNormal(courseShape_invMatrix); // bring intersected object-space normal back into world space
 		intersectionNormal.negate(); // normals usually point outward on shapes, but since we are inside the shape, must flip it
 		intersectionNormal.normalize(); // after the various transformations, make sure normal is a unit-length vector (length of 1)
@@ -1973,7 +1972,6 @@ function updateVariablesAndUniforms()
 			glider1BaseForward.crossVectors(glider1BaseRight, glider1BaseUp).normalize();
 		}
 		glider1IsInAir = false;
-		glider1LocalVelocity.y = 0;
 		glider1Base.position.copy(intersectionPoint);
 	}
 	if (testT > 1.01) // " > 1.01" instead of " > 1" to account for floating point precision
@@ -2224,6 +2222,7 @@ function updateVariablesAndUniforms()
 	
 	if (glider2Base.position.x > courseShape.position.x + (courseShape.scale.x * courseMaxBounds.x))
 	{
+		glider2ThrustTimer.begin(); // #AI
 		glider2Base.position.x = courseShape.position.x + (courseShape.scale.x * courseMaxBounds.x);
 		collisionNormal.set(-1,0,0);
 		savedBoundaryCollisionNormal.copy(collisionNormal);
@@ -2240,6 +2239,7 @@ function updateVariablesAndUniforms()
 	}
 	if (glider2Base.position.x < courseShape.position.x + (courseShape.scale.x * courseMinBounds.x))
 	{
+		glider2ThrustTimer.begin(); // #AI
 		glider2Base.position.x = courseShape.position.x + (courseShape.scale.x * courseMinBounds.x);
 		collisionNormal.set(1,0,0);
 		savedBoundaryCollisionNormal.copy(collisionNormal);
@@ -2256,6 +2256,7 @@ function updateVariablesAndUniforms()
 	}
 	if (glider2Base.position.y > courseShape.position.y + (courseShape.scale.y * courseMaxBounds.y))
 	{
+		glider2ThrustTimer.begin(); // #AI
 		glider2Base.position.y = courseShape.position.y + (courseShape.scale.y * courseMaxBounds.y);
 		collisionNormal.set(0,-1,0);
 		savedBoundaryCollisionNormal.copy(collisionNormal);
@@ -2272,6 +2273,7 @@ function updateVariablesAndUniforms()
 	}
 	if (glider2Base.position.y < courseShape.position.y + (courseShape.scale.y * courseMinBounds.y))
 	{
+		glider2ThrustTimer.begin(); // #AI
 		glider2Base.position.y = courseShape.position.y + (courseShape.scale.y * courseMinBounds.y);
 		collisionNormal.set(0,1,0);
 		savedBoundaryCollisionNormal.copy(collisionNormal);
@@ -2288,6 +2290,7 @@ function updateVariablesAndUniforms()
 	}
 	if (glider2Base.position.z > courseShape.position.z + (courseShape.scale.z * courseMaxBounds.z))
 	{
+		glider2ThrustTimer.begin(); // #AI
 		glider2Base.position.z = courseShape.position.z + (courseShape.scale.z * courseMaxBounds.z);
 		collisionNormal.set(0,0,-1);
 		savedBoundaryCollisionNormal.copy(collisionNormal);
@@ -2304,6 +2307,7 @@ function updateVariablesAndUniforms()
 	}
 	if (glider2Base.position.z < courseShape.position.z + (courseShape.scale.z * courseMinBounds.z))
 	{
+		glider2ThrustTimer.begin(); // #AI
 		glider2Base.position.z = courseShape.position.z + (courseShape.scale.z * courseMinBounds.z);
 		collisionNormal.set(0,0,1);
 		savedBoundaryCollisionNormal.copy(collisionNormal);
@@ -2348,7 +2352,6 @@ function updateVariablesAndUniforms()
 	if (testT < glider2RaySegmentLength)
 	{
 		glider2IsInAir = false;
-		glider2LocalVelocity.y = 0;
 		intersectionNormal.transformSurfaceNormal(courseShape_invMatrix); // bring intersected object-space normal back into world space
 		intersectionNormal.negate(); // normals usually point outward on shapes, but since we are inside the shape, must flip it
 		intersectionNormal.normalize(); // after the various transformations, make sure normal is a unit-length vector (length of 1)
@@ -2414,7 +2417,6 @@ function updateVariablesAndUniforms()
 			glider2BaseForward.crossVectors(glider2BaseRight, glider2BaseUp).normalize();
 		}
 		glider2IsInAir = false;
-		glider2LocalVelocity.y = 0;
 		glider2Base.position.copy(intersectionPoint);
 	}
 	if (testT > 1.01) // " > 1.01" instead of " > 1" to account for floating point precision
@@ -2439,14 +2441,14 @@ function updateVariablesAndUniforms()
 	glider2Thrusters.rotation.copy(glider2Base.rotation);
 	glider2Thrusters.scale.copy(glider2Base.scale);
 
-	// #AI
+	// #AI steering
 	// UPDATE AI GLIDER 2 ////////////////////////////////////
 	if ((!isPaused && !ballIsInAir) || (!isPaused && courseShapeType == 'BilinearPatch'))
 	{
 		// first, get a vector from glider2 to the target(ball.position), but negate it because AI opponent glider2 points in opposite direction from player's glider1
-		if (glider2BaseUp.dot(ballUp) > -0.5)
+		if (glider2BaseUp.dot(ballUp) > 0) //-0.5
 			glider2TargetForward.copy(ball.position).sub(glider2Base.position).normalize().negate();
-		else if (glider2ThrustersForward_dot_clipBoundaryWallNormal > -0.5)
+		else if (glider2ThrustersForward_dot_clipBoundaryWallNormal > -0.1) //-0.5
 			glider2TargetForward.copy(savedBoundaryCollisionNormal).negate();
 		
 		glider2ThrustersForward_dot_clipBoundaryWallNormal = -2; // reset this value every frame
@@ -2754,7 +2756,6 @@ function updateVariablesAndUniforms()
 	if (testT < ballRaySegmentLength)
 	{
 		ballIsInAir = false;
-		ballLocalVelocity.y = 0;
 		intersectionNormal.transformSurfaceNormal(courseShape_invMatrix); // bring intersected object-space normal back into world space
 		intersectionNormal.negate(); // normals usually point outward on shapes, but since we are inside the shape, must flip it
 		intersectionNormal.normalize(); // after the various transformations, make sure normal is a unit-length vector (length of 1)
@@ -2820,7 +2821,6 @@ function updateVariablesAndUniforms()
 			ballForward.crossVectors(ballRight, ballUp).normalize();
 		}
 		ballIsInAir = false;
-		ballLocalVelocity.y = 0;
 		ball.position.copy(intersectionPoint);
 	}
 	if (testT > 1.01) // " > 1.01" instead of " > 1" to account for floating point precision
@@ -2924,11 +2924,6 @@ function updateVariablesAndUniforms()
 	//ball.rotateX(-Math.PI * 0.5);
 	ball.updateMatrixWorld();
 
-	// if ball is on the ground (touching the large course), set its up velocity to 0
-	if (!ballIsInAir)
-	{
-		ballLocalVelocity.y = 0;
-	}
 
 	// send final ball transform (as an inverted matrix), so that the ray tracer can render it in the correct position and orientation
 	pathTracingUniforms.uBallInvMatrix.value.copy(ball.matrixWorld).invert();
@@ -3092,7 +3087,6 @@ function updateVariablesAndUniforms()
 	if (testT < playerGoalRaySegmentLength)
 	{
 		playerGoalIsInAir = false;
-		playerGoalLocalVelocity.y = 0;
 		intersectionNormal.transformSurfaceNormal(courseShape_invMatrix); // bring intersected object-space normal back into world space
 		intersectionNormal.negate(); // normals usually point outward on shapes, but since we are inside the shape, must flip it
 		intersectionNormal.normalize(); // after the various transformations, make sure normal is a unit-length vector (length of 1)
@@ -3149,7 +3143,6 @@ function updateVariablesAndUniforms()
 	if (testT <= 1.01)
 	{
 		playerGoalIsInAir = false;
-		playerGoalLocalVelocity.y = 0;
 		playerGoal.position.copy(intersectionPoint);
 	}
 	if (testT > 1.01) // " > 1.01" instead of " > 1" to account for floating point precision
@@ -3177,12 +3170,6 @@ function updateVariablesAndUniforms()
 	// playerGoalYRotateAngle %= TWO_PI;
 	playerGoal.rotateY(playerGoalYRotateAngle);
 	playerGoal.updateMatrixWorld();
-
-	// if playerGoal is on the ground (touching the large course), set its up velocity to 0
-	if (!playerGoalIsInAir)
-	{
-		playerGoalLocalVelocity.y = 0;
-	}
 
 
 	// send final playerGoal transform (as an inverted matrix), so that the ray tracer can render it in the correct position and orientation
@@ -3346,7 +3333,6 @@ function updateVariablesAndUniforms()
 	if (testT < computerGoalRaySegmentLength)
 	{
 		computerGoalIsInAir = false;
-		computerGoalLocalVelocity.y = 0;
 		intersectionNormal.transformSurfaceNormal(courseShape_invMatrix); // bring intersected object-space normal back into world space
 		intersectionNormal.negate(); // normals usually point outward on shapes, but since we are inside the shape, must flip it
 		intersectionNormal.normalize(); // after the various transformations, make sure normal is a unit-length vector (length of 1)
@@ -3403,7 +3389,6 @@ function updateVariablesAndUniforms()
 	if (testT <= 1.01)
 	{
 		computerGoalIsInAir = false;
-		computerGoalLocalVelocity.y = 0;
 		computerGoal.position.copy(intersectionPoint);
 	}
 	if (testT > 1.01) // " > 1.01" instead of " > 1" to account for floating point precision
@@ -3432,11 +3417,6 @@ function updateVariablesAndUniforms()
 	computerGoal.rotateY(computerGoalYRotateAngle);
 	computerGoal.updateMatrixWorld();
 
-	// if computerGoal is on the ground (touching the large course), set its up velocity to 0
-	if (!computerGoalIsInAir)
-	{
-		computerGoalLocalVelocity.y = 0;
-	}
 
 	// send final computerGoal transform (as an inverted matrix), so that the ray tracer can render it in the correct position and orientation
 	pathTracingUniforms.uComputerGoalInvMatrix.value.copy(computerGoal.matrixWorld).invert();
