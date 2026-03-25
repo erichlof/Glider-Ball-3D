@@ -794,7 +794,7 @@ function updateVariablesAndUniforms()
 			course_ScaleZController.show();
 			course_ScaleXController.setValue(500);
 			course_ScaleYController.setValue(500);
-			course_ScaleZController.setValue(1500);
+			course_ScaleZController.setValue(1400);
 			clipBoundaries_Folder.show();
 			course_ClipMinXController.min(-1); course_ClipMaxXController.max(1);
 			course_ClipMinYController.min(-1); course_ClipMaxYController.max(1);
@@ -893,13 +893,13 @@ function updateVariablesAndUniforms()
 			light2StartingPosition.set(-0.3, 0.3, -1);
 			light3StartingPosition.set(0.3, -0.3, 1);
 			courseShape.position.set(0, 0, 0);
-			course_ScaleUniformController.setValue(800);
+			course_ScaleUniformController.setValue(600);
 			course_ScaleXController.show();
 			course_ScaleYController.show();
 			course_ScaleZController.show();
-			course_ScaleXController.setValue(800);
-			course_ScaleYController.setValue(800);
-			course_ScaleZController.setValue(800);
+			course_ScaleXController.setValue(600);
+			course_ScaleYController.setValue(600);
+			course_ScaleZController.setValue(600);
 			clipBoundaries_Folder.show();
 			course_ClipMinXController.min(-1); course_ClipMaxXController.max(1);
 			course_ClipMinYController.min(-1); course_ClipMaxYController.max(1);
@@ -999,7 +999,7 @@ function updateVariablesAndUniforms()
 			course_ScaleXController.show();
 			course_ScaleYController.show();
 			course_ScaleZController.show();
-			course_ScaleXController.setValue(800);
+			course_ScaleXController.setValue(600);
 			course_ScaleYController.setValue(600);
 			course_ScaleZController.setValue(800);
 			course_ClipMinXController.min(-3); course_ClipMaxXController.max(3);
@@ -1547,9 +1547,9 @@ function updateVariablesAndUniforms()
 
 		// Note: the following is temporary input code for testing red opponent glider movement
 		// will be removed when red opponent glider is fully controlled by AI code
-		if ((!ballIsInAir) || (courseShapeType == 'BilinearPatch')) 
+		if ((!ballIsInAir) || (courseShapeType == 'BilinearPatch')) // #AI
 		{
-			if ( glider2ApplyThrust || (keyPressed('KeyI') && !keyPressed('KeyK')) ) // #AI
+			if ( glider2ApplyThrust )// || (keyPressed('KeyI') && !keyPressed('KeyK')) ) 
 			{
 				if (Math.abs(glider2LocalVelocity.z) < 500)
 				{
@@ -1557,7 +1557,7 @@ function updateVariablesAndUniforms()
 					glider2IsAcceleratingForward = true;
 				}	
 			}
-			if ( keyPressed('KeyK') && !keyPressed('KeyI') )
+			/* if ( keyPressed('KeyK') && !keyPressed('KeyI') )
 			{
 				glider2LocalVelocity.z += (400 * frameTime); 
 				glider2IsAcceleratingForward = true;
@@ -1580,7 +1580,7 @@ function updateVariablesAndUniforms()
 			if ( keyPressed('KeyO') && !keyPressed('KeyU') )
 			{
 				glider2_inputRotationHorizontal -= (2 * frameTime); 
-			}
+			} */
 		}
 		
 	} // end if (!isPaused)
@@ -1964,7 +1964,7 @@ function updateVariablesAndUniforms()
 			glider1BaseForward.crossVectors(glider1BaseRight, glider1BaseUp).normalize();
 		}
 	}
-	if (testT <= 1)
+	if (testT <= 1.01)
 	{
 		if (courseShapeType == 'BilinearPatch')
 		{
@@ -1976,7 +1976,7 @@ function updateVariablesAndUniforms()
 		glider1LocalVelocity.y = 0;
 		glider1Base.position.copy(intersectionPoint);
 	}
-	if (testT > 1) // " > 1.01" instead of " > 1" to account for floating point precision
+	if (testT > 1.01) // " > 1.01" instead of " > 1" to account for floating point precision
 	{
 		glider1IsInAir = true;
 	}
@@ -2405,7 +2405,7 @@ function updateVariablesAndUniforms()
 			glider2BaseForward.crossVectors(glider2BaseRight, glider2BaseUp).normalize();
 		}
 	}
-	if (testT <= 1)
+	if (testT <= 1.01)
 	{
 		if (courseShapeType == 'BilinearPatch')
 		{
@@ -2417,7 +2417,7 @@ function updateVariablesAndUniforms()
 		glider2LocalVelocity.y = 0;
 		glider2Base.position.copy(intersectionPoint);
 	}
-	if (testT > 1) // " > 1.01" instead of " > 1" to account for floating point precision
+	if (testT > 1.01) // " > 1.01" instead of " > 1" to account for floating point precision
 	{
 		glider2IsInAir = true;
 	}
@@ -2446,10 +2446,10 @@ function updateVariablesAndUniforms()
 		// first, get a vector from glider2 to the target(ball.position), but negate it because AI opponent glider2 points in opposite direction from player's glider1
 		if (glider2BaseUp.dot(ballUp) > -0.5)
 			glider2TargetForward.copy(ball.position).sub(glider2Base.position).normalize().negate();
-		if (glider2ThrustersForward_dot_clipBoundaryWallNormal > 0)
+		else if (glider2ThrustersForward_dot_clipBoundaryWallNormal > -0.5)
 			glider2TargetForward.copy(savedBoundaryCollisionNormal).negate();
 		
-		glider2ThrustersForward_dot_clipBoundaryWallNormal = 0; // reset this value every frame
+		glider2ThrustersForward_dot_clipBoundaryWallNormal = -2; // reset this value every frame
 			
 		// construct the ortho basis frame if glider2 were to be pointing at ball
 		glider2TargetUp.copy(glider2BaseUp);
@@ -2537,69 +2537,7 @@ function updateVariablesAndUniforms()
 	ball.position.addScaledVector(ballWorldVelocity, frameTime);
 
 
-	// now that the ball has moved, record its new position minus its old position as a line segment
-	ballRaySegment.copy(ball.position).sub(ballOldPosition);
-	ballRaySegmentLength = ballRaySegment.length(); // will be used later as an out-of-bounds check
-
-	// now make a ray using the ball's old position (rayOrigin) and the direction it is trying to move in (rayDirection)
-	ballRayOrigin.copy(ballOldPosition); // must use ball's old position for this to work
-	ballRayDirection.copy(ballRaySegment).normalize();
-
-	// check for collision between ball and computer A.I.'s goal (red goal)
-
-	rayObjectOrigin.copy(ballRayOrigin);
-	rayObjectDirection.copy(ballRayDirection);
-	// put the rayObjectOrigin and rayObjectDirection in the object space of the computer A.I.'s goal box
-	computerGoalCollisionVolume.position.copy(computerGoal.position);
-	computerGoalCollisionVolume.rotation.copy(computerGoal.rotation);
-	computerGoalCollisionVolume.updateMatrixWorld();
-	computerGoal_invMatrix.copy(computerGoalCollisionVolume.matrixWorld).invert(); // only needed if this object moves
-	rayObjectOrigin.transformAsPoint(computerGoal_invMatrix);
-	rayObjectDirection.transformAsDirection(computerGoal_invMatrix);
-	// now that the ray's origin and direction are in object space, we can raycast against the goal box using a more simple unit-box intersection routine
-	testT = raycastUnitBox(rayObjectOrigin, rayObjectDirection);
-	// If the test t value from the raycast comes back smaller than the distance that the ball is trying to cover during
-	//   this animation frame, that means that the ball's future position would step beyond the goal box.
-	//   Therefore, a goal has been made - reset the ball to its starting position
-	if (testT < ballRaySegmentLength)
-	{
-		ballIsInAir = true;
-		ballLocalVelocity.set(0, 0, 0);
-		ball.position.copy(ballStartingPosition);
-		ballRight.set(1, 0, 0);
-		ballUp.set(0, 1, 0);
-		ballForward.set(0, 0, 1);
-		computerGoalGlowTimer.begin();
-		glider2ThrustTimer.begin(); // #AI
-	}
-
-	// check for collision between ball and player's goal (blue goal)
-
-	rayObjectOrigin.copy(ballRayOrigin);
-	rayObjectDirection.copy(ballRayDirection);
-	// put the rayObjectOrigin and rayObjectDirection in the object space of the player's goal box
-	playerGoalCollisionVolume.position.copy(playerGoal.position);
-	playerGoalCollisionVolume.rotation.copy(playerGoal.rotation);
-	playerGoalCollisionVolume.updateMatrixWorld();
-	playerGoal_invMatrix.copy(playerGoalCollisionVolume.matrixWorld).invert(); // only needed if this object moves
-	rayObjectOrigin.transformAsPoint(playerGoal_invMatrix);
-	rayObjectDirection.transformAsDirection(playerGoal_invMatrix);
-	// now that the ray's origin and direction are in object space, we can raycast against the goal box using a more simple unit-box intersection routine
-	testT = raycastUnitBox(rayObjectOrigin, rayObjectDirection);
-	// If the test t value from the raycast comes back smaller than the distance that the ball is trying to cover during
-	//   this animation frame, that means that the ball's future position would step beyond the goal box.
-	//   Therefore, a goal has been made - reset the ball to its starting position
-	if (testT < ballRaySegmentLength)
-	{
-		ballIsInAir = true;
-		ballLocalVelocity.set(0, 0, 0);
-		ball.position.copy(ballStartingPosition);
-		ballRight.set(1, 0, 0);
-		ballUp.set(0, 1, 0);
-		ballForward.set(0, 0, 1);
-		playerGoalGlowTimer.begin();
-		glider2ThrustTimer.begin(); // #AI
-	}
+	
 
 
 	// PHYSICS for Ball vs. Glider1
@@ -2873,7 +2811,7 @@ function updateVariablesAndUniforms()
 			ballForward.crossVectors(ballRight, ballUp).normalize();
 		}	
 	}
-	if (testT <= 1)
+	if (testT <= 1.01)
 	{
 		if (courseShapeType == 'BilinearPatch')
 		{
@@ -2885,7 +2823,7 @@ function updateVariablesAndUniforms()
 		ballLocalVelocity.y = 0;
 		ball.position.copy(intersectionPoint);
 	}
-	if (testT > 1) // " > 1.01" instead of " > 1" to account for floating point precision
+	if (testT > 1.01) // " > 1.01" instead of " > 1" to account for floating point precision
 	{
 		ballIsInAir = true;
 	}
@@ -2902,6 +2840,73 @@ function updateVariablesAndUniforms()
 		ballLocalVelocity.z -= (ballLocalVelocity.z * 0.7 * frameTime);
 		ballLocalVelocity.x -= (ballLocalVelocity.x * 0.7 * frameTime);
 	}
+
+
+	// now that the ball has moved, record its new position minus its old position as a line segment
+	ballRaySegment.copy(ball.position).sub(ballOldPosition);
+	ballRaySegmentLength = ballRaySegment.length(); // will be used later as an out-of-bounds check
+
+	// now make a ray using the ball's old position (rayOrigin) and the direction it is trying to move in (rayDirection)
+	ballRayOrigin.copy(ballOldPosition); // must use ball's old position for this to work
+	ballRayDirection.copy(ballRaySegment).normalize();
+
+	// check for collision between ball and computer A.I.'s goal (red goal)
+
+	rayObjectOrigin.copy(ballRayOrigin);
+	rayObjectDirection.copy(ballRayDirection);
+	// put the rayObjectOrigin and rayObjectDirection in the object space of the computer A.I.'s goal box
+	computerGoalCollisionVolume.position.copy(computerGoal.position);
+	computerGoalCollisionVolume.rotation.copy(computerGoal.rotation);
+	computerGoalCollisionVolume.updateMatrixWorld();
+	computerGoal_invMatrix.copy(computerGoalCollisionVolume.matrixWorld).invert(); // only needed if this object moves
+	rayObjectOrigin.transformAsPoint(computerGoal_invMatrix);
+	rayObjectDirection.transformAsDirection(computerGoal_invMatrix);
+	// now that the ray's origin and direction are in object space, we can raycast against the goal box using a more simple unit-box intersection routine
+	testT = raycastUnitBox(rayObjectOrigin, rayObjectDirection);
+	// If the test t value from the raycast comes back smaller than the distance that the ball is trying to cover during
+	//   this animation frame, that means that the ball's future position would step beyond the goal box.
+	//   Therefore, a goal has been made - reset the ball to its starting position
+	if (testT < ballRaySegmentLength)
+	{
+		ballIsInAir = true;
+		ballLocalVelocity.set(0, 0, 0);
+		ball.position.copy(ballStartingPosition);
+		ballRight.set(1, 0, 0);
+		ballUp.set(0, 1, 0);
+		ballForward.set(0, 0, 1);
+		computerGoalGlowTimer.begin();
+		glider2ThrustTimer.begin(); // #AI
+	}
+
+	// check for collision between ball and player's goal (blue goal)
+
+	rayObjectOrigin.copy(ballRayOrigin);
+	rayObjectDirection.copy(ballRayDirection);
+	// put the rayObjectOrigin and rayObjectDirection in the object space of the player's goal box
+	playerGoalCollisionVolume.position.copy(playerGoal.position);
+	playerGoalCollisionVolume.rotation.copy(playerGoal.rotation);
+	playerGoalCollisionVolume.updateMatrixWorld();
+	playerGoal_invMatrix.copy(playerGoalCollisionVolume.matrixWorld).invert(); // only needed if this object moves
+	rayObjectOrigin.transformAsPoint(playerGoal_invMatrix);
+	rayObjectDirection.transformAsDirection(playerGoal_invMatrix);
+	// now that the ray's origin and direction are in object space, we can raycast against the goal box using a more simple unit-box intersection routine
+	testT = raycastUnitBox(rayObjectOrigin, rayObjectDirection);
+	// If the test t value from the raycast comes back smaller than the distance that the ball is trying to cover during
+	//   this animation frame, that means that the ball's future position would step beyond the goal box.
+	//   Therefore, a goal has been made - reset the ball to its starting position
+	if (testT < ballRaySegmentLength)
+	{
+		ballIsInAir = true;
+		ballLocalVelocity.set(0, 0, 0);
+		ball.position.copy(ballStartingPosition);
+		ballRight.set(1, 0, 0);
+		ballUp.set(0, 1, 0);
+		ballForward.set(0, 0, 1);
+		playerGoalGlowTimer.begin();
+		glider2ThrustTimer.begin(); // #AI
+	}
+
+
 
 
 	ballOldPosition.copy(ball.position);
@@ -3141,13 +3146,13 @@ function updateVariablesAndUniforms()
 		playerGoalRight.crossVectors(playerGoalUp, playerGoalForward).normalize();
 		playerGoalForward.crossVectors(playerGoalRight, playerGoalUp).normalize();	
 	}
-	if (testT <= 1)
+	if (testT <= 1.01)
 	{
 		playerGoalIsInAir = false;
 		playerGoalLocalVelocity.y = 0;
 		playerGoal.position.copy(intersectionPoint);
 	}
-	if (testT > 1) // " > 1.01" instead of " > 1" to account for floating point precision
+	if (testT > 1.01) // " > 1.01" instead of " > 1" to account for floating point precision
 	{
 		playerGoalIsInAir = true;
 	}
@@ -3395,13 +3400,13 @@ function updateVariablesAndUniforms()
 		computerGoalRight.crossVectors(computerGoalUp, computerGoalForward).normalize();
 		computerGoalForward.crossVectors(computerGoalRight, computerGoalUp).normalize();	
 	}
-	if (testT <= 1)
+	if (testT <= 1.01)
 	{
 		computerGoalIsInAir = false;
 		computerGoalLocalVelocity.y = 0;
 		computerGoal.position.copy(intersectionPoint);
 	}
-	if (testT > 1) // " > 1.01" instead of " > 1" to account for floating point precision
+	if (testT > 1.01) // " > 1.01" instead of " > 1" to account for floating point precision
 	{
 		computerGoalIsInAir = true;
 	}
