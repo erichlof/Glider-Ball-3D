@@ -958,13 +958,13 @@ function updateVariablesAndUniforms()
 			
 			// (game objects and lights position placements are handled in needChangeCourseScale code further down)
 			courseShape.position.set(0, 0, 0);
-			course_ScaleUniformController.setValue(500);
+			course_ScaleUniformController.setValue(950);
 			course_ScaleXController.show();
 			course_ScaleYController.show();
 			course_ScaleZController.show();
-			course_ScaleXController.setValue(500);
-			course_ScaleYController.setValue(500);
-			course_ScaleZController.setValue(500);
+			course_ScaleXController.setValue(950);
+			course_ScaleYController.setValue(950);
+			course_ScaleZController.setValue(950);
 			clipBoundaries_Folder.show();
 			course_ClipMinXController.min(-2); course_ClipMaxXController.max(2);
 			course_ClipMinYController.min(-2); course_ClipMaxYController.max(2);
@@ -2446,7 +2446,7 @@ function updateVariablesAndUniforms()
 	if ((!isPaused && !ballIsInAir) || (!isPaused && courseShapeType == 'BilinearPatch'))
 	{
 		// first, get a vector from glider2 to the target(ball.position), but negate it because AI opponent glider2 points in opposite direction from player's glider1
-		if (glider2BaseUp.dot(ballUp) > 0) //-0.5
+		if (glider2BaseUp.dot(ballUp) > -0.1)
 			glider2TargetForward.copy(ball.position).sub(glider2Base.position).normalize().negate();
 		else if (glider2ThrustersForward_dot_clipBoundaryWallNormal > -0.1) //-0.5
 			glider2TargetForward.copy(savedBoundaryCollisionNormal).negate();
