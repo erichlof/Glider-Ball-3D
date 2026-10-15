@@ -877,7 +877,9 @@ let n = 0;
 // f2(x) =  6ax^2 + 3bx   +  c;
 function root_find4_cy(r, a, b, c, d, e, upper_bound) 
 {
-	
+	// must zero out array, otherwise old junk values might corrupt function, especially on mobile
+	r2[0] = r2[1] = r2[2] = r2[3] = 0.0;
+	r3[0] = r3[1] = r3[2] = r3[3] = 0.0;
 	n = root_find2(        r2, 6*a, 3*b,   c);                   // degree 2
 	n = cy_find4(r3, r2, n, 0, 4*a, 3*b, 2*c, d,    upper_bound);// degree 3
 	n = cy_find4( r, r3, n,      a,   b,   c, d, e, upper_bound);// degree 4
@@ -912,6 +914,8 @@ function intersectUnitTorus(rayO, rayD, torus_r, upper_bound, normal)
 	d = (2 * v * w) + (8 * torusR2 * rayO.z * rayD.z);
 	e = (w * w) + (4 * torusR2 * ((rayO.z * rayO.z) - torusr2));
 
+	// must zero out array, otherwise old junk values might corrupt function, especially on mobile
+	roots[0] = roots[1] = roots[2] = roots[3] = 0.0;
 	numRoots = root_find4_cy(roots, a, b, c, d, e, upper_bound);
 	
 	pos.getPointAlongRay(rayO, rayD, roots[0]);
