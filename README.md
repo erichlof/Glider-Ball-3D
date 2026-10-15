@@ -1,5 +1,5 @@
 # Glider Ball 3D (w.i.p.)
-A fully path traced 3D action game for all devices with a browser.  This game is a work in progress:  Core gameplay and AI opponent ability will be added soon! <br>
+A fully path traced 3D action game for all devices with a browser. <br>
 Click to Play --> https://erichlof.github.io/Glider-Ball-3D/Glider_Ball_3D.html
 <br> <br>
 
@@ -28,7 +28,7 @@ Think 'Rocket League' car-soccer gameplay, but instead of playing on boring, fla
 
 <h2>TODO</h2>
 
-* Add basic AI to the opponent Glider.  It must be able to locate and target the ball while everything is moving fast.  Must be able to line up a shot towards player's goal. This will probably be really challenging, but I will start with very simple target/follow mechanics for the AI Glider, and then refine further.
+* Improve computer-controlled opponent Red Glider.  It must be able to locate and target the ball while everything is moving fast.  Must be able to line up a shot towards player's goal. This will probably be really challenging, but I will start with very simple target/follow mechanics for the AI Glider, and then refine further.
 * Make the Glider models more interesting visually, by using CSG (Constructive Solid Geometry) modeling.  This technique makes cool models (think 1982 TRON light cycles) and is easy for my ray tracing renderer to handle, because the game objects are made from a combination of smaller ray tracing-friendly shapes (spheres, paraboloids, capsules, cones, cylinders, etc).  The blue metal Paraboloid that you drive around now is just a placeholder.
 * Add game sound effects: maybe a low humming/sliding sound as the Gliders hover around the 3D courses, a sound when the Gliders collide with each other, when a Glider hits the ball, when the ball goes into a goal, when a Glider collides with a black-void boundary area, when a match begins, and when a player wins a match.
 * After basic AI is working, consider allowing 2 human players to play against each other online over a p2p network connection.  This would have to use WebSockets or similar Web technology (WebRTC Data Channels?).  I've done this before on my old game, Deep Space Pong, but that was many years ago.  I'm sure the technology and networking APIs have changed.
